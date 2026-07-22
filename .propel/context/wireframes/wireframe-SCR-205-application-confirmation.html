@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SCR-205 — Application Confirmation | AI Interview App</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--brand:#6366F1;--surface-0:#fff;--surface-1:#F8FAFC;--border:#E2E8F0;--ink:#0F172A;--ink-sec:#64748B;--ink-ter:#94A3B8;--success:#10B981;--success-s:#D1FAE5;--font:'Inter',sans-serif;--heading:'Plus Jakarta Sans',sans-serif}
+body{font-family:var(--font);background:var(--surface-1);min-height:100vh;display:flex;flex-direction:column}
+.wf-header{background:#1E293B;color:#fff;padding:10px 40px;font-size:12px;display:flex;justify-content:space-between}
+.wf-tag{background:#6366F1;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600}
+nav{display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:64px;background:var(--surface-0);border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:8px;font-family:var(--heading);font-weight:700;font-size:18px;color:var(--brand)}
+.logo-mark{width:32px;height:32px;background:var(--brand);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700}
+.page{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 20px}
+.card{background:var(--surface-0);border:1px solid var(--border);border-radius:20px;padding:48px 40px;max-width:560px;width:100%;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.success-icon{width:80px;height:80px;background:var(--success-s);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 24px;animation:pop .4s ease}
+@keyframes pop{0%{transform:scale(.5);opacity:0}80%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+h1{font-family:var(--heading);font-size:26px;font-weight:700;margin-bottom:8px}
+.subtitle{font-size:15px;color:var(--ink-sec);margin-bottom:24px;line-height:1.6}
+.app-id{font-family:monospace;font-size:14px;background:var(--surface-1);border:1px solid var(--border);border-radius:8px;padding:8px 16px;display:inline-block;margin-bottom:24px;cursor:pointer;color:var(--ink-ter)}
+.app-id:hover{background:#EEF2FF;color:var(--brand)}
+.next-steps{background:var(--surface-1);border:1px solid var(--border);border-radius:14px;padding:20px 24px;text-align:left;margin-bottom:28px}
+.next-steps-title{font-size:13px;font-weight:600;color:var(--ink-sec);text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px}
+.step-row{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px}
+.step-num{width:28px;height:28px;border-radius:50%;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.step-text{font-size:14px;line-height:1.5}
+.step-text strong{display:block;margin-bottom:2px}
+.step-text span{font-size:13px;color:var(--ink-sec)}
+.actions{display:flex;flex-direction:column;gap:10px}
+.btn-primary{height:48px;background:var(--brand);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:var(--font)}
+.btn-secondary{height:44px;background:transparent;border:1px solid var(--border);border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;font-family:var(--font);color:var(--ink-sec)}
+.spec-note{background:#FFFBEB;border-left:3px solid #F59E0B;padding:8px 12px;margin-top:10px;font-size:12px;color:#92400E;border-radius:0 4px 4px 0;text-align:left}
+</style>
+</head>
+<body>
+<div class="wf-header">
+  <span><span class="wf-tag">SCR-205</span> &nbsp; Application Confirmation &nbsp;·&nbsp; Route: <code>/candidate/applications/:id/confirmation</code> &nbsp;·&nbsp; Role: Applicant</span>
+  <span>FR-019 &nbsp;·&nbsp; 2026-07-22</span>
+</div>
+<nav>
+  <div class="logo"><div class="logo-mark">TF</div>TalentForge</div>
+  <div style="width:36px;height:36px;background:var(--brand);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700">JD</div>
+</nav>
+<div class="page">
+  <div class="card">
+    <div class="success-icon">🎉</div>
+    <h1>Application Submitted!</h1>
+    <p class="subtitle">Your application for <strong>Senior Frontend Engineer</strong> has been received. We'll keep you updated at every step.</p>
+    <div class="app-id" title="Click to copy">📋 App ID: TF-2024-0172 &nbsp;·&nbsp; Copy</div>
+    <div class="next-steps">
+      <div class="next-steps-title">What happens next</div>
+      <div class="step-row">
+        <div class="step-num">1</div>
+        <div class="step-text"><strong>AI Screening</strong><span>Your resume will be evaluated within ~3 minutes.</span></div>
+      </div>
+      <div class="step-row">
+        <div class="step-num">2</div>
+        <div class="step-text"><strong>HR Review</strong><span>An HR reviewer will assess the screening results within 48 hours.</span></div>
+      </div>
+      <div class="step-row">
+        <div class="step-num">3</div>
+        <div class="step-text"><strong>Interview Invitation</strong><span>If shortlisted, you'll receive an interview invitation by email.</span></div>
+      </div>
+    </div>
+    <div class="spec-note">Confirmation email sent to candidate on submit · App ID is copyable · AI screening begins async immediately · FR-019</div>
+    <div class="actions">
+      <button class="btn-primary">View Application Timeline →</button>
+      <button class="btn-secondary">Browse More Jobs</button>
+      <button class="btn-secondary">Return to Dashboard</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

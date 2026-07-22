@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SCR-207 — Assessment Console | AI Interview App</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--brand:#6366F1;--surface-0:#fff;--surface-1:#F8FAFC;--surface-2:#F1F5F9;--border:#E2E8F0;--ink:#0F172A;--ink-sec:#64748B;--ink-ter:#94A3B8;--success:#10B981;--success-s:#D1FAE5;--warning:#F59E0B;--danger:#EF4444;--font:'Inter',sans-serif;--heading:'Plus Jakarta Sans',sans-serif}
+body{font-family:var(--font);background:#0F172A;color:#F8FAFC;min-height:100vh;display:flex;flex-direction:column}
+.wf-header{background:#0A0F1E;color:#fff;padding:8px 24px;font-size:12px;display:flex;justify-content:space-between;border-bottom:1px solid #1E293B}
+.wf-tag{background:#6366F1;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600}
+/* NAV-008: Assessment Header Bar (LAY-005 FullscreenLayout) */
+.assessment-header{background:#1E293B;border-bottom:1px solid #334155;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.header-left{display:flex;align-items:center;gap:16px}
+.assessment-title{font-size:15px;font-weight:600;color:#F8FAFC}
+.assessment-job{font-size:13px;color:#94A3B8}
+/* Timer FBK-012 */
+.timer-wrap{display:flex;align-items:center;gap:8px}
+.timer-icon{font-size:16px}
+.timer-display{font-family:monospace;font-size:18px;font-weight:700}
+.timer-ok{color:#10B981}.timer-warn{color:#F59E0B}.timer-critical{color:#EF4444}
+/* Navigator NAV-007 */
+.question-navigator{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.q-dot{width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;cursor:pointer;border:1px solid #334155}
+.q-dot.answered{background:var(--success);border-color:var(--success);color:#fff}
+.q-dot.current{background:var(--brand);border-color:var(--brand);color:#fff}
+.q-dot.marked{background:#78350F;border-color:#F59E0B;color:#FCD34D}
+.q-dot.unanswered{background:#1E293B;color:#64748B}
+.header-right{display:flex;align-items:center;gap:12px}
+.btn-submit{height:36px;padding:0 20px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font)}
+/* Main content */
+.console-body{display:flex;flex:1;overflow:hidden}
+/* Question panel */
+.question-panel{flex:1;overflow-y:auto;padding:28px 32px;background:#0F172A}
+.q-meta{font-size:12px;color:#64748B;margin-bottom:6px}
+.q-text{font-size:16px;font-weight:500;color:#F1F5F9;line-height:1.7;margin-bottom:24px}
+/* MCQ options */
+.options-list{display:flex;flex-direction:column;gap:10px;margin-bottom:24px}
+.option{display:flex;align-items:flex-start;gap:12px;background:#1E293B;border:1px solid #334155;border-radius:10px;padding:14px 16px;cursor:pointer;transition:.15s}
+.option:hover{border-color:#6366F1}
+.option.selected{border-color:#6366F1;background:#1E1E2E}
+.option-letter{width:28px;height:28px;border-radius:7px;background:#334155;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;color:#94A3B8}
+.option.selected .option-letter{background:#6366F1;color:#fff}
+.option-text{font-size:14px;color:#E2E8F0;padding-top:4px;line-height:1.5}
+/* Code editor for coding questions */
+.code-section{margin-bottom:20px}
+.code-editor{background:#111827;border:1px solid #374151;border-radius:10px;overflow:hidden}
+.code-toolbar{display:flex;align-items:center;gap:8px;padding:8px 16px;background:#1F2937;border-bottom:1px solid #374151}
+.code-lang{font-size:12px;color:#9CA3AF;background:#374151;padding:2px 8px;border-radius:4px}
+.btn-run{height:28px;padding:0 12px;background:#10B981;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer}
+.code-area{padding:16px;font-family:monospace;font-size:13px;color:#A7F3D0;min-height:140px;line-height:1.6;outline:none}
+.output-section{background:#111827;border:1px solid #374151;border-radius:8px;padding:12px 16px;margin-top:10px}
+.output-label{font-size:11px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.output-text{font-family:monospace;font-size:12px;color:#86EFAC}
+/* Bottom nav */
+.question-footer{background:#1E293B;border-top:1px solid #334155;padding:14px 32px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.btn-nav{height:38px;padding:0 18px;border:1px solid #475569;border-radius:8px;background:transparent;color:#94A3B8;font-size:14px;font-weight:500;cursor:pointer;font-family:var(--font)}
+.btn-mark{height:38px;padding:0 18px;border:1px solid #F59E0B;border-radius:8px;background:transparent;color:#F59E0B;font-size:14px;font-weight:500;cursor:pointer;font-family:var(--font)}
+.progress-text{font-size:13px;color:#64748B}
+.spec-note{background:#78350F;border-left:3px solid #F59E0B;padding:8px 12px;margin-top:10px;font-size:12px;color:#FCD34D;border-radius:0 4px 4px 0}
+</style>
+</head>
+<body>
+<div class="wf-header">
+  <span><span class="wf-tag">SCR-207</span> &nbsp; Assessment Console &nbsp;·&nbsp; Route: <code>/candidate/assessments/:id</code> &nbsp;·&nbsp; Role: Applicant &nbsp;·&nbsp; LAY-005 Fullscreen Layout</span>
+  <span>FR-037, FR-044 &nbsp;·&nbsp; 2026-07-22</span>
+</div>
+
+<!-- NAV-008: Assessment Header Bar -->
+<div class="assessment-header">
+  <div class="header-left">
+    <div>
+      <div class="assessment-title">Aptitude Assessment</div>
+      <div class="assessment-job">Senior Frontend Engineer — TalentForge</div>
+    </div>
+    <div style="width:1px;height:32px;background:#334155"></div>
+    <!-- Timer FBK-012 -->
+    <div class="timer-wrap">
+      <span class="timer-icon">⏱</span>
+      <span class="timer-display timer-warn">07:42</span>
+    </div>
+    <div style="font-size:12px;color:#64748B">remaining</div>
+  </div>
+  <!-- NAV-007: Question Navigator -->
+  <div class="question-navigator">
+    <div class="q-dot answered">1</div>
+    <div class="q-dot answered">2</div>
+    <div class="q-dot answered">3</div>
+    <div class="q-dot marked">4</div>
+    <div class="q-dot current">5</div>
+    <div class="q-dot unanswered">6</div>
+    <div class="q-dot unanswered">7</div>
+    <div class="q-dot unanswered">8</div>
+    <div class="q-dot unanswered">9</div>
+    <div class="q-dot unanswered">10</div>
+  </div>
+  <div class="header-right">
+    <button class="btn-submit">Submit Assessment</button>
+  </div>
+</div>
+<div class="spec-note" style="margin:0;border-radius:0">NAV-007 Navigator Legend: Green=Answered · Blue=Current · Yellow=Marked for review · Gray=Unanswered &nbsp;·&nbsp; FBK-012 Timer: green &gt;10min, yellow 5–10min, red+pulse &lt;5min</div>
+
+<div class="console-body">
+  <!-- Question 5 — MCQ -->
+  <div class="question-panel">
+    <div class="q-meta">Question 5 of 10 &nbsp;·&nbsp; Multiple Choice</div>
+    <div class="q-text">Which React hook should be used to perform side effects such as fetching data after a component renders, and what is the correct dependency array pattern to run it only once?</div>
+
+    <div class="options-list">
+      <div class="option">
+        <div class="option-letter">A</div>
+        <div class="option-text"><code style="font-family:monospace;font-size:13px">useState</code> with an empty array passed as the initial state</div>
+      </div>
+      <div class="option selected">
+        <div class="option-letter">B</div>
+        <div class="option-text"><code style="font-family:monospace;font-size:13px">useEffect(() => { fetchData(); }, [])</code> — empty dependency array runs once on mount</div>
+      </div>
+      <div class="option">
+        <div class="option-letter">C</div>
+        <div class="option-text"><code style="font-family:monospace;font-size:13px">useCallback</code> with no dependencies to memoize the fetch call</div>
+      </div>
+      <div class="option">
+        <div class="option-letter">D</div>
+        <div class="option-text"><code style="font-family:monospace;font-size:13px">useEffect</code> without a dependency array, which runs after every render</div>
+      </div>
+    </div>
+
+    <!-- Coding question section (alternate view) -->
+    <div style="background:#1E293B;border:1px dashed #334155;border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-size:12px;color:#64748B;margin-bottom:6px">🔧 Coding question view (alternate) — shown when question type = "code"</div>
+      <div class="code-section">
+        <div class="code-editor">
+          <div class="code-toolbar">
+            <span class="code-lang">JavaScript</span>
+            <button class="btn-run">▶ Run Code</button>
+            <span style="font-size:11px;color:#6B7280;margin-left:auto">Auto-save: ON</span>
+          </div>
+          <div class="code-area" contenteditable="true">
+function reverseString(str) {
+  // Your implementation here
+  return str.split('').reverse().join('');
+}
+          </div>
+        </div>
+        <div class="output-section">
+          <div class="output-label">Output</div>
+          <div class="output-text">✓ Test case 1 passed: "hello" → "olleh"<br/>✗ Test case 2 failed: Expected "racecar", got "racecar" (✓)</div>
+        </div>
+      </div>
+    </div>
+    <div class="spec-note">Code editor: syntax highlighting, auto-complete, run-code · Output console · FR-044</div>
+  </div>
+</div>
+
+<div class="question-footer">
+  <button class="btn-nav">← Previous</button>
+  <div style="display:flex;gap:12px;align-items:center">
+    <button class="btn-mark">🏳 Mark for Review</button>
+    <span class="progress-text">Question 5 of 10</span>
+  </div>
+  <button class="btn-nav">Next →</button>
+</div>
+</body>
+</html>

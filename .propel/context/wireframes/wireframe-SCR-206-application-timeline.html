@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SCR-015 — Application Timeline | AI Interview App</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-brand-primary: #6366F1;
+      --color-brand-accent: #06B6D4;
+      --color-surface-0: #FFFFFF;
+      --color-surface-1: #F8FAFC;
+      --color-surface-2: #F1F5F9;
+      --color-border: #E2E8F0;
+      --color-ink-primary: #0F172A;
+      --color-ink-secondary: #64748B;
+      --color-ink-tertiary: #94A3B8;
+      --color-success: #10B981;
+      --color-success-surface: #D1FAE5;
+      --color-warning: #F59E0B;
+      --color-warning-surface: #FEF3C7;
+      --color-danger: #EF4444;
+      --color-danger-surface: #FEE2E2;
+      --color-info: #3B82F6;
+      --color-info-surface: #DBEAFE;
+      --font-body: 'Inter', sans-serif;
+      --font-heading: 'Plus Jakarta Sans', sans-serif;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+    }
+    body { font-family: var(--font-body); background: var(--color-surface-1); color: var(--color-ink-primary); }
+    .wf-header { background: #1E293B; color: white; padding: 10px 40px; font-size: 12px; display: flex; justify-content: space-between; align-items: center; }
+    .wf-tag { background: #6366F1; color: white; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
+    nav { display: flex; align-items: center; justify-content: space-between; padding: 0 40px; height: 64px; background: var(--color-surface-0); border-bottom: 1px solid var(--color-border); box-shadow: var(--shadow-sm); }
+    .nav-logo { display: flex; align-items: center; gap: 8px; font-family: var(--font-heading); font-weight: 700; font-size: 18px; color: var(--color-brand-primary); }
+    .nav-logo-mark { width: 32px; height: 32px; background: var(--color-brand-primary); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: 700; }
+    .nav-links { display: flex; gap: 4px; }
+    .nav-link { padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; color: var(--color-ink-secondary); text-decoration: none; }
+    .nav-link.active { color: var(--color-brand-primary); background: #EEF2FF; }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+    .notification-btn { width: 40px; height: 40px; border-radius: 8px; background: var(--color-surface-1); border: 1px solid var(--color-border); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; }
+    .avatar { width: 36px; height: 36px; background: var(--color-brand-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: 700; }
+    .page-content { max-width: 900px; margin: 0 auto; padding: 32px 40px; }
+    /* Breadcrumb */
+    .breadcrumb { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--color-ink-secondary); margin-bottom: 24px; }
+    .breadcrumb a { color: var(--color-brand-primary); text-decoration: none; }
+    .breadcrumb-sep { color: var(--color-ink-tertiary); }
+    /* Application header card */
+    .app-header-card { background: var(--color-surface-0); border: 1px solid var(--color-border); border-radius: 16px; padding: 24px 28px; margin-bottom: 28px; box-shadow: var(--shadow-sm); display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; }
+    .app-header-info h1 { font-family: var(--font-heading); font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .app-header-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .badge { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; border: 1px solid; }
+    .badge-info { background: var(--color-info-surface); color: var(--color-info); border-color: #93C5FD; }
+    .badge-success { background: var(--color-success-surface); color: var(--color-success); border-color: #6EE7B7; }
+    .badge-neutral { background: var(--color-surface-2); color: var(--color-ink-secondary); border-color: var(--color-border); }
+    .meta-text { font-size: 13px; color: var(--color-ink-secondary); }
+    .meta-dot { width: 4px; height: 4px; background: var(--color-ink-tertiary); border-radius: 50%; }
+    .btn-withdraw { background: transparent; color: var(--color-danger); border: 1px solid #FCA5A5; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 500; cursor: pointer; }
+    /* Timeline */
+    .timeline-wrap { position: relative; padding-left: 40px; }
+    .timeline-line { position: absolute; left: 15px; top: 16px; bottom: 16px; width: 2px; background: var(--color-border); }
+    .timeline-event { position: relative; margin-bottom: 0; padding-bottom: 32px; }
+    .timeline-event:last-child { padding-bottom: 0; }
+    .timeline-node { position: absolute; left: -33px; top: 4px; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; z-index: 1; }
+    .timeline-node.complete { background: var(--color-success); color: white; box-shadow: 0 0 0 4px var(--color-success-surface); }
+    .timeline-node.in-progress { background: var(--color-info); color: white; box-shadow: 0 0 0 4px var(--color-info-surface); animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100% { box-shadow: 0 0 0 4px rgba(59,130,246,0.25); } 50% { box-shadow: 0 0 0 8px rgba(59,130,246,0.1); } }
+    .timeline-node.pending { background: var(--color-surface-2); border: 2px solid var(--color-border); color: var(--color-ink-tertiary); }
+    .timeline-content { background: var(--color-surface-0); border: 1px solid var(--color-border); border-radius: 12px; padding: 18px 20px; }
+    .timeline-content.active { border-color: var(--color-info); }
+    .tl-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+    .tl-stage-name { font-family: var(--font-heading); font-size: 15px; font-weight: 700; }
+    .tl-timestamp { font-size: 12px; color: var(--color-ink-tertiary); }
+    .tl-detail { font-size: 13px; color: var(--color-ink-secondary); margin-bottom: 10px; }
+    /* AI confidence meter */
+    .confidence-section { background: var(--color-surface-1); border-radius: 8px; padding: 14px 16px; margin-top: 8px; }
+    .confidence-title { font-size: 12px; font-weight: 600; color: var(--color-ink-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+    .confidence-row { display: flex; align-items: center; gap: 10px; }
+    .confidence-meter-wrap { position: relative; width: 64px; height: 64px; flex-shrink: 0; }
+    .confidence-meter-wrap svg { transform: rotate(-90deg); }
+    .confidence-score-label { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .confidence-score-num { font-size: 18px; font-weight: 700; color: var(--color-brand-accent); line-height: 1; }
+    .confidence-score-pct { font-size: 10px; color: var(--color-ink-tertiary); }
+    .confidence-factors { flex: 1; }
+    .factor-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 20px; font-size: 12px; margin: 2px; border: 1px solid; }
+    .factor-positive { background: var(--color-success-surface); color: var(--color-success); border-color: #6EE7B7; }
+    .factor-gap { background: var(--color-danger-surface); color: var(--color-danger); border-color: #FCA5A5; }
+    /* Interview details */
+    .interview-detail-card { background: var(--color-info-surface); border: 1px solid #93C5FD; border-radius: 8px; padding: 14px 16px; margin-top: 8px; }
+    .interview-detail-row { display: flex; gap: 24px; flex-wrap: wrap; font-size: 13px; }
+    .interview-detail-item { display: flex; gap: 6px; }
+    .interview-detail-label { color: var(--color-ink-secondary); }
+    .interview-detail-value { font-weight: 500; }
+    .add-calendar-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--color-brand-primary); text-decoration: none; font-weight: 500; margin-top: 8px; }
+    /* Action section */
+    .action-bar { background: var(--color-surface-0); border: 1px solid var(--color-border); border-radius: 16px; padding: 20px 24px; margin-top: 28px; display: flex; gap: 12px; align-items: center; box-shadow: var(--shadow-sm); }
+    .btn-primary { background: var(--color-brand-primary); color: white; border: none; border-radius: 8px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .btn-secondary { background: transparent; color: var(--color-ink-primary); border: 1px solid var(--color-border); border-radius: 8px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .spec-note { background: #FFFBEB; border-left: 3px solid #F59E0B; padding: 8px 12px; margin-top: 8px; font-size: 12px; color: #92400E; border-radius: 0 4px 4px 0; }
+  </style>
+</head>
+<body>
+  <div class="wf-header">
+    <span><span class="wf-tag">SCR-015</span> &nbsp; Application Timeline &nbsp;·&nbsp; Route: <code>/candidate/applications/:id</code> &nbsp;·&nbsp; Role: Applicant</span>
+    <span>FR-020, FR-027 &nbsp;·&nbsp; 2026-07-22</span>
+  </div>
+
+  <nav>
+    <div class="nav-logo">
+      <div class="nav-logo-mark">TF</div>
+      TalentForge
+    </div>
+    <div class="nav-links">
+      <a href="#" class="nav-link">My Dashboard</a>
+      <a href="#" class="nav-link active">My Applications</a>
+      <a href="#" class="nav-link">Browse Jobs</a>
+    </div>
+    <div class="nav-right">
+      <div class="notification-btn">🔔</div>
+      <div class="avatar">JD</div>
+    </div>
+  </nav>
+
+  <div class="page-content">
+    <!-- NAV-004 Breadcrumb -->
+    <div class="breadcrumb">
+      <a href="#">Dashboard</a>
+      <span class="breadcrumb-sep">›</span>
+      <a href="#">My Applications</a>
+      <span class="breadcrumb-sep">›</span>
+      <span>Senior Frontend Engineer</span>
+    </div>
+
+    <!-- Application Header Card -->
+    <div class="app-header-card">
+      <div class="app-header-info">
+        <h1>Senior Frontend Engineer</h1>
+        <div class="app-header-meta">
+          <span class="badge badge-info">Technical Interview</span>
+          <span class="meta-dot"></span>
+          <span class="meta-text">Engineering · Bengaluru</span>
+          <span class="meta-dot"></span>
+          <span class="meta-text">Applied Jul 18, 2026</span>
+          <span class="meta-dot"></span>
+          <span class="meta-text" style="font-family:monospace;font-size:12px;color:#94A3B8;">App #TF-2024-0142</span>
+        </div>
+      </div>
+      <button class="btn-withdraw">Withdraw Application</button>
+    </div>
+    <div class="spec-note">Withdraw button visible only when application is not yet at final decision stage · FR-027</div>
+
+    <!-- Timeline -->
+    <div class="timeline-wrap">
+      <div class="timeline-line"></div>
+
+      <!-- Stage 1: Application Submitted ✓ -->
+      <div class="timeline-event">
+        <div class="timeline-node complete">✓</div>
+        <div class="timeline-content">
+          <div class="tl-header">
+            <span class="tl-stage-name">Application Submitted</span>
+            <span class="tl-timestamp">Jul 18, 2026 · 10:34 AM</span>
+          </div>
+          <p class="tl-detail">Your application was received and queued for AI screening. Application ID: <code style="font-size:12px;color:#64748B;">TF-2024-0142</code></p>
+        </div>
+      </div>
+
+      <!-- Stage 2: AI Screening ✓ -->
+      <div class="timeline-event">
+        <div class="timeline-node complete">✓</div>
+        <div class="timeline-content">
+          <div class="tl-header">
+            <span class="tl-stage-name">AI Screening</span>
+            <span class="tl-timestamp">Jul 18, 2026 · 10:37 AM (2 min 44 sec)</span>
+          </div>
+          <p class="tl-detail">Your resume was evaluated by our AI screening engine.</p>
+          <div class="confidence-section">
+            <div class="confidence-title">AI Confidence Score</div>
+            <div class="confidence-row">
+              <div class="confidence-meter-wrap">
+                <svg width="64" height="64" viewBox="0 0 64 64">
+                  <circle cx="32" cy="32" r="26" fill="none" stroke="#E2E8F0" stroke-width="6"/>
+                  <circle cx="32" cy="32" r="26" fill="none" stroke="#06B6D4" stroke-width="6"
+                    stroke-dasharray="163.4" stroke-dashoffset="41" stroke-linecap="round"/>
+                </svg>
+                <div class="confidence-score-label">
+                  <span class="confidence-score-num">78</span>
+                  <span class="confidence-score-pct">%</span>
+                </div>
+              </div>
+              <div class="confidence-factors">
+                <div style="font-size:12px;color:var(--color-ink-secondary);margin-bottom:6px;">Key factors:</div>
+                <span class="factor-chip factor-positive">✓ React expertise</span>
+                <span class="factor-chip factor-positive">✓ 4 yrs experience</span>
+                <span class="factor-chip factor-positive">✓ TypeScript</span>
+                <span class="factor-chip factor-gap">✗ Missing: GraphQL</span>
+                <span class="factor-chip factor-gap">✗ Missing: Testing</span>
+              </div>
+            </div>
+          </div>
+          <div class="spec-note">DAT-004 Confidence Meter · DAT-015 AI Factors Chips · FR-020</div>
+        </div>
+      </div>
+
+      <!-- Stage 3: HR Review ✓ -->
+      <div class="timeline-event">
+        <div class="timeline-node complete">✓</div>
+        <div class="timeline-content">
+          <div class="tl-header">
+            <span class="tl-stage-name">HR Review</span>
+            <span class="tl-timestamp">Jul 19, 2026 · 2:15 PM</span>
+          </div>
+          <p class="tl-detail">Your application was reviewed by the HR team. <strong style="color:var(--color-success);">Shortlisted for interview.</strong></p>
+        </div>
+      </div>
+
+      <!-- Stage 4: Technical Interview (In Progress) -->
+      <div class="timeline-event">
+        <div class="timeline-node in-progress">→</div>
+        <div class="timeline-content active">
+          <div class="tl-header">
+            <span class="tl-stage-name">Technical Interview</span>
+            <span class="badge badge-info" style="font-size:11px;padding:2px 8px;">Scheduled</span>
+          </div>
+          <p class="tl-detail">Your technical interview has been scheduled.</p>
+          <div class="interview-detail-card">
+            <div class="interview-detail-row">
+              <div class="interview-detail-item">
+                <span class="interview-detail-label">📅</span>
+                <span class="interview-detail-value">July 25, 2026</span>
+              </div>
+              <div class="interview-detail-item">
+                <span class="interview-detail-label">⏰</span>
+                <span class="interview-detail-value">2:00 PM IST</span>
+              </div>
+              <div class="interview-detail-item">
+                <span class="interview-detail-label">⏱</span>
+                <span class="interview-detail-value">60 minutes</span>
+              </div>
+              <div class="interview-detail-item">
+                <span class="interview-detail-label">👤</span>
+                <span class="interview-detail-value">Arun Menon</span>
+              </div>
+            </div>
+            <a href="#" class="add-calendar-link">📆 Add to Google Calendar</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stage 5: HR Round (Pending) -->
+      <div class="timeline-event">
+        <div class="timeline-node pending">5</div>
+        <div class="timeline-content">
+          <div class="tl-header">
+            <span class="tl-stage-name" style="color:var(--color-ink-tertiary);">HR Round</span>
+            <span class="tl-timestamp" style="color:var(--color-ink-tertiary);">Pending</span>
+          </div>
+          <p class="tl-detail" style="color:var(--color-ink-tertiary);">This stage will be unlocked after your technical interview.</p>
+        </div>
+      </div>
+
+      <!-- Stage 6: Final Decision (Pending) -->
+      <div class="timeline-event">
+        <div class="timeline-node pending">6</div>
+        <div class="timeline-content">
+          <div class="tl-header">
+            <span class="tl-stage-name" style="color:var(--color-ink-tertiary);">Final Decision</span>
+            <span class="tl-timestamp" style="color:var(--color-ink-tertiary);">Pending</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Bar -->
+    <div class="action-bar">
+      <button class="btn-primary">Confirm Interview Attendance →</button>
+      <button class="btn-secondary">Request Reschedule</button>
+      <button class="btn-secondary">Contact Recruiter</button>
+    </div>
+    <div class="spec-note">Action buttons are context-driven based on current stage · FR-027 · Withdraw available on all non-terminal stages</div>
+  </div>
+</body>
+</html>

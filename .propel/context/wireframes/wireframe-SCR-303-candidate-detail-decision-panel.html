@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SCR-032 — Candidate Detail & Decision Panel | AI Interview App</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-brand-primary: #6366F1;
+      --color-brand-accent: #06B6D4;
+      --color-surface-0: #FFFFFF;
+      --color-surface-1: #F8FAFC;
+      --color-surface-2: #F1F5F9;
+      --color-border: #E2E8F0;
+      --color-ink-primary: #0F172A;
+      --color-ink-secondary: #64748B;
+      --color-ink-tertiary: #94A3B8;
+      --color-success: #10B981;
+      --color-success-surface: #D1FAE5;
+      --color-warning: #F59E0B;
+      --color-warning-surface: #FEF3C7;
+      --color-danger: #EF4444;
+      --color-danger-surface: #FEE2E2;
+      --color-info: #3B82F6;
+      --color-info-surface: #DBEAFE;
+      --font-body: 'Inter', sans-serif;
+      --font-heading: 'Plus Jakarta Sans', sans-serif;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    body { font-family: var(--font-body); background: var(--color-surface-1); color: var(--color-ink-primary); display: flex; flex-direction: column; min-height: 100vh; }
+    .wf-header { background: #1E293B; color: white; padding: 10px 24px; font-size: 12px; display: flex; justify-content: space-between; align-items: center; }
+    .wf-tag { background: #6366F1; color: white; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
+    /* App shell */
+    .app-shell { display: flex; flex: 1; overflow: hidden; height: calc(100vh - 34px); }
+    /* Sidebar (collapsed for this screen) */
+    .sidebar { width: 200px; background: var(--color-surface-0); border-right: 1px solid var(--color-border); flex-shrink: 0; display: flex; flex-direction: column; }
+    .sidebar-header { padding: 14px 16px; border-bottom: 1px solid var(--color-border); }
+    .sidebar-logo { display: flex; align-items: center; gap: 8px; font-family: var(--font-heading); font-weight: 700; font-size: 14px; color: var(--color-brand-primary); }
+    .sidebar-logo-mark { width: 24px; height: 24px; background: var(--color-brand-primary); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: 700; }
+    .sidebar-nav { padding: 10px 8px; flex: 1; }
+    .sidebar-item { display: flex; align-items: center; gap: 8px; padding: 9px 10px; border-radius: 7px; font-size: 13px; font-weight: 500; color: var(--color-ink-secondary); cursor: pointer; margin-bottom: 2px; }
+    .sidebar-item:hover, .sidebar-item.active { background: #EEF2FF; color: var(--color-brand-primary); }
+    .sidebar-badge { margin-left: auto; background: var(--color-danger); color: white; border-radius: 10px; padding: 1px 6px; font-size: 10px; font-weight: 600; }
+    /* Three-column layout */
+    .detail-shell { flex: 1; display: flex; overflow: hidden; }
+    /* Left candidate summary sidebar */
+    .left-panel { width: 280px; flex-shrink: 0; background: var(--color-surface-0); border-right: 1px solid var(--color-border); overflow-y: auto; padding: 20px; }
+    /* Middle tabs content */
+    .center-panel { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+    .center-top-bar { background: var(--color-surface-0); border-bottom: 1px solid var(--color-border); padding: 0 24px; height: 52px; display: flex; align-items: center; justify-content: space-between; }
+    .breadcrumb { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--color-ink-secondary); }
+    .breadcrumb a { color: var(--color-brand-primary); text-decoration: none; }
+    .center-body { padding: 24px; flex: 1; }
+    /* Right decision panel */
+    .right-panel { width: 300px; flex-shrink: 0; background: var(--color-surface-0); border-left: 1px solid var(--color-border); overflow-y: auto; padding: 20px; }
+    /* Left panel components */
+    .candidate-profile { text-align: center; margin-bottom: 20px; }
+    .profile-avatar { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #6366F1, #06B6D4); display: flex; align-items: center; justify-content: center; color: white; font-size: 22px; font-weight: 700; margin: 0 auto 12px; }
+    .profile-name { font-family: var(--font-heading); font-size: 18px; font-weight: 700; }
+    .profile-contact { font-size: 12px; color: var(--color-ink-secondary); line-height: 1.8; margin-top: 4px; }
+    .profile-meta { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 10px; }
+    .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; border: 1px solid; }
+    .badge-info { background: var(--color-info-surface); color: var(--color-info); border-color: #93C5FD; }
+    .badge-success { background: var(--color-success-surface); color: var(--color-success); border-color: #6EE7B7; }
+    .badge-warning { background: var(--color-warning-surface); color: var(--color-warning); border-color: #FCD34D; }
+    .badge-neutral { background: var(--color-surface-2); color: var(--color-ink-secondary); border-color: var(--color-border); }
+    .divider { height: 1px; background: var(--color-border); margin: 16px 0; }
+    .section-title-sm { font-size: 11px; font-weight: 600; color: var(--color-ink-tertiary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; }
+    /* Large confidence meter */
+    .conf-meter-lg { display: flex; flex-direction: column; align-items: center; margin-bottom: 16px; }
+    .conf-meter-lg svg { transform: rotate(-90deg); }
+    .conf-num { font-size: 28px; font-weight: 700; color: var(--color-brand-accent); }
+    .conf-label-text { font-size: 12px; color: var(--color-ink-secondary); }
+    /* Factor chips */
+    .factors-list { display: flex; flex-wrap: wrap; gap: 5px; }
+    .chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; border: 1px solid; }
+    .chip-pos { background: var(--color-success-surface); color: var(--color-success); border-color: #6EE7B7; }
+    .chip-gap { background: var(--color-danger-surface); color: var(--color-danger); border-color: #FCA5A5; }
+    /* Tabs */
+    .tab-bar { display: flex; border-bottom: 1px solid var(--color-border); padding: 0 24px; background: var(--color-surface-0); }
+    .tab { padding: 14px 16px; font-size: 14px; font-weight: 500; color: var(--color-ink-secondary); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+    .tab.active { color: var(--color-brand-primary); border-bottom-color: var(--color-brand-primary); }
+    /* Resume panel */
+    .resume-embed { background: var(--color-surface-2); border: 1px solid var(--color-border); border-radius: 10px; height: 480px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; color: var(--color-ink-tertiary); }
+    .resume-actions { display: flex; gap: 8px; margin-bottom: 12px; }
+    .btn-sm { height: 32px; padding: 0 14px; border-radius: 7px; border: 1px solid var(--color-border); background: white; font-size: 12px; font-weight: 500; cursor: pointer; }
+    /* Decision panel */
+    .decision-panel-title { font-family: var(--font-heading); font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+    .sla-timer { background: var(--color-warning-surface); border: 1px solid #FCD34D; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #92400E; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .decision-separator { font-size: 12px; color: var(--color-ink-tertiary); text-align: center; margin: 16px 0 10px; }
+    .form-group { margin-bottom: 14px; }
+    label.form-label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+    select.form-select { width: 100%; height: 40px; border: 1px solid var(--color-border); border-radius: 8px; font-size: 13px; padding: 0 12px; background: white; }
+    textarea.form-textarea { width: 100%; min-height: 80px; border: 1px solid var(--color-border); border-radius: 8px; font-size: 13px; padding: 10px 12px; resize: vertical; font-family: var(--font-body); }
+    .path-section { background: var(--color-surface-1); border: 1px solid var(--color-border); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; }
+    .path-label { font-size: 12px; color: var(--color-ink-secondary); margin-bottom: 6px; }
+    .path-value { font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; }
+    .btn-shortlist-full { width: 100%; height: 44px; background: var(--color-success); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; margin-bottom: 10px; }
+    .btn-reject-full { width: 100%; height: 44px; background: var(--color-danger-surface); color: var(--color-danger); border: 1px solid #FCA5A5; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; }
+    .spec-note { background: #FFFBEB; border-left: 3px solid #F59E0B; padding: 8px 12px; margin-top: 8px; font-size: 12px; color: #92400E; border-radius: 0 4px 4px 0; }
+  </style>
+</head>
+<body>
+  <div class="wf-header">
+    <span><span class="wf-tag">SCR-032</span> &nbsp; Candidate Detail & Decision Panel &nbsp;·&nbsp; Route: <code>/hr/candidates/:id</code> &nbsp;·&nbsp; Role: HR Reviewer, Recruiter</span>
+    <span>FR-027, FR-029, FR-030, FR-032, FR-033 &nbsp;·&nbsp; 2026-07-22</span>
+  </div>
+
+  <div class="app-shell">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <div class="sidebar-logo-mark">TF</div>
+          TalentForge
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="sidebar-item"><span>📊</span> Dashboard</div>
+        <div class="sidebar-item active"><span>📋</span> Review Queue <span class="sidebar-badge">24</span></div>
+        <div class="sidebar-item"><span>👥</span> Candidates</div>
+        <div class="sidebar-item"><span>💼</span> Requisitions</div>
+        <div class="sidebar-item"><span>✉️</span> Comm. Log</div>
+      </nav>
+    </aside>
+
+    <!-- Three-panel detail layout (LAY-006 SplitLayout) -->
+    <div class="detail-shell">
+      <!-- LEFT: Candidate Summary -->
+      <div class="left-panel">
+        <div class="candidate-profile">
+          <div class="profile-avatar">RK</div>
+          <div class="profile-name">Rahul Kumar</div>
+          <div class="profile-contact">
+            rahul.kumar@email.com<br />
+            +91 98765 43210
+          </div>
+          <div class="profile-meta">
+            <span class="badge badge-info">Screening Complete</span>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="section-title-sm">Submitted</div>
+        <p style="font-size:13px;color:var(--color-ink-secondary);margin-bottom:16px;">Jul 18, 2026 · 10:34 AM<br /><span style="font-family:monospace;font-size:11px;">TF-2024-0089</span></p>
+
+        <div class="section-title-sm">AI Confidence</div>
+        <div class="conf-meter-lg">
+          <svg width="96" height="96" viewBox="0 0 96 96">
+            <circle cx="48" cy="48" r="40" fill="none" stroke="#E2E8F0" stroke-width="8"/>
+            <circle cx="48" cy="48" r="40" fill="none" stroke="#06B6D4" stroke-width="8"
+              stroke-dasharray="251.3" stroke-dashoffset="45" stroke-linecap="round"/>
+          </svg>
+          <span class="conf-num">82%</span>
+          <span class="conf-label-text">High Confidence</span>
+        </div>
+
+        <div class="section-title-sm">Positive Factors</div>
+        <div class="factors-list" style="margin-bottom:16px;">
+          <span class="chip chip-pos">✓ React 5yrs</span>
+          <span class="chip chip-pos">✓ TypeScript</span>
+          <span class="chip chip-pos">✓ Team lead exp.</span>
+          <span class="chip chip-pos">✓ Open source</span>
+          <span class="chip chip-pos">✓ Education match</span>
+        </div>
+        <div class="section-title-sm">Skill Gaps</div>
+        <div class="factors-list">
+          <span class="chip chip-gap">✗ GraphQL</span>
+          <span class="chip chip-gap">✗ Testing (unit)</span>
+        </div>
+        <div class="spec-note">DAT-004 Confidence Meter · DAT-015 AI Factor Chips · FR-029</div>
+      </div>
+
+      <!-- CENTER: Tabs -->
+      <div class="center-panel">
+        <div class="center-top-bar">
+          <div class="breadcrumb">
+            <a href="#">Queue</a> › <a href="#">Senior Frontend Eng.</a> › Rahul Kumar
+          </div>
+        </div>
+
+        <!-- NAV-005 Tab Bar -->
+        <div class="tab-bar">
+          <div class="tab active">Resume</div>
+          <div class="tab">Timeline</div>
+          <div class="tab">Screening Details</div>
+          <div class="tab">Interviews</div>
+          <div class="tab">Notes</div>
+        </div>
+
+        <div class="center-body">
+          <div class="resume-actions">
+            <button class="btn-sm">⬇ Download PDF</button>
+            <button class="btn-sm">🖨 Print</button>
+            <button class="btn-sm">📋 Copy parsed text</button>
+          </div>
+          <!-- Resume embed placeholder -->
+          <div class="resume-embed">
+            <span style="font-size: 32px;">📄</span>
+            <span style="font-size: 14px; font-weight: 500;">Resume PDF Viewer</span>
+            <span style="font-size: 12px;">rahul_kumar_resume.pdf · 1.2 MB</span>
+            <span style="font-size: 12px; color: #94A3B8;">Embedded PDF viewer renders here · max-height 600px</span>
+          </div>
+          <div class="spec-note">Embedded PDF viewer · Parsed text tab shows extracted sections (Skills, Experience, Education) · FR-027</div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Decision Panel -->
+      <div class="right-panel">
+        <div class="decision-panel-title">Review Decision</div>
+
+        <!-- SLA Countdown (FBK-007) -->
+        <div class="sla-timer">
+          ⏰ SLA: <strong>3h 22m remaining</strong>
+          <span style="font-size:11px;opacity:0.7;margin-left:auto;">Deadline: Jul 22, 3 PM</span>
+        </div>
+        <div class="spec-note">FBK-007 SLA Countdown · Color: yellow approaching, red breached · FR-034</div>
+
+        <!-- Path Classification -->
+        <div class="path-section">
+          <div class="path-label">AI Path Classification</div>
+          <div class="path-value">
+            <span class="badge badge-neutral">Fresher Path</span>
+            <span style="font-size:12px;color:var(--color-brand-primary);cursor:pointer;">Override</span>
+          </div>
+          <div style="font-size:11px;color:var(--color-ink-tertiary);margin-top:4px;">Experience: 1.5 yrs (≤2 yr threshold)</div>
+        </div>
+        <div class="spec-note">Path override requires justification · FR-032, FR-033</div>
+
+        <div class="decision-separator">— Enter decision —</div>
+
+        <div class="form-group">
+          <label class="form-label">Reason Code <span style="color:#EF4444;">*</span></label>
+          <select class="form-select">
+            <option value="">Select a reason…</option>
+            <option>Strong technical match</option>
+            <option>Good cultural fit</option>
+            <option>Insufficient experience</option>
+            <option>Skill gap too large</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Justification <span style="color:#94A3B8;font-weight:400;">(optional)</span></label>
+          <textarea class="form-textarea" placeholder="Add internal notes for this decision…"></textarea>
+        </div>
+
+        <button class="btn-shortlist-full">✓ Shortlist Candidate</button>
+        <button class="btn-reject-full">✗ Reject Candidate</button>
+        <div class="spec-note">Shortlist → MOD-002 Confirmation · Reject → MOD-003 · triggers rejection email · FR-030</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

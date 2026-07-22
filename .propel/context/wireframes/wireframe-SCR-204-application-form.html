@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SCR-204 — Application Form | AI Interview App</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--brand:#6366F1;--surface-0:#fff;--surface-1:#F8FAFC;--surface-2:#F1F5F9;--border:#E2E8F0;--focus:#6366F1;--ink:#0F172A;--ink-sec:#64748B;--ink-ter:#94A3B8;--success:#10B981;--success-s:#D1FAE5;--warning:#F59E0B;--danger:#EF4444;--font:'Inter',sans-serif;--heading:'Plus Jakarta Sans',sans-serif;--shadow:0 1px 3px rgba(0,0,0,.06)}
+body{font-family:var(--font);background:var(--surface-1);min-height:100vh;display:flex;flex-direction:column}
+.wf-header{background:#1E293B;color:#fff;padding:10px 40px;font-size:12px;display:flex;justify-content:space-between}
+.wf-tag{background:#6366F1;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600}
+nav{display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:64px;background:var(--surface-0);border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:8px;font-family:var(--heading);font-weight:700;font-size:18px;color:var(--brand)}
+.logo-mark{width:32px;height:32px;background:var(--brand);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700}
+.page{max-width:760px;margin:0 auto;padding:32px 20px;width:100%}
+.breadcrumb{display:flex;gap:6px;font-size:13px;color:var(--ink-sec);margin-bottom:24px}
+.breadcrumb a{color:var(--brand);text-decoration:none}
+/* Progress Rail NAV-006 */
+.step-rail{display:flex;align-items:center;margin-bottom:8px}
+.step-item{display:flex;align-items:center;flex:1}
+.step-circle{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0}
+.complete{background:var(--success);color:#fff}.active{background:var(--brand);color:#fff}.pending{background:var(--surface-2);color:var(--ink-ter);border:2px solid var(--border)}
+.step-lbl{font-size:12px;font-weight:500;margin-left:8px;white-space:nowrap}
+.step-lbl.active{color:var(--brand)}.step-lbl.pending{color:var(--ink-ter)}.step-lbl.complete{color:var(--success)}
+.step-conn{flex:1;height:2px;background:var(--border);margin:0 8px}
+.step-conn.done{background:var(--success)}
+.step-indicator{font-size:13px;color:var(--ink-ter);margin-bottom:4px}
+/* auto-save */
+.autosave-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.autosave-badge{font-size:12px;color:var(--success);display:flex;align-items:center;gap:5px}
+.time-badge{font-size:12px;color:var(--ink-ter)}
+/* tabs to preview steps */
+.step-tabs{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap}
+.step-tab{font-size:12px;padding:5px 12px;border-radius:6px;border:1px solid var(--border);cursor:pointer;font-weight:500;color:var(--ink-sec);background:var(--surface-0)}
+.step-tab.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+.panel{display:none}.panel.visible{display:block}
+/* Form */
+.form-card{background:var(--surface-0);border:1px solid var(--border);border-radius:16px;padding:28px;box-shadow:var(--shadow);margin-bottom:20px}
+.form-card-title{font-family:var(--heading);font-size:18px;font-weight:700;margin-bottom:20px}
+.form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-group{margin-bottom:18px}
+.form-label{display:block;font-size:14px;font-weight:500;margin-bottom:6px}
+.req{color:var(--danger)}
+input[type=text],input[type=email],input[type=tel],select,textarea{width:100%;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:var(--font);padding:0 14px;height:44px;background:var(--surface-0)}
+textarea{height:auto;min-height:80px;padding:10px 14px;resize:vertical}
+input:focus,select:focus,textarea:focus{border:2px solid var(--focus);outline:none}
+/* upload */
+.upload-zone{border:2px dashed var(--border);border-radius:10px;padding:32px;text-align:center;cursor:pointer;transition:.15s}
+.upload-zone:hover{border-color:var(--brand);background:#F5F3FF}
+.upload-icon{font-size:36px;margin-bottom:10px}
+.upload-title{font-size:15px;font-weight:600;margin-bottom:6px}
+.upload-sub{font-size:13px;color:var(--ink-sec)}
+.upload-limit{font-size:12px;color:var(--ink-ter);margin-top:6px}
+/* progress */
+.upload-progress{margin-top:14px}
+.upload-file-row{display:flex;align-items:center;gap:10px;background:var(--surface-1);border:1px solid var(--border);border-radius:8px;padding:10px 14px}
+.file-icon{font-size:20px}
+.file-info{flex:1}
+.file-name{font-size:13px;font-weight:600}
+.file-meta{font-size:12px;color:var(--ink-sec)}
+.progress-bar-outer{height:4px;border-radius:2px;background:var(--surface-2);margin-top:6px}
+.progress-bar-inner{height:100%;border-radius:2px;background:var(--brand);width:100%}
+/* parse preview */
+.parse-preview{background:var(--success-s);border:1px solid #6EE7B7;border-radius:8px;padding:14px;margin-top:14px}
+.parse-title{font-size:12px;font-weight:600;color:var(--success);margin-bottom:10px;display:flex;justify-content:space-between}
+.parse-field{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.05)}
+.parse-field:last-child{border-bottom:none}
+/* nav buttons */
+.form-nav{display:flex;gap:12px;margin-top:24px}
+.btn-primary{height:46px;padding:0 28px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:var(--font)}
+.btn-secondary{height:46px;padding:0 20px;background:transparent;border:1px solid var(--border);border-radius:8px;font-size:15px;font-weight:500;cursor:pointer;font-family:var(--font);color:var(--ink)}
+.spec-note{background:#FFFBEB;border-left:3px solid #F59E0B;padding:8px 12px;margin-top:10px;font-size:12px;color:#92400E;border-radius:0 4px 4px 0}
+</style>
+</head>
+<body>
+<div class="wf-header">
+  <span><span class="wf-tag">SCR-204</span> &nbsp; Application Form &nbsp;·&nbsp; Route: <code>/candidate/apply/:jobId</code> &nbsp;·&nbsp; Role: Applicant</span>
+  <span>FR-013–019 &nbsp;·&nbsp; 2026-07-22</span>
+</div>
+<nav>
+  <div class="logo"><div class="logo-mark">TF</div>TalentForge</div>
+  <div style="display:flex;gap:12px;align-items:center"><div style="width:36px;height:36px;background:var(--brand);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700">JD</div></div>
+</nav>
+<div class="page">
+  <div class="breadcrumb"><a href="#">Jobs</a> › <a href="#">Senior Frontend Engineer</a> › Apply</div>
+  <!-- Step Rail -->
+  <div class="step-rail">
+    <div class="step-item"><div class="step-circle active">1</div><span class="step-lbl active">Personal Info</span></div>
+    <div class="step-conn"></div>
+    <div class="step-item"><div class="step-circle pending">2</div><span class="step-lbl pending">Resume</span></div>
+    <div class="step-conn"></div>
+    <div class="step-item"><div class="step-circle pending">3</div><span class="step-lbl pending">Questions</span></div>
+    <div class="step-conn"></div>
+    <div class="step-item"><div class="step-circle pending">4</div><span class="step-lbl pending">Review & Submit</span></div>
+  </div>
+  <div class="autosave-bar">
+    <div class="step-indicator">Step 1 of 4</div>
+    <div style="display:flex;gap:16px">
+      <span class="autosave-badge">✓ Saved 2 min ago</span>
+      <span class="time-badge">~8 min remaining</span>
+    </div>
+  </div>
+  <div class="spec-note" style="margin-bottom:16px">FBK-010 Auto-save timestamp · Estimated completion time · FR-013</div>
+
+  <!-- Step tabs (wireframe annotation) -->
+  <div class="step-tabs">
+    <span style="font-size:12px;color:#94A3B8;line-height:2">Preview step:</span>
+    <div class="step-tab active" onclick="showStep(1,this)">Step 1 — Personal Info</div>
+    <div class="step-tab" onclick="showStep(2,this)">Step 2 — Resume</div>
+    <div class="step-tab" onclick="showStep(3,this)">Step 3 — Questions</div>
+    <div class="step-tab" onclick="showStep(4,this)">Step 4 — Review</div>
+  </div>
+
+  <!-- Step 1: Personal Info -->
+  <div id="p1" class="panel visible">
+    <div class="form-card">
+      <div class="form-card-title">Personal Information</div>
+      <div class="form-grid-2">
+        <div class="form-group"><label class="form-label">First Name <span class="req">*</span></label><input type="text" value="Jane"/></div>
+        <div class="form-group"><label class="form-label">Last Name <span class="req">*</span></label><input type="text" value="Doe"/></div>
+      </div>
+      <div class="form-group"><label class="form-label">Email Address <span class="req">*</span></label><input type="email" value="jane.doe@example.com"/></div>
+      <div class="form-group"><label class="form-label">Phone Number <span class="req">*</span></label><input type="tel" value="+91 98765 43210"/></div>
+      <div class="form-group"><label class="form-label">LinkedIn Profile <span style="color:var(--ink-ter);font-weight:400">(optional)</span></label><input type="text" placeholder="https://linkedin.com/in/…"/></div>
+      <div class="form-group"><label class="form-label">Current Location <span class="req">*</span></label>
+        <select><option>Bengaluru, Karnataka</option><option>Hyderabad</option><option>Mumbai</option></select>
+      </div>
+    </div>
+    <div class="form-nav"><button class="btn-primary">Continue to Resume →</button></div>
+  </div>
+
+  <!-- Step 2: Resume Upload -->
+  <div id="p2" class="panel">
+    <div class="form-card">
+      <div class="form-card-title">Resume Upload <span class="req">*</span></div>
+      <div class="upload-zone">
+        <div class="upload-icon">📄</div>
+        <div class="upload-title">Drag & drop your resume here</div>
+        <div class="upload-sub">or <span style="color:var(--brand);font-weight:600;cursor:pointer">browse to upload</span></div>
+        <div class="upload-limit">PDF or DOCX · Max 10 MB</div>
+      </div>
+      <div class="spec-note">FRM-011 File Upload · Malware scan runs after upload · FBK-009 Upload Progress → scan → parse preview · FR-014, FR-015, FR-016</div>
+      <!-- Upload in-progress state -->
+      <div class="upload-progress">
+        <div class="upload-file-row">
+          <span class="file-icon">📄</span>
+          <div class="file-info">
+            <div class="file-name">jane_doe_resume.pdf</div>
+            <div class="file-meta">1.4 MB · Scanning for malware…</div>
+            <div class="progress-bar-outer"><div class="progress-bar-inner" style="width:80%"></div></div>
+          </div>
+          <span style="cursor:pointer;color:var(--ink-ter)">✕</span>
+        </div>
+        <!-- Parse preview after scan complete -->
+        <div class="parse-preview">
+          <div class="parse-title">✓ Resume parsed successfully <span style="cursor:pointer;color:var(--success)">Edit fields</span></div>
+          <div class="parse-field"><span>Name</span><strong>Jane Doe</strong></div>
+          <div class="parse-field"><span>Experience</span><strong>3.5 years</strong></div>
+          <div class="parse-field"><span>Skills</span><strong>React, TypeScript, Node.js</strong></div>
+          <div class="parse-field"><span>Education</span><strong>B.Tech CS — IIT Bengaluru</strong></div>
+        </div>
+      </div>
+    </div>
+    <div class="form-nav">
+      <button class="btn-secondary">← Back</button>
+      <button class="btn-primary">Continue to Questions →</button>
+    </div>
+  </div>
+
+  <!-- Step 3: Additional Questions -->
+  <div id="p3" class="panel">
+    <div class="form-card">
+      <div class="form-card-title">Additional Questions</div>
+      <div class="form-group">
+        <label class="form-label">Why are you interested in this role? <span class="req">*</span></label>
+        <textarea placeholder="Describe your motivation (max 500 characters)…"></textarea>
+        <div style="font-size:12px;color:var(--ink-ter);text-align:right;margin-top:4px">0 / 500</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">What is your expected salary range? <span class="req">*</span></label>
+        <select><option>Select a range…</option><option>₹10–15 LPA</option><option>₹15–20 LPA</option><option>₹20–30 LPA</option><option>₹30+ LPA</option></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notice period / availability <span class="req">*</span></label>
+        <select><option>Immediate</option><option>15 days</option><option>30 days</option><option>60 days</option><option>90 days</option></select>
+      </div>
+    </div>
+    <div class="form-nav">
+      <button class="btn-secondary">← Back</button>
+      <button class="btn-primary">Review & Submit →</button>
+    </div>
+  </div>
+
+  <!-- Step 4: Review & Submit -->
+  <div id="p4" class="panel">
+    <div class="form-card">
+      <div class="form-card-title">Review Your Application</div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="background:var(--surface-1);border:1px solid var(--border);border-radius:10px;padding:16px">
+          <div style="font-size:12px;font-weight:600;color:var(--ink-sec);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;display:flex;justify-content:space-between">Personal Info <span style="color:var(--brand);cursor:pointer">Edit</span></div>
+          <div style="font-size:14px;color:var(--ink)">Jane Doe · jane.doe@example.com · +91 98765 43210</div>
+        </div>
+        <div style="background:var(--surface-1);border:1px solid var(--border);border-radius:10px;padding:16px">
+          <div style="font-size:12px;font-weight:600;color:var(--ink-sec);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;display:flex;justify-content:space-between">Resume <span style="color:var(--brand);cursor:pointer">Replace</span></div>
+          <div style="font-size:14px;color:var(--ink)">📄 jane_doe_resume.pdf · 1.4 MB</div>
+        </div>
+        <div style="background:var(--surface-1);border:1px solid var(--border);border-radius:10px;padding:16px">
+          <div style="font-size:12px;font-weight:600;color:var(--ink-sec);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;display:flex;justify-content:space-between">Additional Questions <span style="color:var(--brand);cursor:pointer">Edit</span></div>
+          <div style="font-size:13px;color:var(--ink-sec)">All required fields completed ✓</div>
+        </div>
+      </div>
+    </div>
+    <div class="spec-note">Submission triggers: duplicate-application check (BR-03), cooling-period check → SCR-210 if blocked · FR-017, FR-018, FR-019</div>
+    <div class="form-nav">
+      <button class="btn-secondary">← Back</button>
+      <button class="btn-primary" style="background:#10B981">Submit Application ✓</button>
+    </div>
+  </div>
+</div>
+<script>
+function showStep(n,tab){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('visible'));
+  document.querySelectorAll('.step-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('p'+n).classList.add('visible');
+  tab.classList.add('active');
+  const circles=document.querySelectorAll('.step-circle');
+  const labels=document.querySelectorAll('.step-lbl');
+  const conns=document.querySelectorAll('.step-conn');
+  circles.forEach((c,i)=>{c.className='step-circle '+(i+1<n?'complete':i+1===n?'active':'pending');c.textContent=i+1<n?'✓':i+1;labels[i].className='step-lbl '+(i+1<n?'complete':i+1===n?'active':'pending');if(conns[i])conns[i].className='step-conn '+(i+1<n?'done':'');});
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SCR-408/409 — AI Model Config & System Health | AI Interview App</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--brand:#6366F1;--accent:#06B6D4;--surface-0:#fff;--surface-1:#F8FAFC;--surface-2:#F1F5F9;--border:#E2E8F0;--ink:#0F172A;--ink-sec:#64748B;--ink-ter:#94A3B8;--success:#10B981;--success-s:#D1FAE5;--warning:#F59E0B;--warning-s:#FEF3C7;--danger:#EF4444;--danger-s:#FEE2E2;--font:'Inter',sans-serif;--heading:'Plus Jakarta Sans',sans-serif;--shadow:0 1px 3px rgba(0,0,0,.06)}
+body{font-family:var(--font);background:var(--surface-1);display:flex;flex-direction:column;min-height:100vh}
+.wf-header{background:#1E293B;color:#fff;padding:10px 24px;font-size:12px;display:flex;justify-content:space-between}
+.wf-tag{background:#6366F1;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600}
+.page{padding:24px 28px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+h2{font-family:var(--heading);font-size:17px;font-weight:700;margin-bottom:4px}
+.scr-tag{display:inline-block;background:#334155;color:#fff;padding:4px 12px;border-radius:6px;font-size:11px;font-weight:600;margin-bottom:10px}
+.card{background:var(--surface-0);border:1px solid var(--border);border-radius:14px;padding:20px;box-shadow:var(--shadow);margin-bottom:14px}
+/* Model version card */
+.model-badge{display:inline-flex;align-items:center;gap:6px;background:var(--success-s);border:1px solid #6EE7B7;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:600;color:var(--success);margin-bottom:12px}
+.model-stat{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border)}
+.model-stat:last-child{border-bottom:none}
+.form-group{margin-bottom:14px}
+.form-group label{font-size:12px;font-weight:600;color:var(--ink-sec);display:block;margin-bottom:4px}
+.range-wrap{display:flex;align-items:center;gap:10px}
+.range-input{flex:1;accent-color:var(--brand)}
+.range-val{font-size:13px;font-weight:700;color:var(--brand);min-width:32px}
+.zone-indicator{display:flex;gap:6px;margin-top:6px;font-size:11px}
+.zone{flex:1;padding:4px 8px;border-radius:5px;text-align:center;font-weight:500}
+.zone-reject{background:var(--danger-s);color:var(--danger)}
+.zone-manual{background:var(--warning-s);color:var(--warning)}
+.zone-shortlist{background:var(--success-s);color:var(--success)}
+.version-table{width:100%;border-collapse:collapse}
+.version-table th{padding:8px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--ink-ter);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);background:var(--surface-2)}
+.version-table td{padding:8px 12px;font-size:12px;border-bottom:1px solid var(--border)}
+.version-table tr:last-child td{border-bottom:none}
+.btn-row{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.btn-primary{height:36px;padding:0 18px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
+.btn-secondary{height:36px;padding:0 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;background:transparent;color:var(--ink-sec)}
+/* System Health */
+.service-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px}
+.service-card{background:var(--surface-0);border:1px solid var(--border);border-radius:10px;padding:14px;box-shadow:var(--shadow)}
+.svc-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.svc-name{font-size:13px;font-weight:600}
+.svc-status{width:10px;height:10px;border-radius:50%}
+.svc-green{background:var(--success)}.svc-yellow{background:var(--warning)}.svc-red{background:var(--danger)}
+.svc-metric{font-size:22px;font-weight:700;margin-bottom:2px}
+.svc-label{font-size:11px;color:var(--ink-ter)}
+.chart-placeholder{background:var(--surface-2);border:1px dashed var(--border);border-radius:8px;height:120px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--ink-ter);margin-bottom:10px}
+.incident-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;align-items:flex-start}
+.incident-item:last-child{border-bottom:none}
+.inc-sev{padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600}
+.inc-p1{background:var(--danger-s);color:var(--danger)}.inc-p2{background:var(--warning-s);color:#92400E}
+.refresh-toggle{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-sec);margin-bottom:14px}
+.toggle{width:38px;height:20px;border-radius:10px;background:var(--brand);border:none;cursor:pointer;position:relative;flex-shrink:0}
+.toggle::after{content:'';position:absolute;width:14px;height:14px;background:#fff;border-radius:50%;top:3px;left:21px;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.spec-note{background:#FFFBEB;border-left:3px solid #F59E0B;padding:6px 10px;margin-top:10px;font-size:11px;color:#92400E;border-radius:0 4px 4px 0}
+</style>
+</head>
+<body>
+<div class="wf-header">
+  <span><span class="wf-tag">SCR-408 + SCR-409</span> &nbsp; AI Model Config / System Health &nbsp;·&nbsp; Role: System Admin</span>
+  <span>FR-024–026, BR-02, BR-16, FR-067 &nbsp;·&nbsp; 2026-07-22</span>
+</div>
+<div class="page">
+
+  <!-- SCR-408: AI Model Config -->
+  <div>
+    <div class="scr-tag">SCR-408 — /admin/ai-config</div>
+    <h2>AI Model Configuration</h2>
+    <p style="font-size:13px;color:var(--ink-sec);margin-bottom:14px">Manage AI scoring model, thresholds, and fallback behavior.</p>
+    <!-- Current model card -->
+    <div class="card">
+      <div style="font-family:var(--heading);font-size:14px;font-weight:700;margin-bottom:10px">Current Active Model</div>
+      <div class="model-badge">🤖 gemini-hire-v2.3 &nbsp;·&nbsp; Active</div>
+      <div class="model-stat"><span>Model Version</span><strong>gemini-hire-v2.3</strong></div>
+      <div class="model-stat"><span>Deployed On</span><strong>Jul 15, 2026</strong></div>
+      <div class="model-stat"><span>Human Agreement Rate</span><strong style="color:var(--success)">91.4%</strong></div>
+      <div class="model-stat"><span>Avg Inference Time</span><strong>340 ms</strong></div>
+      <div class="model-stat"><span>Fallback Mode</span><strong style="color:var(--ink-sec)">Inactive</strong></div>
+      <div class="spec-note">FR-024, BR-02 · Model changes require dual approval (Admin + HR Manager) · BR-16</div>
+    </div>
+    <!-- Threshold config -->
+    <div class="card">
+      <div style="font-family:var(--heading);font-size:14px;font-weight:700;margin-bottom:12px">Scoring Thresholds</div>
+      <div class="form-group">
+        <label>Auto-Shortlist Threshold</label>
+        <div class="range-wrap">
+          <span style="font-size:12px;color:var(--ink-ter)">50</span>
+          <input type="range" class="range-input" min="50" max="100" value="75"/>
+          <span style="font-size:12px;color:var(--ink-ter)">100</span>
+          <span class="range-val">75</span>
+        </div>
+        <div class="zone-indicator">
+          <div class="zone zone-reject">Reject (&lt;35)</div>
+          <div class="zone zone-manual">Manual Review (35–75)</div>
+          <div class="zone zone-shortlist">Auto-Shortlist (&gt;75)</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Low Confidence Threshold (flag for human review)</label>
+        <div class="range-wrap">
+          <span style="font-size:12px;color:var(--ink-ter)">0</span>
+          <input type="range" class="range-input" min="0" max="100" value="35"/>
+          <span style="font-size:12px;color:var(--ink-ter)">100</span>
+          <span class="range-val">35</span>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label>Fallback: Use rule-based scoring when AI unavailable</label>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+          <button class="toggle"></button>
+          <span style="font-size:12px;color:var(--ink-sec)">Currently disabled (AI is healthy)</span>
+        </div>
+      </div>
+      <div class="btn-row"><button class="btn-secondary">Revert</button><button class="btn-primary">Save Thresholds</button></div>
+    </div>
+    <!-- Version history -->
+    <div class="card">
+      <div style="font-family:var(--heading);font-size:14px;font-weight:700;margin-bottom:10px">Model Version History</div>
+      <table class="version-table">
+        <thead><tr><th>Version</th><th>Deployed</th><th>Accuracy</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>gemini-hire-v2.3</td><td>Jul 15, 2026</td><td style="color:var(--success)">91.4%</td><td style="color:var(--success)">Active</td></tr>
+          <tr><td>gemini-hire-v2.2</td><td>Jun 1, 2026</td><td>89.1%</td><td style="color:var(--ink-ter)">Archived</td></tr>
+          <tr><td>gemini-hire-v2.1</td><td>Apr 10, 2026</td><td>87.6%</td><td style="color:var(--ink-ter)">Archived</td></tr>
+        </tbody>
+      </table>
+      <div class="spec-note">FR-025, FR-026 · Rollback requires dual approval · Version selection triggers A/B test prompt</div>
+    </div>
+  </div>
+
+  <!-- SCR-409: System Health -->
+  <div>
+    <div class="scr-tag">SCR-409 — /admin/health</div>
+    <h2>System Health Dashboard</h2>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <p style="font-size:13px;color:var(--ink-sec)">Real-time service status and infrastructure metrics.</p>
+      <div class="refresh-toggle"><button class="toggle"></button>Auto-refresh (30s)</div>
+    </div>
+    <!-- Service status grid -->
+    <div class="service-grid">
+      <div class="service-card">
+        <div class="svc-header"><div class="svc-name">🤖 AI Worker</div><div class="svc-status svc-green"></div></div>
+        <div class="svc-metric" style="color:var(--success)">Healthy</div>
+        <div class="svc-label">Queue: 12 jobs · 340ms avg</div>
+      </div>
+      <div class="service-card">
+        <div class="svc-header"><div class="svc-name">✉️ Email Service</div><div class="svc-status svc-yellow"></div></div>
+        <div class="svc-metric" style="color:var(--warning)">Degraded</div>
+        <div class="svc-label">Delivery rate: 94% · 3 bounced</div>
+      </div>
+      <div class="service-card">
+        <div class="svc-header"><div class="svc-name">🗄 Database</div><div class="svc-status svc-green"></div></div>
+        <div class="svc-metric" style="color:var(--success)">Healthy</div>
+        <div class="svc-label">Latency: 12ms · 0 errors</div>
+      </div>
+      <div class="service-card">
+        <div class="svc-header"><div class="svc-name">⚙ Background Jobs</div><div class="svc-status svc-red"></div></div>
+        <div class="svc-metric" style="color:var(--danger)">Error</div>
+        <div class="svc-label">BullMQ: 2 failed jobs · retry in 5m</div>
+      </div>
+    </div>
+    <!-- Queue chart placeholder -->
+    <div class="card">
+      <div style="font-family:var(--heading);font-size:14px;font-weight:700;margin-bottom:10px">BullMQ Queue Depth (last 24h)</div>
+      <div class="chart-placeholder">📊 Line chart: queue depth over time (AI / Email / BG Jobs) · Zoom: 1h, 6h, 24h</div>
+      <div style="display:flex;gap:14px;font-size:12px;margin-top:8px">
+        <span style="color:var(--brand)">● AI Queue (peak: 48)</span>
+        <span style="color:var(--accent)">● Email Queue (peak: 201)</span>
+        <span style="color:var(--warning)">● BG Jobs (peak: 15)</span>
+      </div>
+    </div>
+    <!-- Incidents -->
+    <div class="card">
+      <div style="font-family:var(--heading);font-size:14px;font-weight:700;margin-bottom:10px">Recent Incidents</div>
+      <div class="incident-item"><span class="inc-sev inc-p2">P2</span><div><strong>Email service degraded</strong> — SMTP rate limit reached<br/><span style="color:var(--ink-ter)">Jul 22 · 11:30 AM · Ongoing</span></div></div>
+      <div class="incident-item"><span class="inc-sev inc-p1">P1</span><div><strong>AI Worker outage (15 min)</strong> — Auto-recovered via fallback<br/><span style="color:var(--ink-ter)">Jul 20 · 3:42 PM · Resolved</span></div></div>
+      <div class="incident-item"><span class="inc-sev inc-p2">P2</span><div><strong>Database latency spike (&gt;500ms)</strong><br/><span style="color:var(--ink-ter)">Jul 18 · 9:15 AM · Resolved</span></div></div>
+      <div class="spec-note">FR-067, BR-16 · Incidents auto-generate admin alert · P1 = page on-call engineer</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

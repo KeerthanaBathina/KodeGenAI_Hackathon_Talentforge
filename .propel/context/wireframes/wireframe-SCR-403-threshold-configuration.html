@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SCR-052 — Threshold Configuration | AI Interview App</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-brand-primary: #6366F1;
+      --color-brand-accent: #06B6D4;
+      --color-surface-0: #FFFFFF;
+      --color-surface-1: #F8FAFC;
+      --color-surface-2: #F1F5F9;
+      --color-border: #E2E8F0;
+      --color-ink-primary: #0F172A;
+      --color-ink-secondary: #64748B;
+      --color-ink-tertiary: #94A3B8;
+      --color-success: #10B981;
+      --color-success-surface: #D1FAE5;
+      --color-warning: #F59E0B;
+      --color-warning-surface: #FEF3C7;
+      --color-danger: #EF4444;
+      --color-info: #3B82F6;
+      --font-body: 'Inter', sans-serif;
+      --font-heading: 'Plus Jakarta Sans', sans-serif;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    body { font-family: var(--font-body); background: var(--color-surface-1); color: var(--color-ink-primary); display: flex; flex-direction: column; min-height: 100vh; }
+    .wf-header { background: #1E293B; color: white; padding: 10px 24px; font-size: 12px; display: flex; justify-content: space-between; align-items: center; }
+    .wf-tag { background: #6366F1; color: white; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
+    .app-shell { display: flex; flex: 1; }
+    .sidebar { width: 220px; background: var(--color-surface-0); border-right: 1px solid var(--color-border); display: flex; flex-direction: column; flex-shrink: 0; }
+    .sidebar-header { padding: 16px; border-bottom: 1px solid var(--color-border); }
+    .sidebar-logo { display: flex; align-items: center; gap: 8px; font-family: var(--font-heading); font-weight: 700; font-size: 15px; color: var(--color-brand-primary); }
+    .sidebar-logo-mark { width: 26px; height: 26px; background: var(--color-brand-primary); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: 700; }
+    .sidebar-nav { padding: 8px; flex: 1; }
+    .sidebar-item { display: flex; align-items: center; gap: 8px; padding: 9px 10px; border-radius: 7px; font-size: 13px; font-weight: 500; color: var(--color-ink-secondary); cursor: pointer; margin-bottom: 1px; }
+    .sidebar-item.active { background: #EEF2FF; color: var(--color-brand-primary); }
+    .main { flex: 1; display: flex; flex-direction: column; }
+    .top-bar { background: var(--color-surface-0); border-bottom: 1px solid var(--color-border); padding: 0 28px; height: 52px; display: flex; align-items: center; justify-content: space-between; box-shadow: var(--shadow-sm); }
+    .page-title { font-family: var(--font-heading); font-size: 17px; font-weight: 700; }
+    .avatar { width: 32px; height: 32px; background: #334155; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: 700; }
+    .content { padding: 28px; overflow-y: auto; }
+    /* Breadcrumb */
+    .breadcrumb { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--color-ink-secondary); margin-bottom: 20px; }
+    .breadcrumb a { color: var(--color-brand-primary); text-decoration: none; }
+    /* Config card */
+    .config-card { background: var(--color-surface-0); border: 1px solid var(--color-border); border-radius: 16px; padding: 28px; box-shadow: var(--shadow-sm); margin-bottom: 20px; }
+    .config-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    .config-card-title { font-family: var(--font-heading); font-size: 16px; font-weight: 700; }
+    /* Job family selector */
+    .job-family-selector { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
+    .job-family-label { font-size: 14px; font-weight: 500; }
+    .job-family-select { height: 40px; border: 1px solid var(--color-border); border-radius: 8px; font-size: 14px; padding: 0 12px; min-width: 220px; background: white; cursor: pointer; }
+    /* Threshold row */
+    .threshold-item { margin-bottom: 28px; }
+    .threshold-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+    .threshold-name { font-size: 15px; font-weight: 600; }
+    .threshold-value-display { font-family: var(--font-heading); font-size: 22px; font-weight: 700; color: var(--color-brand-primary); }
+    .threshold-desc { font-size: 13px; color: var(--color-ink-secondary); margin-bottom: 12px; }
+    /* Slider (FRM-012) */
+    .slider-wrap { position: relative; padding: 10px 0; }
+    .slider-track { height: 8px; border-radius: 4px; background: var(--color-surface-2); position: relative; }
+    .slider-fill-shortlist { height: 100%; border-radius: 4px; background: var(--color-success); width: 75%; }
+    .slider-fill-lowconf { height: 100%; border-radius: 4px; background: var(--color-warning); width: 35%; }
+    .slider-thumb { position: absolute; width: 22px; height: 22px; border-radius: 50%; background: white; border: 2px solid var(--color-brand-primary); box-shadow: 0 1px 4px rgba(0,0,0,0.15); top: 50%; transform: translateY(-50%); cursor: grab; }
+    .slider-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--color-ink-tertiary); margin-top: 6px; }
+    .slider-zones { display: flex; justify-content: space-between; font-size: 12px; margin-top: 10px; }
+    .zone-label { padding: 3px 8px; border-radius: 5px; font-weight: 500; font-size: 11px; }
+    .zone-reject { background: var(--color-danger-surface); color: var(--color-danger); }
+    .zone-manual { background: var(--color-warning-surface); color: var(--color-warning); }
+    .zone-shortlist { background: var(--color-success-surface); color: var(--color-success); }
+    .divider { height: 1px; background: var(--color-border); margin: 24px 0; }
+    /* Effective date */
+    .effective-date-row { display: flex; align-items: center; gap: 12px; margin-top: 20px; }
+    .effective-label { font-size: 14px; font-weight: 500; }
+    .date-input { height: 40px; border: 1px solid var(--color-border); border-radius: 8px; padding: 0 14px; font-size: 14px; font-family: var(--font-body); }
+    /* Change history table */
+    .history-table-wrap { margin-top: 28px; }
+    .history-title { font-family: var(--font-heading); font-size: 15px; font-weight: 700; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; border: 1px solid var(--color-border); border-radius: 10px; overflow: hidden; }
+    thead th { background: var(--color-surface-1); padding: 10px 16px; text-align: left; font-size: 12px; font-weight: 600; color: var(--color-ink-secondary); border-bottom: 1px solid var(--color-border); }
+    tbody td { padding: 12px 16px; font-size: 13px; border-bottom: 1px solid var(--color-border); }
+    tbody tr:last-child td { border-bottom: none; }
+    .btn-primary { height: 44px; padding: 0 28px; background: var(--color-brand-primary); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: var(--font-body); }
+    .save-bar { display: flex; align-items: center; gap: 12px; }
+    .save-note { font-size: 13px; color: var(--color-ink-secondary); }
+    .spec-note { background: #FFFBEB; border-left: 3px solid #F59E0B; padding: 8px 12px; margin-top: 8px; font-size: 12px; color: #92400E; border-radius: 0 4px 4px 0; }
+  </style>
+</head>
+<body>
+  <div class="wf-header">
+    <span><span class="wf-tag">SCR-052</span> &nbsp; Threshold Configuration &nbsp;·&nbsp; Route: <code>/admin/thresholds</code> &nbsp;·&nbsp; Role: System Admin</span>
+    <span>FR-024, FR-065 &nbsp;·&nbsp; 2026-07-22</span>
+  </div>
+
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <div class="sidebar-logo-mark">TF</div>
+          TalentForge Admin
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="sidebar-item"><span>📊</span> Dashboard</div>
+        <div class="sidebar-item"><span>👥</span> Users</div>
+        <div class="sidebar-item"><span>⚙️</span> Business Rules</div>
+        <div class="sidebar-item active"><span>🎯</span> Thresholds</div>
+        <div class="sidebar-item"><span>✉️</span> Templates</div>
+        <div class="sidebar-item"><span>📋</span> Approval Matrix</div>
+        <div class="sidebar-item"><span>🗂️</span> Audit Log</div>
+      </nav>
+    </aside>
+
+    <div class="main">
+      <div class="top-bar">
+        <span class="page-title">AI Threshold Configuration</span>
+        <div class="avatar">SA</div>
+      </div>
+
+      <div class="content">
+        <div class="breadcrumb">
+          <a href="#">Admin</a> › Threshold Configuration
+        </div>
+
+        <!-- Job Family Selector -->
+        <div class="job-family-selector">
+          <span class="job-family-label">Job Family:</span>
+          <select class="job-family-select">
+            <option>Software Engineering</option>
+            <option>Product Management</option>
+            <option>Data Science</option>
+            <option>Operations</option>
+            <option>Design</option>
+          </select>
+          <span style="font-size:13px;color:var(--color-ink-tertiary);">Showing thresholds for: <strong style="color:var(--color-ink-primary);">Software Engineering</strong></span>
+        </div>
+
+        <div class="config-card">
+          <div class="config-card-header">
+            <span class="config-card-title">Scoring Thresholds — Software Engineering</span>
+            <span style="font-size:13px;color:var(--color-ink-secondary);">Last updated: Jul 18, 2026 by admin@tf.io</span>
+          </div>
+
+          <!-- Threshold 1: Auto-Shortlist -->
+          <div class="threshold-item">
+            <div class="threshold-header">
+              <span class="threshold-name">Auto-Shortlist Threshold</span>
+              <span class="threshold-value-display">75</span>
+            </div>
+            <p class="threshold-desc">Candidates scoring <strong>above this value</strong> will automatically advance to HR review without manual AI screening review.</p>
+            <div class="slider-wrap">
+              <div class="slider-track">
+                <div class="slider-fill-shortlist"></div>
+                <div class="slider-thumb" style="left: calc(75% - 11px);"></div>
+              </div>
+              <div class="slider-labels">
+                <span>0</span>
+                <span>25</span>
+                <span>50</span>
+                <span>75 ←</span>
+                <span>100</span>
+              </div>
+            </div>
+            <div class="slider-zones">
+              <span class="zone-label zone-reject">0–35: Auto-reject</span>
+              <span class="zone-label zone-manual">35–75: Manual review</span>
+              <span class="zone-label zone-shortlist">75–100: Auto-advance ✓</span>
+            </div>
+          </div>
+          <div class="spec-note">FRM-012 Slider · Zones reflect auto-reject / manual review / auto-shortlist ranges · FR-024</div>
+
+          <div class="divider"></div>
+
+          <!-- Threshold 2: Low Confidence -->
+          <div class="threshold-item">
+            <div class="threshold-header">
+              <span class="threshold-name">Low Confidence Threshold</span>
+              <span class="threshold-value-display" style="color:var(--color-warning);">35</span>
+            </div>
+            <p class="threshold-desc">Candidates with confidence <strong>below this value</strong> will be flagged for mandatory manual review, regardless of auto-shortlist threshold.</p>
+            <div class="slider-wrap">
+              <div class="slider-track">
+                <div class="slider-fill-lowconf"></div>
+                <div class="slider-thumb" style="left: calc(35% - 11px); border-color: var(--color-warning);"></div>
+              </div>
+              <div class="slider-labels">
+                <span>0</span>
+                <span>25</span>
+                <span style="font-weight:600;color:var(--color-warning);">35 ←</span>
+                <span>50</span>
+                <span>100</span>
+              </div>
+            </div>
+          </div>
+          <div class="spec-note">FR-065 · Low-confidence flag overrides auto-advance even if score &gt; shortlist threshold</div>
+
+          <div class="divider"></div>
+
+          <!-- Effective date + save -->
+          <div class="effective-date-row">
+            <span class="effective-label">Effective from:</span>
+            <input class="date-input" type="date" value="2026-07-23" />
+            <span style="font-size:13px;color:var(--color-ink-secondary);">Changes apply to new evaluations only</span>
+          </div>
+          <div style="margin-top:20px;">
+            <div class="save-bar">
+              <button class="btn-primary">Save Threshold Changes</button>
+              <span class="save-note">→ Requires confirmation (MOD-007)</span>
+            </div>
+            <div class="spec-note">Save → MOD-007 Threshold Change Confirmation Modal · "This change applies to new evaluations only. Existing evaluations retain previous threshold." · FR-065</div>
+          </div>
+
+          <!-- Change History -->
+          <div class="history-table-wrap">
+            <div class="history-title">Change History — Software Engineering</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Author</th>
+                  <th>Old Value</th>
+                  <th>New Value</th>
+                  <th>Threshold</th>
+                  <th>Effective Date</th>
+                  <th>Timestamp</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>admin@tf.io</td>
+                  <td>70</td>
+                  <td style="color:var(--color-brand-primary);font-weight:600;">75</td>
+                  <td>Auto-Shortlist</td>
+                  <td>Jul 20, 2026</td>
+                  <td style="color:var(--color-ink-tertiary);">Jul 18, 10:15 AM</td>
+                </tr>
+                <tr>
+                  <td>superadmin@tf.io</td>
+                  <td>40</td>
+                  <td style="color:var(--color-warning);font-weight:600;">35</td>
+                  <td>Low Confidence</td>
+                  <td>Jun 01, 2026</td>
+                  <td style="color:var(--color-ink-tertiary);">May 28, 2:30 PM</td>
+                </tr>
+                <tr>
+                  <td>admin@tf.io</td>
+                  <td>65</td>
+                  <td>70</td>
+                  <td>Auto-Shortlist</td>
+                  <td>Apr 15, 2026</td>
+                  <td style="color:var(--color-ink-tertiary);">Apr 12, 11:00 AM</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

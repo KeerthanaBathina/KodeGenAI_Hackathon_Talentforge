@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SCR-406/407 — Business Rules & Approval Matrix | AI Interview App</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--brand:#6366F1;--surface-0:#fff;--surface-1:#F8FAFC;--surface-2:#F1F5F9;--border:#E2E8F0;--ink:#0F172A;--ink-sec:#64748B;--ink-ter:#94A3B8;--success:#10B981;--success-s:#D1FAE5;--warning:#F59E0B;--warning-s:#FEF3C7;--danger:#EF4444;--danger-s:#FEE2E2;--font:'Inter',sans-serif;--heading:'Plus Jakarta Sans',sans-serif;--shadow:0 1px 3px rgba(0,0,0,.06)}
+body{font-family:var(--font);background:var(--surface-1);display:flex;flex-direction:column;min-height:100vh}
+.wf-header{background:#1E293B;color:#fff;padding:10px 24px;font-size:12px;display:flex;justify-content:space-between}
+.wf-tag{background:#6366F1;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600}
+.page{padding:24px 28px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+h2{font-family:var(--heading);font-size:17px;font-weight:700;margin-bottom:4px}
+.scr-tag{display:inline-block;background:#334155;color:#fff;padding:4px 12px;border-radius:6px;font-size:11px;font-weight:600;margin-bottom:10px}
+.card{background:var(--surface-0);border:1px solid var(--border);border-radius:14px;padding:20px;box-shadow:var(--shadow)}
+/* Tabs */
+.tab-row{display:flex;gap:2px;background:var(--surface-2);border-radius:10px;padding:3px;margin-bottom:16px;flex-wrap:wrap}
+.tab-btn{flex:1;height:30px;border:none;border-radius:7px;font-size:11px;font-weight:500;cursor:pointer;background:transparent;color:var(--ink-sec)}
+.tab-btn.active{background:var(--surface-0);color:var(--brand);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+/* Rule items */
+.rule-item{background:var(--surface-1);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px}
+.rule-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.rule-name{font-size:14px;font-weight:600}
+.rule-desc{font-size:12px;color:var(--ink-sec);margin-bottom:10px}
+.rule-control{display:flex;align-items:center;gap:10px}
+.rule-label{font-size:12px;color:var(--ink-sec);min-width:80px}
+.range-input{width:100%;accent-color:var(--brand)}
+.toggle{width:40px;height:22px;border-radius:11px;background:#CBD5E1;border:none;cursor:pointer;position:relative;flex-shrink:0;transition:.2s}
+.toggle.on{background:var(--brand)}
+.toggle::after{content:'';position:absolute;width:16px;height:16px;background:#fff;border-radius:50%;top:3px;left:3px;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle.on::after{left:21px}
+.rule-value{font-size:13px;font-weight:600;color:var(--brand);min-width:30px;text-align:right}
+.change-hist{margin-top:14px}
+.hist-item{font-size:12px;padding:6px 0;border-bottom:1px solid var(--border);color:var(--ink-sec);display:flex;justify-content:space-between}
+.hist-item:last-child{border-bottom:none}
+/* Approval matrix table */
+.matrix-table{width:100%;border-collapse:collapse;font-size:13px}
+.matrix-table th{padding:10px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--ink-ter);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);background:var(--surface-2)}
+.matrix-table td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.matrix-table tr:last-child td{border-bottom:none}
+.matrix-table tr.selected-band{background:#EEF2FF}
+.band-badge{display:inline-flex;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:500;background:var(--surface-2);border:1px solid var(--border)}
+.approver-chain{display:flex;align-items:center;gap:4px;font-size:12px}
+.approver-chip{background:#EEF2FF;border:1px solid #C7D2FE;border-radius:6px;padding:2px 7px;font-size:11px;color:var(--brand)}
+.approver-arrow{color:var(--ink-ter)}
+/* Band editor */
+.band-editor{margin-top:14px;background:var(--surface-1);border:1px solid var(--border);border-radius:10px;padding:14px}
+.be-title{font-size:13px;font-weight:600;margin-bottom:10px}
+.form-group{margin-bottom:8px}
+.form-group label{font-size:11px;font-weight:600;color:var(--ink-sec);display:block;margin-bottom:3px}
+.form-input{height:32px;border:1px solid var(--border);border-radius:8px;padding:0 10px;font-size:13px;font-family:var(--font);width:100%;color:var(--ink)}
+.drag-handle{cursor:grab;color:var(--ink-ter);margin-right:6px}
+.approver-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface-0);border:1px solid var(--border);border-radius:7px;padding:6px 10px;margin-bottom:5px;font-size:12px}
+.btn-row{display:flex;gap:8px;margin-top:12px;justify-content:flex-end}
+.btn-primary{height:34px;padding:0 18px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
+.btn-secondary{height:34px;padding:0 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;background:transparent;color:var(--ink-sec)}
+.spec-note{background:#FFFBEB;border-left:3px solid #F59E0B;padding:6px 10px;margin-top:10px;font-size:11px;color:#92400E;border-radius:0 4px 4px 0}
+</style>
+</head>
+<body>
+<div class="wf-header">
+  <span><span class="wf-tag">SCR-406 + SCR-407</span> &nbsp; Business Rules Config / Approval Matrix &nbsp;·&nbsp; Role: System Admin</span>
+  <span>FR-024, FR-064, BR-03–05, BR-08, FR-051, BR-07 &nbsp;·&nbsp; 2026-07-22</span>
+</div>
+<div class="page">
+
+  <!-- SCR-406: Business Rules Config -->
+  <div>
+    <div class="scr-tag">SCR-406 — /admin/business-rules</div>
+    <h2>Business Rules Configuration</h2>
+    <p style="font-size:13px;color:var(--ink-sec);margin-bottom:14px">Configure application-wide business logic rules.</p>
+    <div class="card">
+      <div class="tab-row">
+        <button class="tab-btn active">Application</button>
+        <button class="tab-btn">Path Assignment</button>
+        <button class="tab-btn">SLA</button>
+        <button class="tab-btn">Security</button>
+      </div>
+      <!-- Application Rules -->
+      <div class="rule-item">
+        <div class="rule-header">
+          <div><div class="rule-name">Cooling Period (days)</div><div class="rule-desc">Minimum days before reapplication is allowed for the same position. (BR-03)</div></div>
+          <div class="rule-value">30</div>
+        </div>
+        <div class="rule-control">
+          <span class="rule-label">15 days</span>
+          <input type="range" class="range-input" min="15" max="180" value="30" style="flex:1"/>
+          <span class="rule-label" style="text-align:right">180 days</span>
+        </div>
+      </div>
+      <div class="rule-item">
+        <div class="rule-header">
+          <div><div class="rule-name">Max Applications per Candidate</div><div class="rule-desc">Maximum simultaneous active applications per candidate. (BR-04)</div></div>
+          <div class="rule-value">3</div>
+        </div>
+        <div class="rule-control">
+          <span class="rule-label">1</span>
+          <input type="range" class="range-input" min="1" max="10" value="3" style="flex:1"/>
+          <span class="rule-label" style="text-align:right">10</span>
+        </div>
+      </div>
+      <div class="rule-item">
+        <div class="rule-header" style="align-items:center">
+          <div><div class="rule-name">Require HR Override Justification</div><div class="rule-desc">Require a reason code when HR overrides AI scoring result. (BR-05)</div></div>
+          <button class="toggle on" title="Toggle"></button>
+        </div>
+      </div>
+      <div class="rule-item">
+        <div class="rule-header" style="align-items:center">
+          <div><div class="rule-name">Account Lockout (failed attempts)</div><div class="rule-desc">Lock account after N failed login attempts. (BR-08)</div></div>
+          <div class="rule-value">5</div>
+        </div>
+        <div class="rule-control">
+          <span class="rule-label">3</span>
+          <input type="range" class="range-input" min="3" max="10" value="5" style="flex:1"/>
+          <span class="rule-label" style="text-align:right">10</span>
+        </div>
+      </div>
+      <div class="btn-row"><button class="btn-secondary">Reset Defaults</button><button class="btn-primary">Save Changes</button></div>
+      <div class="change-hist">
+        <div style="font-size:12px;font-weight:600;color:var(--ink-sec);margin-bottom:6px">Change History</div>
+        <div class="hist-item"><span>Cooling Period: 30d → 45d</span><span>Jul 10 · arun@acme.com</span></div>
+        <div class="hist-item"><span>Account Lockout: 3 → 5 attempts</span><span>Jun 25 · arun@acme.com</span></div>
+      </div>
+      <div class="spec-note">FR-024, FR-064 · Changes logged in audit trail (SCR-404) · Effective immediately upon save</div>
+    </div>
+  </div>
+
+  <!-- SCR-407: Approval Matrix -->
+  <div>
+    <div class="scr-tag">SCR-407 — /admin/approval-matrix</div>
+    <h2>Approval Matrix</h2>
+    <p style="font-size:13px;color:var(--ink-sec);margin-bottom:14px">Configure offer approval chains by compensation band.</p>
+    <div class="card">
+      <table class="matrix-table">
+        <thead><tr><th>Band</th><th>Salary Range</th><th>Approval Chain</th><th></th></tr></thead>
+        <tbody>
+          <tr><td><span class="band-badge">Band 1</span></td><td>< ₹8L</td><td><div class="approver-chain"><span class="approver-chip">HR Reviewer</span></div></td><td><a style="color:var(--brand);font-size:12px;cursor:pointer">Edit</a></td></tr>
+          <tr><td><span class="band-badge">Band 2</span></td><td>₹8L – ₹12L</td><td><div class="approver-chain"><span class="approver-chip">HR Reviewer</span><span class="approver-arrow">›</span><span class="approver-chip">Manager</span></div></td><td><a style="color:var(--brand);font-size:12px;cursor:pointer">Edit</a></td></tr>
+          <tr><td><span class="band-badge">Band 3</span></td><td>₹12L – ₹20L</td><td><div class="approver-chain"><span class="approver-chip">HR</span><span class="approver-arrow">›</span><span class="approver-chip">Manager</span><span class="approver-arrow">›</span><span class="approver-chip">HR Mgr</span></div></td><td><a style="color:var(--brand);font-size:12px;cursor:pointer">Edit</a></td></tr>
+          <tr class="selected-band"><td><span class="band-badge" style="background:#EEF2FF;border-color:#C7D2FE;color:var(--brand)">Band 4 ✏</span></td><td>₹20L – ₹35L</td><td><div class="approver-chain"><span class="approver-chip">HR</span><span class="approver-arrow">›</span><span class="approver-chip">Manager</span><span class="approver-arrow">›</span><span class="approver-chip">HR Mgr</span><span class="approver-arrow">›</span><span class="approver-chip">VP</span></div></td><td><a style="color:var(--brand);font-size:12px;cursor:pointer;font-weight:600">Editing</a></td></tr>
+        </tbody>
+      </table>
+      <!-- Band Editor -->
+      <div class="band-editor">
+        <div class="be-title">Editing: Band 4 (₹20L – ₹35L)</div>
+        <div style="display:flex;gap:10px;margin-bottom:10px">
+          <div class="form-group" style="flex:1"><label>Min Salary (₹)</label><input class="form-input" value="2000000"/></div>
+          <div class="form-group" style="flex:1"><label>Max Salary (₹)</label><input class="form-input" value="3500000"/></div>
+        </div>
+        <div style="font-size:12px;font-weight:600;color:var(--ink-sec);margin-bottom:6px">Approval Chain (drag to reorder)</div>
+        <div class="approver-row"><span class="drag-handle">⠿</span>1. HR Reviewer<span style="font-size:11px;color:var(--ink-ter)">(required)</span><span style="margin-left:auto;color:var(--danger);font-size:12px;cursor:pointer">×</span></div>
+        <div class="approver-row"><span class="drag-handle">⠿</span>2. Engineering Manager<span style="margin-left:auto;color:var(--danger);font-size:12px;cursor:pointer">×</span></div>
+        <div class="approver-row"><span class="drag-handle">⠿</span>3. HR Manager<span style="margin-left:auto;color:var(--danger);font-size:12px;cursor:pointer">×</span></div>
+        <div class="approver-row"><span class="drag-handle">⠿</span>4. VP of Engineering<span style="margin-left:auto;color:var(--danger);font-size:12px;cursor:pointer">×</span></div>
+        <button style="height:28px;font-size:11px;border:1px dashed var(--border);border-radius:7px;background:transparent;cursor:pointer;padding:0 12px;margin-top:4px;color:var(--ink-sec)">+ Add Approver</button>
+        <div class="btn-row"><button class="btn-secondary">Cancel</button><button class="btn-primary">Save Band</button></div>
+      </div>
+      <div class="spec-note">FR-051, BR-07 · Changes to approval matrix apply to future decisions only · Current in-flight offers retain original chain</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

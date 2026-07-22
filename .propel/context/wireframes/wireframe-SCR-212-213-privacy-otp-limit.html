@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SCR-212/213 — Privacy & OTP Rate Limit | AI Interview App</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--brand:#6366F1;--surface-0:#fff;--surface-1:#F8FAFC;--surface-2:#F1F5F9;--border:#E2E8F0;--ink:#0F172A;--ink-sec:#64748B;--ink-ter:#94A3B8;--success:#10B981;--success-s:#D1FAE5;--warning:#F59E0B;--warning-s:#FEF3C7;--danger:#EF4444;--danger-s:#FEE2E2;--font:'Inter',sans-serif;--heading:'Plus Jakarta Sans',sans-serif}
+body{font-family:var(--font);background:var(--surface-1);min-height:100vh;display:flex;flex-direction:column}
+.wf-header{background:#1E293B;color:#fff;padding:10px 40px;font-size:12px;display:flex;justify-content:space-between}
+.wf-tag{background:#6366F1;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600}
+nav{display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:64px;background:var(--surface-0);border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:8px;font-family:var(--heading);font-weight:700;font-size:18px;color:var(--brand)}
+.logo-mark{width:32px;height:32px;background:var(--brand);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700}
+.page{padding:28px 40px;max-width:1400px;margin:0 auto;width:100%;display:flex;gap:24px}
+.screen-wrapper{flex:1;background:var(--surface-1);border:1px solid #CBD5E1;border-radius:16px;overflow:hidden;max-width:680px}
+.screen-label{background:#334155;color:#fff;padding:8px 16px;font-size:12px;font-weight:600;display:flex;gap:8px;align-items:center}
+.scr-tag{background:#6366F1;border-radius:4px;padding:1px 6px;font-size:11px}
+.screen-body{padding:20px}
+.card{background:var(--surface-0);border:1px solid var(--border);border-radius:14px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+h2{font-family:var(--heading);font-size:17px;font-weight:700;margin-bottom:6px}
+.subtitle{font-size:13px;color:var(--ink-sec);margin-bottom:16px}
+.section-title{font-size:11px;font-weight:600;color:var(--ink-ter);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 10px}
+.consent-item{background:var(--surface-1);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start}
+.consent-name{font-size:13px;font-weight:600;margin-bottom:2px}
+.consent-meta{font-size:12px;color:var(--ink-ter)}
+.consent-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:500;background:var(--success-s);color:var(--success);border:1px solid #6EE7B7}
+.timeline-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
+.timeline-item:last-child{border-bottom:none}
+.timeline-dot{width:8px;height:8px;border-radius:50%;background:var(--brand);flex-shrink:0;margin-top:4px}
+.rights-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.btn-rights{flex:1;min-width:140px;height:40px;border:1px solid var(--border);background:var(--surface-0);border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font);color:var(--ink-sec)}
+.btn-danger-rights{border-color:#FCA5A5;color:var(--danger);background:var(--danger-s)}
+.spec-note{background:#FFFBEB;border-left:3px solid #F59E0B;padding:6px 10px;margin-top:8px;font-size:11px;color:#92400E;border-radius:0 4px 4px 0}
+/* SCR-213: OTP rate limit */
+.otp-block-card{text-align:center}
+.block-icon{font-size:48px;margin-bottom:16px}
+.countdown-lg{font-family:var(--heading);font-size:36px;font-weight:700;color:var(--warning)}
+.btn-primary{width:100%;height:44px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font);margin-bottom:8px;margin-top:14px}
+.btn-secondary{width:100%;height:40px;background:transparent;border:1px solid var(--border);border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:var(--font);color:var(--ink-sec);margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="wf-header">
+  <span><span class="wf-tag">SCR-212 + SCR-213</span> &nbsp; Consent & Privacy / OTP Rate Limit &nbsp;·&nbsp; Role: Applicant</span>
+  <span>FR-003, BR-15, FR-008 &nbsp;·&nbsp; 2026-07-22</span>
+</div>
+<nav>
+  <div class="logo"><div class="logo-mark">TF</div>TalentForge</div>
+  <div style="width:36px;height:36px;background:var(--brand);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700">JD</div>
+</nav>
+<div class="page">
+
+  <!-- SCR-212: Consent & Privacy Management -->
+  <div class="screen-wrapper">
+    <div class="screen-label"><span class="scr-tag">SCR-212</span> Consent & Privacy Management &nbsp;·&nbsp; /candidate/privacy</div>
+    <div class="screen-body">
+      <div class="card">
+        <h2>Privacy & Consent Management</h2>
+        <p class="subtitle">Review your active consents and exercise your data rights.</p>
+        <div class="section-title">Active Consents</div>
+        <div class="consent-item">
+          <div><div class="consent-name">Privacy Policy</div><div class="consent-meta">Version 2.1 · Accepted Jul 18, 2026</div></div>
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+            <span class="consent-badge">✓ Active</span>
+            <a href="#" style="font-size:11px;color:var(--brand)">View full text</a>
+          </div>
+        </div>
+        <div class="consent-item">
+          <div><div class="consent-name">AI Processing Notice</div><div class="consent-meta">Version 1.4 · Accepted Jul 18, 2026</div></div>
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+            <span class="consent-badge">✓ Active</span>
+            <a href="#" style="font-size:11px;color:var(--brand)">View full text</a>
+          </div>
+        </div>
+        <div class="consent-item">
+          <div><div class="consent-name">Marketing Communications</div><div class="consent-meta">Optional · Opted in Jul 18, 2026</div></div>
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+            <span class="consent-badge">✓ Active</span>
+            <button style="font-size:11px;color:var(--danger);background:none;border:none;cursor:pointer">Withdraw</button>
+          </div>
+        </div>
+        <div class="section-title">Consent History</div>
+        <div class="timeline-item"><div class="timeline-dot"></div><div><strong>Privacy Policy v2.1</strong> accepted &nbsp;·&nbsp; Jul 18, 2026 10:34 AM &nbsp;·&nbsp; IP: 103.x.x.x</div></div>
+        <div class="timeline-item"><div class="timeline-dot"></div><div><strong>AI Processing Notice v1.4</strong> accepted &nbsp;·&nbsp; Jul 18, 2026 10:34 AM</div></div>
+        <div class="spec-note">FR-003 · Consent history is immutable audit trail · Download receipt available · BR-15</div>
+        <div class="section-title">Data Subject Rights (GDPR)</div>
+        <div class="rights-row">
+          <button class="btn-rights">⬇ Download My Data</button>
+          <button class="btn-rights btn-danger-rights">🗑 Request Deletion</button>
+        </div>
+        <div class="spec-note">Data deletion → MOD-008 confirmation modal · Completes within 30 days per regulatory requirements</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCR-213: OTP Rate Limit -->
+  <div class="screen-wrapper" style="max-width:380px">
+    <div class="screen-label"><span class="scr-tag">SCR-213</span> OTP Rate Limit Screen &nbsp;·&nbsp; Inline in registration flow</div>
+    <div class="screen-body">
+      <div class="card otp-block-card">
+        <div class="block-icon">🚫</div>
+        <span style="display:inline-block;background:var(--warning-s);color:#92400E;border:1px solid #FCD34D;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:500;margin-bottom:12px">Resend Limit Reached</span>
+        <h2>Too many OTP requests</h2>
+        <p style="font-size:13px;color:var(--ink-sec);margin-bottom:16px">For security reasons, you've reached the maximum number of OTP resend attempts. Please wait before requesting another code.</p>
+        <div style="background:var(--warning-s);border:1px solid #FCD34D;border-radius:10px;padding:16px;margin-bottom:4px">
+          <div style="font-size:12px;color:#92400E;margin-bottom:6px">Next OTP available in:</div>
+          <div class="countdown-lg">14:32</div>
+          <div style="font-size:12px;color:#92400E;margin-top:4px">minutes : seconds</div>
+        </div>
+        <div class="spec-note">FR-008 · Max 3 resend attempts · Wait period resets on next attempt</div>
+        <button class="btn-primary" disabled style="opacity:.5;cursor:not-allowed">Resend Code (locked)</button>
+        <button class="btn-secondary">Try a Different Email</button>
+        <a href="#" style="font-size:13px;color:var(--brand);display:block;text-align:center">Contact Support</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

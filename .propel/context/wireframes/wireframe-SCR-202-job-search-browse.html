@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SCR-202 — Job Search & Browse | AI Interview App</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--brand:#6366F1;--accent:#06B6D4;--surface-0:#fff;--surface-1:#F8FAFC;--surface-2:#F1F5F9;--border:#E2E8F0;--ink:#0F172A;--ink-sec:#64748B;--ink-ter:#94A3B8;--success:#10B981;--success-s:#D1FAE5;--font:'Inter',sans-serif;--heading:'Plus Jakarta Sans',sans-serif;--shadow:0 1px 3px rgba(0,0,0,.06)}
+body{font-family:var(--font);background:var(--surface-1);min-height:100vh;display:flex;flex-direction:column}
+.wf-header{background:#1E293B;color:#fff;padding:10px 40px;font-size:12px;display:flex;justify-content:space-between}
+.wf-tag{background:#6366F1;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600}
+nav{display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:64px;background:var(--surface-0);border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:8px;font-family:var(--heading);font-weight:700;font-size:18px;color:var(--brand)}
+.logo-mark{width:32px;height:32px;background:var(--brand);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700}
+.nav-links{display:flex;gap:4px}
+.nav-link{padding:8px 16px;border-radius:8px;font-size:14px;font-weight:500;color:var(--ink-sec);text-decoration:none}
+.nav-link.active{color:var(--brand);background:#EEF2FF}
+.nav-right{display:flex;align-items:center;gap:12px}
+.avatar{width:36px;height:36px;background:var(--brand);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700}
+.layout{display:flex;max-width:1280px;margin:0 auto;width:100%;padding:28px 40px;gap:24px}
+/* Filters sidebar */
+.filters{width:256px;flex-shrink:0}
+.filters-card{background:var(--surface-0);border:1px solid var(--border);border-radius:14px;padding:20px;box-shadow:var(--shadow)}
+.filters-title{font-family:var(--heading);font-size:15px;font-weight:700;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.filters-reset{font-size:13px;color:var(--brand);cursor:pointer;font-weight:500}
+.filter-group{margin-bottom:20px}
+.filter-label{font-size:12px;font-weight:600;color:var(--ink-sec);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+.search-input{width:100%;height:40px;padding:0 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:var(--font);margin-bottom:16px}
+.checkbox-item{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:14px;cursor:pointer}
+.checkbox-item input{width:16px;height:16px;accent-color:var(--brand)}
+/* Main content */
+.main{flex:1}
+.main-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.results-count{font-size:14px;color:var(--ink-sec)}
+.view-toggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.view-btn{padding:0 14px;height:36px;border:none;cursor:pointer;background:var(--surface-0);font-size:13px;font-weight:500;color:var(--ink-sec)}
+.view-btn.active{background:var(--brand);color:#fff}
+.jobs-list{display:flex;flex-direction:column;gap:14px}
+.job-card{background:var(--surface-0);border:1px solid var(--border);border-radius:14px;padding:22px 24px;box-shadow:var(--shadow);display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.job-card-left{flex:1}
+.job-title{font-family:var(--heading);font-size:17px;font-weight:700;color:var(--brand);cursor:pointer;margin-bottom:6px}
+.job-meta{display:flex;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--ink-sec);margin-bottom:10px}
+.job-meta-item{display:flex;align-items:center;gap:4px}
+.eligibility{font-size:13px;color:var(--ink-sec);border-top:1px solid var(--border);padding-top:10px;margin-top:10px}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:500;border:1px solid}
+.badge-success{background:var(--success-s);color:var(--success);border-color:#6EE7B7}
+.badge-neutral{background:var(--surface-2);color:var(--ink-sec);border-color:var(--border)}
+.job-card-right{display:flex;flex-direction:column;align-items:flex-end;gap:12px;flex-shrink:0}
+.btn-apply{background:var(--brand);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:var(--font)}
+.btn-save{width:36px;height:36px;background:var(--surface-1);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px}
+.slots-badge{font-size:12px;color:var(--ink-ter)}
+/* empty state */
+.empty-state{text-align:center;padding:60px 20px}
+.empty-state-icon{font-size:48px;margin-bottom:16px}
+.empty-state h3{font-family:var(--heading);font-size:18px;font-weight:700;margin-bottom:8px}
+.empty-state p{font-size:14px;color:var(--ink-sec);margin-bottom:20px}
+/* pagination */
+.pagination{display:flex;justify-content:space-between;align-items:center;padding:20px 0}
+.pg-info{font-size:13px;color:var(--ink-sec)}
+.pg-btns{display:flex;gap:4px}
+.pg-btn{width:34px;height:34px;border-radius:7px;border:1px solid var(--border);background:var(--surface-0);display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer}
+.pg-btn.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+.spec-note{background:#FFFBEB;border-left:3px solid #F59E0B;padding:8px 12px;margin-top:10px;font-size:12px;color:#92400E;border-radius:0 4px 4px 0}
+</style>
+</head>
+<body>
+<div class="wf-header">
+  <span><span class="wf-tag">SCR-202</span> &nbsp; Job Search & Browse &nbsp;·&nbsp; Route: <code>/candidate/jobs</code> &nbsp;·&nbsp; Role: Applicant</span>
+  <span>FR-011 &nbsp;·&nbsp; 2026-07-22</span>
+</div>
+<nav>
+  <div class="logo"><div class="logo-mark">TF</div>TalentForge</div>
+  <div class="nav-links">
+    <a href="#" class="nav-link">My Dashboard</a>
+    <a href="#" class="nav-link active">Browse Jobs</a>
+    <a href="#" class="nav-link">My Applications</a>
+  </div>
+  <div class="nav-right"><div class="avatar">JD</div></div>
+</nav>
+<div class="layout">
+  <!-- Filters Sidebar -->
+  <aside class="filters">
+    <div class="filters-card">
+      <div class="filters-title">Filters <span class="filters-reset">Reset all</span></div>
+      <input class="search-input" type="text" placeholder="🔍  Job title, keywords…"/>
+      <div class="filter-group">
+        <div class="filter-label">Department</div>
+        <div class="checkbox-item"><input type="checkbox" checked/> Engineering</div>
+        <div class="checkbox-item"><input type="checkbox"/> Product</div>
+        <div class="checkbox-item"><input type="checkbox"/> Design</div>
+        <div class="checkbox-item"><input type="checkbox"/> Analytics</div>
+        <div class="checkbox-item"><input type="checkbox"/> Operations</div>
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">Location</div>
+        <div class="checkbox-item"><input type="checkbox" checked/> Bengaluru</div>
+        <div class="checkbox-item"><input type="checkbox"/> Hyderabad</div>
+        <div class="checkbox-item"><input type="checkbox"/> Remote</div>
+        <div class="checkbox-item"><input type="checkbox"/> Pune</div>
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">Experience Level</div>
+        <div class="checkbox-item"><input type="checkbox"/> Entry Level</div>
+        <div class="checkbox-item"><input type="checkbox" checked/> Mid Level</div>
+        <div class="checkbox-item"><input type="checkbox" checked/> Senior</div>
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">Job Type</div>
+        <div class="checkbox-item"><input type="checkbox" checked/> Full-time</div>
+        <div class="checkbox-item"><input type="checkbox"/> Part-time</div>
+        <div class="checkbox-item"><input type="checkbox"/> Contract</div>
+      </div>
+      <div class="spec-note">FRM-006 Checkboxes · FRM-005 Multi-select · Filters applied on change (debounced 300ms)</div>
+    </div>
+  </aside>
+
+  <!-- Results -->
+  <main class="main">
+    <div class="main-header">
+      <span class="results-count">Showing <strong>24 jobs</strong> matching your filters</span>
+      <div class="view-toggle">
+        <button class="view-btn active">☰ List</button>
+        <button class="view-btn">⊞ Grid</button>
+      </div>
+    </div>
+
+    <div class="jobs-list">
+      <!-- Job 1 -->
+      <div class="job-card">
+        <div class="job-card-left">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
+            <div class="job-title">Senior Frontend Engineer</div>
+            <span class="badge badge-success">Open</span>
+          </div>
+          <div class="job-meta">
+            <span class="job-meta-item">🏢 Engineering</span>
+            <span class="job-meta-item">📍 Bengaluru</span>
+            <span class="job-meta-item">⏰ Full-time</span>
+            <span class="job-meta-item">💼 3–5 years exp.</span>
+          </div>
+          <div class="eligibility">Must have: React, TypeScript, REST APIs. Degree in CS/related field preferred.</div>
+        </div>
+        <div class="job-card-right">
+          <button class="btn-apply">Apply Now →</button>
+          <div class="btn-save">🔖</div>
+          <span class="slots-badge">4 slots left</span>
+        </div>
+      </div>
+      <!-- Job 2: Already applied -->
+      <div class="job-card" style="opacity:0.75;background:#F8FAFC">
+        <div class="job-card-left">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
+            <div class="job-title" style="color:var(--ink-sec)">Product Manager — Growth</div>
+            <span class="badge badge-success">Open</span>
+          </div>
+          <div class="job-meta">
+            <span class="job-meta-item">🏢 Product</span>
+            <span class="job-meta-item">📍 Remote</span>
+            <span class="job-meta-item">⏰ Full-time</span>
+            <span class="job-meta-item">💼 4–7 years exp.</span>
+          </div>
+          <div class="eligibility">Must have: Roadmap planning, stakeholder management, data-driven decision making.</div>
+        </div>
+        <div class="job-card-right">
+          <button class="btn-apply" style="background:#64748B;cursor:not-allowed">Applied ✓</button>
+          <div class="btn-save">🔖</div>
+        </div>
+      </div>
+      <!-- Job 3: Closing soon -->
+      <div class="job-card">
+        <div class="job-card-left">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
+            <div class="job-title">Data Analyst — Business Intelligence</div>
+            <span class="badge" style="background:#FEF3C7;color:#92400E;border-color:#FCD34D">Closing Soon</span>
+          </div>
+          <div class="job-meta">
+            <span class="job-meta-item">🏢 Analytics</span>
+            <span class="job-meta-item">📍 Hyderabad</span>
+            <span class="job-meta-item">⏰ Full-time</span>
+            <span class="job-meta-item">💼 2–4 years exp.</span>
+          </div>
+          <div class="eligibility">Must have: SQL, Tableau/Power BI, Python preferred. Statistical analysis skills.</div>
+        </div>
+        <div class="job-card-right">
+          <button class="btn-apply">Apply Now →</button>
+          <div class="btn-save">🔖</div>
+          <span class="slots-badge" style="color:#F59E0B">2 slots left</span>
+        </div>
+      </div>
+    </div>
+    <div class="spec-note">DAT-011 Job Card · Applied state: button disabled + "Applied ✓" · Cooling period active: "Reapply from [date]" · FR-011, FR-012</div>
+
+    <div class="pagination">
+      <span class="pg-info">1–10 of 24 results</span>
+      <div class="pg-btns">
+        <div class="pg-btn">‹</div>
+        <div class="pg-btn active">1</div>
+        <div class="pg-btn">2</div>
+        <div class="pg-btn">3</div>
+        <div class="pg-btn">›</div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SCR-203 — Job Detail Page | AI Interview App</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--brand:#6366F1;--accent:#06B6D4;--surface-0:#fff;--surface-1:#F8FAFC;--surface-2:#F1F5F9;--border:#E2E8F0;--ink:#0F172A;--ink-sec:#64748B;--ink-ter:#94A3B8;--success:#10B981;--success-s:#D1FAE5;--warning:#F59E0B;--warning-s:#FEF3C7;--danger:#EF4444;--danger-s:#FEE2E2;--font:'Inter',sans-serif;--heading:'Plus Jakarta Sans',sans-serif;--shadow:0 1px 3px rgba(0,0,0,.06)}
+body{font-family:var(--font);background:var(--surface-1);display:flex;flex-direction:column;min-height:100vh}
+.wf-header{background:#1E293B;color:#fff;padding:10px 40px;font-size:12px;display:flex;justify-content:space-between}
+.wf-tag{background:#6366F1;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600}
+nav{display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:64px;background:var(--surface-0);border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:8px;font-family:var(--heading);font-weight:700;font-size:18px;color:var(--brand)}
+.logo-mark{width:32px;height:32px;background:var(--brand);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700}
+.page{max-width:1100px;margin:0 auto;width:100%;padding:28px 40px;display:flex;gap:24px}
+.breadcrumb{font-size:13px;color:var(--ink-sec);margin-bottom:14px}
+.breadcrumb a{color:var(--brand);text-decoration:none}
+/* Job Header Card */
+.job-header{background:var(--surface-0);border:1px solid var(--border);border-radius:14px;padding:24px;box-shadow:var(--shadow);margin-bottom:20px}
+.company-logo{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,var(--brand),var(--accent));display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700;margin-bottom:10px}
+.job-title{font-family:var(--heading);font-size:22px;font-weight:700;margin-bottom:4px}
+.job-company{font-size:14px;color:var(--ink-sec);margin-bottom:12px}
+.meta-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:var(--surface-1);border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--ink-sec)}
+.apply-btn{height:46px;padding:0 32px;background:var(--brand);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:var(--font)}
+.save-btn{height:46px;padding:0 18px;border:1px solid var(--border);border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;background:transparent;color:var(--ink-sec)}
+/* Tabs */
+.tab-bar{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px}
+.tab-btn{height:42px;padding:0 18px;background:transparent;border:none;font-size:14px;font-weight:500;cursor:pointer;color:var(--ink-sec);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:var(--font)}
+.tab-btn.active{color:var(--brand);border-bottom-color:var(--brand);font-weight:600}
+.content-block{background:var(--surface-0);border:1px solid var(--border);border-radius:14px;padding:24px;box-shadow:var(--shadow)}
+.content-block h3{font-family:var(--heading);font-size:15px;font-weight:700;margin-bottom:12px}
+.content-block p{font-size:14px;color:var(--ink-sec);line-height:1.7;margin-bottom:12px}
+.bullet-list{list-style:none;padding:0}
+.bullet-list li{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:14px;color:var(--ink-sec)}
+.bullet-list li::before{content:'•';color:var(--brand);font-size:16px;flex-shrink:0;margin-top:-1px}
+/* Eligibility Check */
+.elig-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px}
+.elig-item:last-child{border-bottom:none}
+.elig-ok{color:var(--success);font-size:18px}
+.elig-fail{color:var(--danger);font-size:18px}
+.elig-warn{color:var(--warning);font-size:18px}
+/* Sidebar sticky */
+.sidebar{width:280px;flex-shrink:0}
+.apply-card{background:var(--surface-0);border:1px solid var(--border);border-radius:14px;padding:20px;box-shadow:var(--shadow);position:sticky;top:20px}
+.apply-card h3{font-family:var(--heading);font-size:15px;font-weight:700;margin-bottom:4px}
+.apply-card p{font-size:13px;color:var(--ink-sec);margin-bottom:16px}
+.interview-steps{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.int-step{display:flex;align-items:center;gap:8px;font-size:13px}
+.step-num{width:22px;height:22px;border-radius:50%;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.spec-note{background:#FFFBEB;border-left:3px solid #F59E0B;padding:6px 10px;margin-top:10px;font-size:11px;color:#92400E;border-radius:0 4px 4px 0}
+.state-banner{padding:12px 16px;border-radius:10px;font-size:13px;margin-bottom:14px;display:flex;gap:8px;align-items:center}
+.banner-warn{background:var(--warning-s);border:1px solid #FCD34D;color:#92400E}
+.banner-neutral{background:var(--surface-2);border:1px solid var(--border);color:var(--ink-sec)}
+</style>
+</head>
+<body>
+<div class="wf-header">
+  <span><span class="wf-tag">SCR-203</span> &nbsp; Job Detail Page &nbsp;·&nbsp; Route: <code>/candidate/jobs/:id</code> &nbsp;·&nbsp; Role: Applicant (Auth) / Public (Unauth)</span>
+  <span>FR-011, FR-012, FR-013 &nbsp;·&nbsp; 2026-07-22</span>
+</div>
+<nav>
+  <div class="logo"><div class="logo-mark">TF</div>TalentForge</div>
+  <div style="display:flex;gap:12px;align-items:center">
+    <a href="#" style="font-size:14px;color:var(--ink-sec)">Browse Jobs</a>
+    <div style="width:36px;height:36px;background:var(--brand);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700">JD</div>
+  </div>
+</nav>
+<div class="page" style="flex-direction:column">
+  <div class="breadcrumb"><a href="#">Jobs</a> › <a href="#">Engineering</a> › Senior Frontend Engineer</div>
+  <div style="display:flex;gap:24px">
+    <div style="flex:1">
+      <!-- Job Header -->
+      <div class="job-header">
+        <div class="company-logo">TF</div>
+        <div class="job-title">Senior Frontend Engineer</div>
+        <div class="job-company">TalentForge · Bengaluru, India</div>
+        <div class="meta-chips">
+          <span class="chip">💼 Full-time</span>
+          <span class="chip">📍 Hybrid — Bengaluru</span>
+          <span class="chip">💰 ₹20L – ₹28L</span>
+          <span class="chip">📅 Posted Jul 5, 2026</span>
+          <span class="chip" style="background:var(--success-s);color:var(--success);border-color:#6EE7B7">🟢 Open · 2 slots</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button class="apply-btn">Apply Now</button>
+          <button class="save-btn">🔖 Save Job</button>
+          <button class="save-btn">↗ Share</button>
+        </div>
+      </div>
+      <!-- State Banners (alternate states) -->
+      <div class="state-banner banner-warn">⚠ <span><strong>Already Applied</strong> — You applied on Jul 18, 2026. <a href="#" style="color:var(--brand)">View your application →</a></span></div>
+      <div class="state-banner banner-neutral" style="display:none">🔒 <span>This position has been <strong>closed</strong>.</span></div>
+      <div class="spec-note">State variants: (1) Default Apply CTA · (2) Already Applied banner (shown above) · (3) Cooling Period blocked · (4) Requisition Closed banner · FR-012</div>
+      <!-- Tabs -->
+      <div class="tab-bar">
+        <button class="tab-btn active">Description</button>
+        <button class="tab-btn">Eligibility</button>
+        <button class="tab-btn">Interview Process</button>
+        <button class="tab-btn">Benefits</button>
+      </div>
+      <!-- Tab Content: Description -->
+      <div class="content-block">
+        <h3>About the Role</h3>
+        <p>We are looking for a seasoned Senior Frontend Engineer to join our rapidly growing engineering team. You'll work on TalentForge's core product — an AI-powered hiring platform used by over 500 enterprises globally.</p>
+        <h3>Responsibilities</h3>
+        <ul class="bullet-list">
+          <li>Design and build high-performance, accessible React components</li>
+          <li>Collaborate with Product, Design, and Backend teams to ship user-facing features</li>
+          <li>Mentor junior engineers and conduct code reviews</li>
+          <li>Own technical architecture for frontend modules</li>
+          <li>Establish and enforce frontend best practices and coding standards</li>
+        </ul>
+        <h3>Requirements</h3>
+        <ul class="bullet-list">
+          <li>5+ years of experience with React and TypeScript</li>
+          <li>Strong knowledge of CSS, Tailwind, and modern layout techniques</li>
+          <li>Familiarity with GraphQL or REST APIs</li>
+          <li>Experience with testing frameworks (Jest, React Testing Library)</li>
+          <li>Excellent communication and problem-solving skills</li>
+        </ul>
+        <div class="spec-note">FR-011 · Job description fetched from requisition record in SCR-601 · Markdown content supported</div>
+      </div>
+    </div>
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="apply-card">
+        <h3>Quick Apply</h3>
+        <p>Estimated time: 5–10 minutes</p>
+        <div style="font-size:12px;font-weight:600;color:var(--ink-sec);margin-bottom:8px">Interview Process (5 stages)</div>
+        <div class="interview-steps">
+          <div class="int-step"><div class="step-num">1</div>AI Resume Screening</div>
+          <div class="int-step"><div class="step-num">2</div>Online Assessment</div>
+          <div class="int-step"><div class="step-num">3</div>Technical Phone Screen</div>
+          <div class="int-step"><div class="step-num">4</div>System Design Interview</div>
+          <div class="int-step"><div class="step-num">5</div>HR Behavioural Interview</div>
+        </div>
+        <button class="apply-btn" style="width:100%">Apply Now →</button>
+        <div style="text-align:center;font-size:12px;color:var(--ink-ter);margin-top:8px">Deadline: Aug 15, 2026</div>
+        <div class="spec-note">Apply button → SCR-204 Application Form · FR-013</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

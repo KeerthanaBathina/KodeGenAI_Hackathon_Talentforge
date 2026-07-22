@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SCR-304 — Interview Planner | AI Interview App</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--brand:#6366F1;--accent:#06B6D4;--surface-0:#fff;--surface-1:#F8FAFC;--surface-2:#F1F5F9;--border:#E2E8F0;--ink:#0F172A;--ink-sec:#64748B;--ink-ter:#94A3B8;--success:#10B981;--success-s:#D1FAE5;--warning:#F59E0B;--warning-s:#FEF3C7;--danger:#EF4444;--danger-s:#FEE2E2;--font:'Inter',sans-serif;--heading:'Plus Jakarta Sans',sans-serif;--shadow:0 1px 3px rgba(0,0,0,.06)}
+body{font-family:var(--font);background:var(--surface-1);min-height:100vh;display:flex;flex-direction:column}
+.wf-header{background:#1E293B;color:#fff;padding:10px 24px;font-size:12px;display:flex;justify-content:space-between}
+.wf-tag{background:#6366F1;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600}
+.app-bar{background:var(--surface-0);border-bottom:1px solid var(--border);padding:0 28px;height:56px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow)}
+.breadcrumb{font-size:13px;color:var(--ink-sec)}
+.breadcrumb a{color:var(--brand);text-decoration:none}
+.breadcrumb-sep{margin:0 6px;color:var(--ink-ter)}
+.page-title{font-family:var(--heading);font-size:17px;font-weight:700}
+.page{display:flex;gap:20px;padding:24px 28px;max-width:1400px;margin:0 auto;width:100%}
+.candidate-summary{background:var(--surface-0);border:1px solid var(--border);border-radius:14px;padding:20px;box-shadow:var(--shadow);display:flex;gap:14px;margin-bottom:20px;align-items:center}
+.summary-avatar{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--brand),var(--accent));display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700;flex-shrink:0}
+.summary-info h3{font-family:var(--heading);font-size:15px;font-weight:700;margin-bottom:2px}
+.summary-info p{font-size:13px;color:var(--ink-sec)}
+.summary-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.chip{display:inline-flex;align-items:center;padding:2px 8px;background:var(--surface-2);border:1px solid var(--border);border-radius:5px;font-size:11px;font-weight:500;color:var(--ink-sec)}
+.interviews-list{flex:1}
+.stage-card{background:var(--surface-0);border:1px solid var(--border);border-radius:14px;padding:20px;box-shadow:var(--shadow);margin-bottom:16px}
+.stage-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.stage-title{font-family:var(--heading);font-size:15px;font-weight:700}
+.stage-badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:500}
+.badge-upcoming{background:var(--info-s);color:var(--info);border:1px solid #93C5FD}
+.badge-scheduled{background:var(--success-s);color:var(--success);border:1px solid #6EE7B7}
+.badge-conflict{background:var(--danger-s);color:var(--danger);border:1px solid #FCA5A5}
+.form-row{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.form-group{display:flex;flex-direction:column;gap:4px;min-width:140px;flex:1}
+.form-group label{font-size:12px;font-weight:600;color:var(--ink-sec)}
+.form-input{height:36px;border:1px solid var(--border);border-radius:8px;padding:0 10px;font-size:13px;font-family:var(--font);color:var(--ink);background:var(--surface-0)}
+.form-input:focus{outline:none;border-color:var(--brand)}
+.panelist-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface-1);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:6px;font-size:13px}
+.panelist-avatar{width:26px;height:26px;border-radius:50%;background:var(--brand);display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:600}
+.conflict-badge{background:var(--danger-s);color:var(--danger);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
+.available-badge{background:var(--success-s);color:var(--success);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
+.calendar-mini{background:var(--surface-1);border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:10px}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.cal-day-name{font-size:10px;font-weight:600;color:var(--ink-ter);padding:4px 0}
+.cal-day{font-size:12px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.cal-day.empty{visibility:hidden}
+.cal-day.busy{background:var(--danger-s);color:var(--danger)}
+.cal-day.selected{background:var(--brand);color:#fff;font-weight:700}
+.cal-day.available{background:var(--success-s);color:var(--success)}
+.cal-day:hover:not(.selected){background:var(--surface-2)}
+.btn-row{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.btn-primary{height:36px;padding:0 20px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
+.btn-secondary{height:36px;padding:0 16px;background:transparent;border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;color:var(--ink-sec)}
+.spec-note{background:#FFFBEB;border-left:3px solid #F59E0B;padding:6px 10px;margin-top:8px;font-size:11px;color:#92400E;border-radius:0 4px 4px 0}
+</style>
+</head>
+<body>
+<div class="wf-header">
+  <span><span class="wf-tag">SCR-304</span> &nbsp; Interview Planner &nbsp;·&nbsp; Route: <code>/hr/interviews/:applicationId</code> &nbsp;·&nbsp; Role: HR Reviewer, Recruiter</span>
+  <span>FR-037, FR-038, FR-039, FR-044, FR-047, FR-048 &nbsp;·&nbsp; 2026-07-22</span>
+</div>
+<div class="app-bar">
+  <div>
+    <div class="breadcrumb"><a href="#">HR Review</a><span class="breadcrumb-sep">›</span><a href="#">Rahul Kumar</a><span class="breadcrumb-sep">›</span>Interview Planner</div>
+    <div class="page-title">Interview Planner</div>
+  </div>
+  <div style="display:flex;gap:8px"><button class="btn-secondary">Cancel</button><button class="btn-primary">Save All Stages</button></div>
+</div>
+<div class="page" style="flex-direction:column">
+  <!-- Application Summary Card -->
+  <div class="candidate-summary">
+    <div class="summary-avatar">RK</div>
+    <div class="summary-info">
+      <h3>Rahul Kumar</h3>
+      <p>Senior Frontend Engineer · Application ID: APP-00342 · AI Score: 82 / 100</p>
+      <div class="summary-chips">
+        <span class="chip">Current Stage: Screening Done</span>
+        <span class="chip">🟢 Auto-shortlisted</span>
+        <span class="chip">3 Interview Stages</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:20px">
+    <div class="interviews-list">
+
+      <!-- Stage 1: Technical Phone Screen -->
+      <div class="stage-card">
+        <div class="stage-header">
+          <span class="stage-title">Stage 1 — Technical Phone Screen</span>
+          <span class="stage-badge badge-upcoming">Upcoming</span>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" class="form-input" value="2026-07-25"/>
+          </div>
+          <div class="form-group">
+            <label>Time</label>
+            <input type="time" class="form-input" value="14:00"/>
+          </div>
+          <div class="form-group">
+            <label>Duration</label>
+            <select class="form-input"><option>30 min</option><option selected>45 min</option><option>60 min</option><option>90 min</option></select>
+          </div>
+          <div class="form-group">
+            <label>Mode</label>
+            <select class="form-input"><option>Video Call</option><option>Phone</option><option>In-Person</option></select>
+          </div>
+        </div>
+        <div style="font-size:12px;font-weight:600;color:var(--ink-sec);margin-bottom:8px">Interview Panel</div>
+        <div class="panelist-row"><div style="display:flex;align-items:center;gap:8px"><div class="panelist-avatar">AM</div>Arun Menon — Sr. Tech Lead</div><span class="available-badge">✓ Available</span><span style="font-size:12px;color:var(--ink-ter)">Primary</span></div>
+        <button class="btn-secondary" style="font-size:12px;height:30px;margin-top:6px">+ Add Panelist</button>
+        <div class="spec-note">FR-038, FR-047 · Panel conflict detection · Click panelist to see availability calendar</div>
+        <div class="btn-row">
+          <button class="btn-secondary">Preview Invite</button>
+          <button class="btn-primary">Schedule Stage 1</button>
+        </div>
+      </div>
+
+      <!-- Stage 2: System Design Interview -->
+      <div class="stage-card">
+        <div class="stage-header">
+          <span class="stage-title">Stage 2 — System Design Interview</span>
+          <span class="stage-badge badge-conflict">⚠ Panelist Conflict</span>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" class="form-input" value="2026-07-28"/>
+          </div>
+          <div class="form-group">
+            <label>Time</label>
+            <input type="time" class="form-input" value="10:00"/>
+          </div>
+          <div class="form-group">
+            <label>Duration</label>
+            <select class="form-input"><option>45 min</option><option selected>60 min</option><option>90 min</option></select>
+          </div>
+        </div>
+        <div style="font-size:12px;font-weight:600;color:var(--ink-sec);margin-bottom:8px">Interview Panel</div>
+        <div class="panelist-row"><div style="display:flex;align-items:center;gap:8px"><div class="panelist-avatar" style="background:#8B5CF6">SP</div>Sneha Patel — Engineering Manager</div><span class="available-badge">✓ Available</span></div>
+        <div class="panelist-row"><div style="display:flex;align-items:center;gap:8px"><div class="panelist-avatar" style="background:#EF4444">RJ</div>Ramesh Joshi — Architect</div><span class="conflict-badge">⚠ Unavailable Jul 28</span></div>
+        <div class="spec-note">FR-048 · Conflict indicator shown for unavailable panelists · Suggest alternative dates</div>
+        <div class="btn-row">
+          <button class="btn-secondary">Suggest Alternatives</button>
+          <button class="btn-primary" style="background:#F59E0B">Resolve Conflict →</button>
+        </div>
+      </div>
+
+    </div>
+    <!-- Mini Calendar sidebar -->
+    <div style="width:240px;flex-shrink:0">
+      <div style="font-family:var(--heading);font-size:14px;font-weight:700;margin-bottom:10px">July 2026</div>
+      <div class="calendar-mini">
+        <div class="calendar-grid">
+          <div class="cal-day-name">S</div><div class="cal-day-name">M</div><div class="cal-day-name">T</div><div class="cal-day-name">W</div><div class="cal-day-name">T</div><div class="cal-day-name">F</div><div class="cal-day-name">S</div>
+          <div class="cal-day empty"></div><div class="cal-day empty"></div><div class="cal-day">1</div><div class="cal-day">2</div><div class="cal-day">3</div><div class="cal-day">4</div><div class="cal-day">5</div>
+          <div class="cal-day">6</div><div class="cal-day">7</div><div class="cal-day">8</div><div class="cal-day">9</div><div class="cal-day">10</div><div class="cal-day">11</div><div class="cal-day">12</div>
+          <div class="cal-day">13</div><div class="cal-day">14</div><div class="cal-day">15</div><div class="cal-day">16</div><div class="cal-day">17</div><div class="cal-day">18</div><div class="cal-day">19</div>
+          <div class="cal-day">20</div><div class="cal-day">21</div><div class="cal-day">22</div><div class="cal-day busy">23</div><div class="cal-day busy">24</div><div class="cal-day selected">25</div><div class="cal-day">26</div>
+          <div class="cal-day">27</div><div class="cal-day busy">28</div><div class="cal-day">29</div><div class="cal-day available">30</div><div class="cal-day available">31</div>
+        </div>
+        <div style="margin-top:10px;font-size:11px">
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:3px"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--brand)"></span>Selected</div>
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:3px"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--danger-s);border:1px solid #FCA5A5"></span>Busy</div>
+          <div style="display:flex;gap:6px;align-items:center"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--success-s);border:1px solid #6EE7B7"></span>Available</div>
+        </div>
+      </div>
+      <div class="spec-note" style="font-size:11px;margin-top:10px">FR-044 · Calendar syncs panelist availability from HR system</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SCR-002 — Registration | AI Interview App</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-brand-primary: #6366F1;
+      --color-brand-primary-hover: #4F46E5;
+      --color-surface-0: #FFFFFF;
+      --color-surface-1: #F8FAFC;
+      --color-surface-2: #F1F5F9;
+      --color-border: #E2E8F0;
+      --color-border-focus: #6366F1;
+      --color-ink-primary: #0F172A;
+      --color-ink-secondary: #64748B;
+      --color-ink-tertiary: #94A3B8;
+      --color-ink-inverse: #FFFFFF;
+      --color-success: #10B981;
+      --color-success-surface: #D1FAE5;
+      --color-warning: #F59E0B;
+      --color-danger: #EF4444;
+      --font-body: 'Inter', sans-serif;
+      --font-heading: 'Plus Jakarta Sans', sans-serif;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+    }
+    body { font-family: var(--font-body); background: var(--color-surface-1); color: var(--color-ink-primary); min-height: 100vh; display: flex; flex-direction: column; }
+    .wf-header { background: #1E293B; color: white; padding: 10px 40px; font-size: 12px; font-weight: 500; display: flex; justify-content: space-between; align-items: center; }
+    .wf-tag { background: #6366F1; color: white; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
+    nav { display: flex; align-items: center; justify-content: center; padding: 0 40px; height: 64px; background: var(--color-surface-0); border-bottom: 1px solid var(--color-border); }
+    .nav-logo { display: flex; align-items: center; gap: 8px; font-family: var(--font-heading); font-weight: 700; font-size: 18px; color: var(--color-brand-primary); }
+    .nav-logo-mark { width: 32px; height: 32px; background: var(--color-brand-primary); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: 700; }
+    .page-body { flex: 1; display: flex; align-items: flex-start; justify-content: center; padding: 40px 20px; }
+    .reg-card { background: var(--color-surface-0); border: 1px solid var(--color-border); border-radius: 16px; padding: 40px; width: 100%; max-width: 520px; box-shadow: var(--shadow-md); }
+
+    /* ── STEP RAIL ── */
+    .step-rail { display: flex; align-items: center; margin-bottom: 32px; gap: 0; }
+    .step-item { display: flex; align-items: center; flex: 1; }
+    .step-circle { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0; }
+    .step-circle.complete { background: var(--color-success); color: white; }
+    .step-circle.active { background: var(--color-brand-primary); color: white; }
+    .step-circle.pending { background: var(--color-surface-2); color: var(--color-ink-tertiary); border: 2px solid var(--color-border); }
+    .step-label { font-size: 12px; font-weight: 500; margin-left: 8px; white-space: nowrap; }
+    .step-label.active { color: var(--color-brand-primary); }
+    .step-label.pending { color: var(--color-ink-tertiary); }
+    .step-label.complete { color: var(--color-success); }
+    .step-connector { flex: 1; height: 2px; background: var(--color-border); margin: 0 8px; }
+    .step-connector.complete { background: var(--color-success); }
+
+    /* ── FORM ── */
+    .card-title { font-family: var(--font-heading); font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .card-subtitle { font-size: 14px; color: var(--color-ink-secondary); margin-bottom: 28px; }
+    .step-indicator { font-size: 13px; color: var(--color-ink-tertiary); margin-bottom: 20px; }
+    .form-group { margin-bottom: 20px; }
+    .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+    .required-star { color: var(--color-danger); margin-left: 2px; }
+    input[type="text"], input[type="email"], input[type="tel"], input[type="password"] {
+      width: 100%; height: 48px; padding: 0 16px; border: 1px solid var(--color-border);
+      border-radius: 8px; font-size: 15px; font-family: var(--font-body);
+      background: var(--color-surface-0); color: var(--color-ink-primary);
+      outline: none;
+    }
+    input:focus { border: 2px solid var(--color-border-focus); }
+    .phone-group { display: flex; gap: 8px; }
+    .country-code-select { width: 100px; height: 48px; border: 1px solid var(--color-border); border-radius: 8px; font-size: 14px; padding: 0 8px; background: var(--color-surface-0); cursor: pointer; }
+    .helper-text { font-size: 12px; color: var(--color-ink-secondary); margin-top: 6px; }
+    .input-suffix-inside { position: relative; }
+    .input-suffix-inside input { padding-right: 48px; }
+    .eye-icon { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--color-ink-tertiary); }
+
+    /* ── PASSWORD STRENGTH ── */
+    .pw-strength { margin-top: 8px; }
+    .pw-strength-bar { height: 4px; border-radius: 2px; background: var(--color-surface-3); margin-bottom: 4px; }
+    .pw-strength-fill { height: 100%; border-radius: 2px; width: 40%; background: var(--color-warning); }
+    .pw-strength-label { font-size: 12px; color: var(--color-warning); font-weight: 500; }
+
+    /* ── BUTTONS ── */
+    .btn-primary { background: var(--color-brand-primary); color: white; border: none; border-radius: 8px; height: 48px; width: 100%; font-size: 16px; font-weight: 600; cursor: pointer; font-family: var(--font-body); }
+    .btn-secondary { background: transparent; color: var(--color-ink-primary); border: 1px solid var(--color-border); border-radius: 8px; height: 48px; font-size: 16px; font-weight: 600; cursor: pointer; font-family: var(--font-body); padding: 0 20px; }
+    .form-nav { display: flex; gap: 12px; margin-top: 28px; }
+    .form-nav .btn-primary { flex: 2; }
+    .form-nav .btn-secondary { flex: 1; }
+
+    .spec-note { background: #FFFBEB; border-left: 3px solid #F59E0B; padding: 8px 12px; margin-top: 8px; font-size: 12px; color: #92400E; border-radius: 0 4px 4px 0; }
+    .card-footer { text-align: center; margin-top: 24px; font-size: 14px; color: var(--color-ink-secondary); }
+    .card-footer a { color: var(--color-brand-primary); text-decoration: none; font-weight: 500; }
+    footer { padding: 20px; text-align: center; font-size: 13px; color: var(--color-ink-tertiary); }
+
+    /* ── OTP SECTION (Step 2 preview) ── */
+    .otp-section { text-align: center; padding: 8px 0; }
+    .otp-desc { font-size: 14px; color: var(--color-ink-secondary); margin-bottom: 24px; line-height: 1.6; }
+    .otp-input-row { display: flex; gap: 10px; justify-content: center; margin-bottom: 24px; }
+    .otp-digit { width: 52px; height: 60px; border: 2px solid var(--color-border-focus); border-radius: 10px; font-size: 24px; font-weight: 700; text-align: center; display: flex; align-items: center; justify-content: center; background: var(--color-surface-0); color: var(--color-ink-primary); }
+    .otp-digit.empty { border-color: var(--color-border); color: var(--color-ink-tertiary); }
+    .otp-digit.cursor { border-color: var(--color-brand-primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+    .resend-area { font-size: 14px; color: var(--color-ink-secondary); }
+    .resend-area a { color: var(--color-brand-primary); font-weight: 500; text-decoration: none; }
+    .resend-timer { font-weight: 600; color: var(--color-ink-primary); }
+
+    /* Tabs for showing step states */
+    .step-tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+    .step-tab { font-size: 13px; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--color-border); cursor: pointer; font-weight: 500; color: var(--color-ink-secondary); background: white; }
+    .step-tab.active { background: var(--color-brand-primary); color: white; border-color: var(--color-brand-primary); }
+    .step-panel { display: none; }
+    .step-panel.visible { display: block; }
+  </style>
+</head>
+<body>
+  <div class="wf-header">
+    <span><span class="wf-tag">SCR-002</span> &nbsp; Registration Page &nbsp;·&nbsp; Route: <code>/register</code> &nbsp;·&nbsp; Role: Applicant (unauthenticated)</span>
+    <span>FR-001, FR-003, FR-006, FR-007, FR-008 &nbsp;·&nbsp; 2026-07-22</span>
+  </div>
+
+  <nav>
+    <div class="nav-logo">
+      <div class="nav-logo-mark">TF</div>
+      TalentForge
+    </div>
+  </nav>
+
+  <div class="page-body">
+    <div class="reg-card">
+
+      <!-- Step rail (NAV-006) -->
+      <div class="step-rail">
+        <div class="step-item">
+          <div class="step-circle active">1</div>
+          <span class="step-label active">Contact Details</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step-item">
+          <div class="step-circle pending">2</div>
+          <span class="step-label pending">Verify OTP</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step-item">
+          <div class="step-circle pending">3</div>
+          <span class="step-label pending">Consent</span>
+        </div>
+      </div>
+
+      <!-- Step selector (wireframe annotation - shows different step states) -->
+      <div class="step-tabs">
+        <span style="font-size:12px;color:#94A3B8;margin-right:4px;line-height:2;">Wireframe step:</span>
+        <div class="step-tab active" onclick="showStep(1,this)">Step 1 — Contact</div>
+        <div class="step-tab" onclick="showStep(2,this)">Step 2 — OTP</div>
+        <div class="step-tab" onclick="showStep(3,this)">Step 3 — Consent</div>
+      </div>
+
+      <!-- STEP 1: Contact Details -->
+      <div id="step1" class="step-panel visible">
+        <h1 class="card-title">Create your account</h1>
+        <p class="card-subtitle">Step 1 of 3 — Enter your contact details</p>
+
+        <form>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label>First Name <span class="required-star">*</span></label>
+              <input type="text" placeholder="Jane" />
+            </div>
+            <div class="form-group">
+              <label>Last Name <span class="required-star">*</span></label>
+              <input type="text" placeholder="Doe" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Email Address <span class="required-star">*</span></label>
+            <input type="email" placeholder="jane.doe@example.com" />
+            <p class="helper-text">OTP will be sent to verify this email</p>
+          </div>
+          <div class="form-group">
+            <label>Phone Number <span class="required-star">*</span></label>
+            <div class="phone-group">
+              <select class="country-code-select">
+                <option>🇮🇳 +91</option>
+                <option>🇺🇸 +1</option>
+                <option>🇬🇧 +44</option>
+              </select>
+              <input type="tel" placeholder="98765 43210" style="flex:1;" />
+            </div>
+            <div class="spec-note">Country code selector (FRM-013) · Format validation on blur · FR-007</div>
+          </div>
+          <div class="form-group">
+            <label>Password <span class="required-star">*</span></label>
+            <div class="input-suffix-inside">
+              <input type="password" placeholder="Create a strong password" />
+              <span class="eye-icon">👁</span>
+            </div>
+            <div class="pw-strength">
+              <div class="pw-strength-bar"><div class="pw-strength-fill"></div></div>
+              <span class="pw-strength-label">Fair — add a number or symbol to strengthen</span>
+            </div>
+            <div class="spec-note">Password strength meter (FBK-008) · Min 10 chars, 1 uppercase, 1 number, 1 special</div>
+          </div>
+
+          <div class="form-nav">
+            <button type="submit" class="btn-primary">Continue to OTP Verification →</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- STEP 2: OTP Verification -->
+      <div id="step2" class="step-panel">
+        <h1 class="card-title">Verify your email</h1>
+        <p class="card-subtitle">Step 2 of 3 — Enter the 6-digit code</p>
+        <div class="otp-section">
+          <p class="otp-desc">We sent a 6-digit code to <strong>jane.doe@example.com</strong><br />The code expires in 10 minutes.</p>
+          <div class="otp-input-row">
+            <div class="otp-digit">4</div>
+            <div class="otp-digit">2</div>
+            <div class="otp-digit cursor">_</div>
+            <div class="otp-digit empty">—</div>
+            <div class="otp-digit empty">—</div>
+            <div class="otp-digit empty">—</div>
+          </div>
+          <div class="spec-note">FRM-010 OTP Input · Each digit is its own input · Auto-focus advances on digit entry · FR-006</div>
+          <div class="resend-area">
+            Didn't receive it? &nbsp;
+            <a href="#">Resend code</a> &nbsp;·&nbsp; Resend available in <span class="resend-timer">1:42</span>
+          </div>
+          <div class="spec-note">Max 3 resend attempts → SCR-019a OTP Rate Limit Screen · FR-008</div>
+        </div>
+        <div class="form-nav">
+          <button class="btn-secondary">← Back</button>
+          <button class="btn-primary">Verify & Continue →</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: Consent -->
+      <div id="step3" class="step-panel">
+        <h1 class="card-title">Review and consent</h1>
+        <p class="card-subtitle">Step 3 of 3 — Accept our terms to complete registration</p>
+        <div style="display:flex;flex-direction:column;gap:16px;margin-bottom:24px;">
+          <label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;background:var(--color-surface-1);padding:16px;border-radius:10px;border:1px solid var(--color-border);">
+            <input type="checkbox" style="margin-top:3px;width:18px;height:18px;accent-color:var(--color-brand-primary);" />
+            <div>
+              <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Privacy Policy & Terms of Service <span class="required-star">*</span></div>
+              <div style="font-size:13px;color:var(--color-ink-secondary);">I have read and agree to the <a href="#" style="color:var(--color-brand-primary);">Privacy Policy</a> and <a href="#" style="color:var(--color-brand-primary);">Terms of Service</a>.</div>
+            </div>
+          </label>
+          <label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;background:var(--color-surface-1);padding:16px;border-radius:10px;border:1px solid var(--color-border);">
+            <input type="checkbox" style="margin-top:3px;width:18px;height:18px;accent-color:var(--color-brand-primary);" />
+            <div>
+              <div style="font-size:14px;font-weight:600;margin-bottom:4px;">AI Processing Notice <span class="required-star">*</span></div>
+              <div style="font-size:13px;color:var(--color-ink-secondary);">I consent to AI-powered screening and evaluation of my application data for recruitment purposes.</div>
+            </div>
+          </label>
+          <label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;background:var(--color-surface-1);padding:16px;border-radius:10px;border:1px solid var(--color-border);">
+            <input type="checkbox" style="margin-top:3px;width:18px;height:18px;accent-color:var(--color-brand-primary);" />
+            <div>
+              <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Marketing Communications <span style="color:var(--color-ink-tertiary);font-weight:400;">(optional)</span></div>
+              <div style="font-size:13px;color:var(--color-ink-secondary);">I'd like to receive job alerts and platform updates by email.</div>
+            </div>
+          </label>
+        </div>
+        <div class="spec-note">Required consents must be checked before submit · FR-003 · BR-15</div>
+        <div class="form-nav">
+          <button class="btn-secondary">← Back</button>
+          <button class="btn-primary">Create Account ✓</button>
+        </div>
+      </div>
+
+      <div class="card-footer">
+        Already have an account? <a href="/login">Sign in</a>
+      </div>
+    </div>
+  </div>
+
+  <footer>© 2026 TalentForge</footer>
+
+  <script>
+    function showStep(n, tab) {
+      document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('visible'));
+      document.querySelectorAll('.step-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('step' + n).classList.add('visible');
+      tab.classList.add('active');
+      // Update rail
+      const circles = document.querySelectorAll('.step-circle');
+      const labels = document.querySelectorAll('.step-label');
+      const connectors = document.querySelectorAll('.step-connector');
+      circles.forEach((c, i) => {
+        c.className = 'step-circle ' + (i + 1 < n ? 'complete' : i + 1 === n ? 'active' : 'pending');
+        c.textContent = i + 1 < n ? '✓' : i + 1;
+        labels[i].className = 'step-label ' + (i + 1 < n ? 'complete' : i + 1 === n ? 'active' : 'pending');
+        if (connectors[i]) connectors[i].className = 'step-connector ' + (i + 1 < n ? 'complete' : '');
+      });
+    }
+  </script>
+</body>
+</html>

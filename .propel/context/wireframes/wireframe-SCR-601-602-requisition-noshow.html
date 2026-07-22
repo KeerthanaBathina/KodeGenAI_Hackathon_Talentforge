@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SCR-601/602 — Requisition Management & No-Show | AI Interview App</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--brand:#6366F1;--accent:#06B6D4;--surface-0:#fff;--surface-1:#F8FAFC;--surface-2:#F1F5F9;--border:#E2E8F0;--ink:#0F172A;--ink-sec:#64748B;--ink-ter:#94A3B8;--success:#10B981;--success-s:#D1FAE5;--warning:#F59E0B;--warning-s:#FEF3C7;--danger:#EF4444;--danger-s:#FEE2E2;--font:'Inter',sans-serif;--heading:'Plus Jakarta Sans',sans-serif;--shadow:0 1px 3px rgba(0,0,0,.06)}
+body{font-family:var(--font);background:var(--surface-1);display:flex;flex-direction:column;min-height:100vh}
+.wf-header{background:#1E293B;color:#fff;padding:10px 24px;font-size:12px;display:flex;justify-content:space-between}
+.wf-tag{background:#6366F1;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600}
+.page{padding:24px 28px;display:grid;grid-template-columns:1.4fr 1fr;gap:24px}
+h2{font-family:var(--heading);font-size:17px;font-weight:700;margin-bottom:4px}
+.scr-tag{display:inline-block;background:#334155;color:#fff;padding:4px 12px;border-radius:6px;font-size:11px;font-weight:600;margin-bottom:10px}
+.card{background:var(--surface-0);border:1px solid var(--border);border-radius:14px;padding:20px;box-shadow:var(--shadow);margin-bottom:14px}
+/* Toolbar */
+.toolbar{display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.search-box{flex:1;max-width:250px;height:34px;border:1px solid var(--border);border-radius:8px;padding:0 10px;font-size:13px;font-family:var(--font);color:var(--ink)}
+.filter-select{height:34px;border:1px solid var(--border);border-radius:8px;padding:0 8px;font-size:12px;background:var(--surface-0);font-family:var(--font);color:var(--ink)}
+.btn-primary{height:36px;padding:0 16px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
+.btn-secondary{height:36px;padding:0 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;background:transparent;color:var(--ink-sec)}
+.data-table{width:100%;border-collapse:collapse}
+.data-table th{padding:9px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--ink-ter);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);background:var(--surface-2)}
+.data-table td{padding:9px 12px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle}
+.data-table tr:last-child td{border-bottom:none}
+.status-badge{display:inline-flex;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:500;border:1px solid}
+.sb-open{background:var(--success-s);color:var(--success);border-color:#6EE7B7}
+.sb-draft{background:var(--surface-2);color:var(--ink-sec);border-color:var(--border)}
+.sb-closed{background:var(--danger-s);color:var(--danger);border-color:#FCA5A5}
+.sb-hold{background:var(--warning-s);color:var(--warning);border-color:#FCD34D}
+.fill-bar{height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden;width:80px;display:inline-block;vertical-align:middle;margin-left:6px}
+.fill-inner{height:100%;background:var(--brand);border-radius:3px}
+.action-link{color:var(--brand);font-size:12px;cursor:pointer;text-decoration:none;margin-right:6px}
+/* SCR-602: No-Show */
+.candidate-card{background:linear-gradient(135deg,#EEF2FF,#EFF6FF);border:1px solid #C7D2FE;border-radius:12px;padding:16px;margin-bottom:14px;display:flex;gap:12px;align-items:center}
+.cand-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--brand),var(--accent));display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:700;flex-shrink:0}
+.interview-detail{background:var(--surface-1);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px}
+.detail-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:0}
+.detail-chip{background:var(--surface-0);border:1px solid var(--border);border-radius:7px;padding:6px 12px;font-size:12px}
+.detail-chip span{display:block;font-size:10px;color:var(--ink-ter);margin-bottom:1px}
+.detail-chip strong{font-size:13px;color:var(--ink)}
+.action-option{background:var(--surface-1);border:2px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px;cursor:pointer}
+.action-option.selected{border-color:var(--brand);background:#EEF2FF}
+.action-title{font-size:14px;font-weight:600;margin-bottom:2px}
+.action-desc{font-size:12px;color:var(--ink-sec)}
+.form-group{margin-bottom:10px}
+.form-group label{font-size:12px;font-weight:600;color:var(--ink-sec);display:block;margin-bottom:3px}
+.form-select,.form-textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;font-family:var(--font);color:var(--ink);background:var(--surface-0)}
+.form-select{height:34px}
+.form-textarea{min-height:72px;resize:vertical}
+.spec-note{background:#FFFBEB;border-left:3px solid #F59E0B;padding:6px 10px;margin-top:8px;font-size:11px;color:#92400E;border-radius:0 4px 4px 0}
+</style>
+</head>
+<body>
+<div class="wf-header">
+  <span><span class="wf-tag">SCR-601 + SCR-602</span> &nbsp; Requisition Management / No-Show Management &nbsp;·&nbsp; Role: Recruiter, HR Manager</span>
+  <span>FR-064, FR-068, FR-042, BR-09 &nbsp;·&nbsp; 2026-07-22</span>
+</div>
+<div class="page">
+
+  <!-- SCR-601: Requisition Management -->
+  <div>
+    <div class="scr-tag">SCR-601 — /hr/requisitions</div>
+    <h2>Requisition Management</h2>
+    <p style="font-size:13px;color:var(--ink-sec);margin-bottom:14px">Manage open job requisitions and track hiring progress.</p>
+    <div class="toolbar">
+      <input class="search-box" type="text" placeholder="Search job title or dept…"/>
+      <select class="filter-select"><option>All Statuses</option><option>Open</option><option>Draft</option><option>On Hold</option><option>Closed</option></select>
+      <select class="filter-select"><option>All Departments</option><option>Engineering</option><option>Product</option><option>HR</option></select>
+      <div style="margin-left:auto"></div>
+      <button class="btn-primary">+ Create Requisition</button>
+    </div>
+    <div style="background:var(--surface-0);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)">
+      <table class="data-table">
+        <thead>
+          <tr><th>Job Title</th><th>Department</th><th>Slots</th><th>Status</th><th>Created</th><th>Applications</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><div style="font-weight:600">Senior Frontend Engineer</div><div style="font-size:11px;color:var(--ink-ter)">REQ-0042</div></td>
+            <td>Engineering</td>
+            <td>2<div class="fill-bar"><div class="fill-inner" style="width:50%"></div></div></td>
+            <td><span class="status-badge sb-open">Open</span></td>
+            <td style="font-size:12px;color:var(--ink-sec)">Jul 1, 2026</td>
+            <td style="font-size:13px;font-weight:600">48</td>
+            <td><a class="action-link">View</a><a class="action-link">Edit</a></td>
+          </tr>
+          <tr>
+            <td><div style="font-weight:600">Product Manager</div><div style="font-size:11px;color:var(--ink-ter)">REQ-0039</div></td>
+            <td>Product</td>
+            <td>1<div class="fill-bar"><div class="fill-inner" style="width:100%;background:var(--success)"></div></div></td>
+            <td><span class="status-badge sb-closed">Filled</span></td>
+            <td style="font-size:12px;color:var(--ink-sec)">Jun 15, 2026</td>
+            <td style="font-size:13px;font-weight:600">97</td>
+            <td><a class="action-link">View</a></td>
+          </tr>
+          <tr>
+            <td><div style="font-weight:600">Data Analyst</div><div style="font-size:11px;color:var(--ink-ter)">REQ-0043</div></td>
+            <td>Analytics</td>
+            <td>3<div class="fill-bar"><div class="fill-inner" style="width:33%"></div></div></td>
+            <td><span class="status-badge sb-open">Open</span></td>
+            <td style="font-size:12px;color:var(--ink-sec)">Jul 5, 2026</td>
+            <td style="font-size:13px;font-weight:600">22</td>
+            <td><a class="action-link">View</a><a class="action-link">Edit</a></td>
+          </tr>
+          <tr>
+            <td><div style="font-weight:600">DevOps Engineer</div><div style="font-size:11px;color:var(--ink-ter)">REQ-0041</div></td>
+            <td>Infrastructure</td>
+            <td>1<div class="fill-bar"><div class="fill-inner" style="width:0%"></div></div></td>
+            <td><span class="status-badge sb-hold">On Hold</span></td>
+            <td style="font-size:12px;color:var(--ink-sec)">Jun 28, 2026</td>
+            <td style="font-size:13px;font-weight:600">34</td>
+            <td><a class="action-link">View</a><a class="action-link">Reopen</a></td>
+          </tr>
+          <tr>
+            <td><div style="font-weight:600">UX Designer</div><div style="font-size:11px;color:var(--ink-ter)">REQ-0044</div></td>
+            <td>Design</td>
+            <td>1<div class="fill-bar"><div class="fill-inner" style="width:0%"></div></div></td>
+            <td><span class="status-badge sb-draft">Draft</span></td>
+            <td style="font-size:12px;color:var(--ink-sec)">Jul 20, 2026</td>
+            <td style="font-size:13px;font-weight:600">0</td>
+            <td><a class="action-link">Edit</a><a class="action-link">Publish</a></td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="padding:10px 14px;font-size:12px;color:var(--ink-sec);border-top:1px solid var(--border)">Showing 1–5 of 18 requisitions</div>
+    </div>
+    <div class="spec-note">FR-064, FR-068 · Filled bar = slots filled / total · Create requisition opens modal with job details, approval, slots, deadline fields</div>
+  </div>
+
+  <!-- SCR-602: No-Show Management -->
+  <div>
+    <div class="scr-tag">SCR-602 — /hr/interviews/:stageId/no-show</div>
+    <h2>No-Show Management</h2>
+    <p style="font-size:13px;color:var(--ink-sec);margin-bottom:14px">Handle candidate no-show for interview stage.</p>
+    <!-- Candidate Card -->
+    <div class="candidate-card">
+      <div class="cand-avatar">RK</div>
+      <div>
+        <div style="font-family:var(--heading);font-size:15px;font-weight:700">Rahul Kumar</div>
+        <div style="font-size:13px;color:var(--ink-sec)">Senior Frontend Engineer</div>
+        <div style="font-size:12px;color:var(--danger);margin-top:4px;font-weight:500">⚠ No-show recorded for Technical Interview</div>
+      </div>
+    </div>
+    <!-- Interview Details -->
+    <div class="interview-detail">
+      <div style="font-size:12px;font-weight:600;color:var(--ink-ter);margin-bottom:8px">Interview Details</div>
+      <div class="detail-row">
+        <div class="detail-chip"><span>Stage</span><strong>Technical Interview</strong></div>
+        <div class="detail-chip"><span>Scheduled</span><strong>Jul 25, 2026 · 2:00 PM</strong></div>
+        <div class="detail-chip"><span>Interviewer</span><strong>Arun Menon</strong></div>
+        <div class="detail-chip"><span>No-shows</span><strong style="color:var(--danger)">1 of 2 allowed</strong></div>
+      </div>
+    </div>
+    <!-- Action Options -->
+    <div style="font-size:13px;font-weight:600;margin-bottom:8px">Select Action:</div>
+    <div class="action-option selected">
+      <div class="action-title">📅 Reschedule Interview</div>
+      <div class="action-desc">Allow one more attempt. System will send a reschedule request to candidate.</div>
+    </div>
+    <div class="action-option">
+      <div class="action-title">🔄 Withdraw Application</div>
+      <div class="action-desc">Withdraw the candidate's application for this position. They can reapply after cooling period.</div>
+    </div>
+    <div class="action-option">
+      <div class="action-title">✗ Reject Application</div>
+      <div class="action-desc">Permanently reject this application. No further consideration for this requisition.</div>
+    </div>
+    <!-- Reason + Notes -->
+    <div class="form-group" style="margin-top:12px">
+      <label>Reason Code</label>
+      <select class="form-select"><option>Candidate did not respond</option><option>Candidate cancelled last minute</option><option>Technical issue (candidate-side)</option><option>Emergency</option></select>
+    </div>
+    <div class="form-group">
+      <label>Notes (internal)</label>
+      <textarea class="form-textarea" placeholder="Add any context or notes for the record…"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn-secondary">Cancel</button>
+      <button class="btn-primary">Confirm Reschedule</button>
+    </div>
+    <div class="spec-note">FR-042, BR-09 · Maximum 2 no-shows before auto-withdrawal · All no-show events logged in communication timeline</div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SCR-404/405 — Audit Log & Template Management | AI Interview App</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--brand:#6366F1;--surface-0:#fff;--surface-1:#F8FAFC;--surface-2:#F1F5F9;--border:#E2E8F0;--ink:#0F172A;--ink-sec:#64748B;--ink-ter:#94A3B8;--success:#10B981;--success-s:#D1FAE5;--warning:#F59E0B;--danger:#EF4444;--danger-s:#FEE2E2;--font:'Inter',sans-serif;--heading:'Plus Jakarta Sans',sans-serif;--shadow:0 1px 3px rgba(0,0,0,.06)}
+body{font-family:var(--font);background:var(--surface-1);display:flex;flex-direction:column;min-height:100vh}
+.wf-header{background:#1E293B;color:#fff;padding:10px 24px;font-size:12px;display:flex;justify-content:space-between}
+.wf-tag{background:#6366F1;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600}
+.page{padding:24px 28px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+h2{font-family:var(--heading);font-size:17px;font-weight:700;margin-bottom:4px}
+.scr-tag{display:inline-block;background:#334155;color:#fff;padding:4px 12px;border-radius:6px;font-size:11px;font-weight:600;margin-bottom:10px}
+.card{background:var(--surface-0);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
+.card-body{padding:20px}
+.filters-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.filter-input,.filter-select{height:34px;border:1px solid var(--border);border-radius:8px;padding:0 10px;font-size:12px;font-family:var(--font);color:var(--ink);background:var(--surface-0)}
+.filter-input{flex:1;min-width:100px}
+.data-table{width:100%;border-collapse:collapse}
+.data-table th{padding:9px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--ink-ter);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);background:var(--surface-2)}
+.data-table td{padding:9px 12px;font-size:12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.data-table tr:last-child td{border-bottom:none}
+.event-badge{display:inline-flex;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:500;border:1px solid}
+.eb-create{background:#DCFCE7;color:var(--success);border-color:#86EFAC}
+.eb-update{background:#DBEAFE;color:#3B82F6;border-color:#93C5FD}
+.eb-delete{background:var(--danger-s);color:var(--danger);border-color:#FCA5A5}
+.eb-auth{background:#FEF3C7;color:var(--warning);border-color:#FCD34D}
+.link-btn{color:var(--brand);background:none;border:none;cursor:pointer;font-size:12px;font-family:var(--font)}
+.btn-export{height:32px;padding:0 14px;border:1px solid var(--border);border-radius:7px;font-size:12px;cursor:pointer;background:var(--surface-0);color:var(--ink-sec)}
+/* Template management */
+.template-shell{display:flex;height:560px;border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
+.template-sidebar{width:200px;background:var(--surface-1);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.ts-header{padding:12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.ts-title{font-size:12px;font-weight:600}
+.ts-new{font-size:11px;color:var(--brand);cursor:pointer;background:none;border:none}
+.ts-filter{display:flex;gap:4px;padding:8px 12px;border-bottom:1px solid var(--border)}
+.ts-filter-btn{flex:1;height:26px;border-radius:5px;border:1px solid var(--border);background:var(--surface-0);font-size:11px;cursor:pointer;color:var(--ink-sec)}
+.ts-filter-btn.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+.template-item{padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;font-size:12px}
+.template-item.active{background:#EEF2FF;border-right:2px solid var(--brand)}
+.template-item-name{font-weight:600;margin-bottom:2px}
+.template-item-type{font-size:11px;color:var(--ink-ter)}
+.template-main{flex:1;display:flex;flex-direction:column;background:var(--surface-0)}
+.editor-toolbar{padding:8px 14px;border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:center;background:var(--surface-1);flex-wrap:wrap}
+.toolbar-btn{width:28px;height:28px;border:1px solid var(--border);border-radius:5px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;background:var(--surface-0)}
+.editor-area{flex:1;padding:14px;font-size:13px;color:var(--ink);line-height:1.8;overflow-y:auto}
+.token-chip{display:inline-block;background:#EEF2FF;border:1px solid #C7D2FE;border-radius:4px;padding:0 5px;font-size:12px;color:var(--brand);font-family:monospace}
+.editor-footer{padding:8px 14px;border-top:1px solid var(--border);display:flex;gap:8px;background:var(--surface-1)}
+.ef-btn{height:30px;padding:0 14px;border-radius:6px;font-size:12px;cursor:pointer;border:1px solid}
+.ef-btn-primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+.ef-btn-secondary{background:var(--surface-0);color:var(--ink-sec);border-color:var(--border)}
+.spec-note{background:#FFFBEB;border-left:3px solid #F59E0B;padding:6px 10px;margin-top:10px;font-size:11px;color:#92400E;border-radius:0 4px 4px 0}
+</style>
+</head>
+<body>
+<div class="wf-header">
+  <span><span class="wf-tag">SCR-404 + SCR-405</span> &nbsp; Audit Log / Template Management &nbsp;·&nbsp; Role: System Admin</span>
+  <span>FR-066, FR-057 &nbsp;·&nbsp; 2026-07-22</span>
+</div>
+<div class="page">
+
+  <!-- SCR-404: Audit Log Viewer -->
+  <div>
+    <div class="scr-tag">SCR-404 — /admin/audit</div>
+    <h2>Audit Log Viewer</h2>
+    <p style="font-size:13px;color:var(--ink-sec);margin-bottom:14px">Immutable log of all system and user actions.</p>
+    <div class="card">
+      <div class="card-body">
+        <div class="filters-row">
+          <input type="text" class="filter-input" placeholder="Actor (user / system)…"/>
+          <select class="filter-select"><option>All Event Types</option><option>Create</option><option>Update</option><option>Delete</option><option>Auth</option></select>
+          <select class="filter-select"><option>All Entities</option><option>User</option><option>Application</option><option>Threshold</option><option>Template</option></select>
+          <input type="date" class="filter-input" value="2026-07-01" style="width:120px"/>
+          <input type="date" class="filter-input" value="2026-07-22" style="width:120px"/>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-size:12px;color:var(--ink-sec)">4,821 events found</span>
+          <button class="btn-export">⬇ Export CSV</button>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr><th>Timestamp</th><th>Actor</th><th>Event</th><th>Entity</th><th></th></tr>
+          </thead>
+          <tbody>
+            <tr><td style="white-space:nowrap">Jul 22 · 14:34:11</td><td>arun@acme.com</td><td><span class="event-badge eb-update">UPDATE</span></td><td>AI Threshold</td><td><button class="link-btn">Details →</button></td></tr>
+            <tr><td style="white-space:nowrap">Jul 22 · 11:02:03</td><td>ananya@acme.com</td><td><span class="event-badge eb-create">CREATE</span></td><td>Decision</td><td><button class="link-btn">Details →</button></td></tr>
+            <tr><td style="white-space:nowrap">Jul 22 · 09:45:58</td><td>system</td><td><span class="event-badge eb-auth">AUTH</span></td><td>User Login</td><td><button class="link-btn">Details →</button></td></tr>
+            <tr><td style="white-space:nowrap">Jul 21 · 18:12:30</td><td>sneha@acme.com</td><td><span class="event-badge eb-delete">DELETE</span></td><td>Template</td><td><button class="link-btn">Details →</button></td></tr>
+            <tr><td style="white-space:nowrap">Jul 21 · 16:55:00</td><td>system</td><td><span class="event-badge eb-update">UPDATE</span></td><td>Business Rule</td><td><button class="link-btn">Details →</button></td></tr>
+          </tbody>
+        </table>
+        <div style="font-size:12px;color:var(--ink-sec);margin-top:8px">Showing 1–5 of 4,821 &nbsp;·&nbsp; Page 1 of 965</div>
+        <div class="spec-note">FR-066 · Details modal shows full JSON payload · Events are immutable · Retention: 2 years</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCR-405: Template Management -->
+  <div>
+    <div class="scr-tag">SCR-405 — /admin/templates</div>
+    <h2>Template Management</h2>
+    <p style="font-size:13px;color:var(--ink-sec);margin-bottom:14px">Create and manage email/SMS notification templates.</p>
+    <div class="template-shell">
+      <!-- Sidebar -->
+      <div class="template-sidebar">
+        <div class="ts-header"><span class="ts-title">Templates</span><button class="ts-new">+ New</button></div>
+        <div class="ts-filter">
+          <button class="ts-filter-btn active">All</button>
+          <button class="ts-filter-btn">Email</button>
+          <button class="ts-filter-btn">SMS</button>
+        </div>
+        <div class="template-item active">
+          <div class="template-item-name">Application Received</div>
+          <div class="template-item-type">Email · Active</div>
+        </div>
+        <div class="template-item">
+          <div class="template-item-name">Interview Scheduled</div>
+          <div class="template-item-type">Email · Active</div>
+        </div>
+        <div class="template-item">
+          <div class="template-item-name">Offer Letter</div>
+          <div class="template-item-type">Email · Active</div>
+        </div>
+        <div class="template-item">
+          <div class="template-item-name">SMS Reminder</div>
+          <div class="template-item-type">SMS · Active</div>
+        </div>
+        <div class="template-item">
+          <div class="template-item-name">Rejection Notice</div>
+          <div class="template-item-type">Email · Draft</div>
+        </div>
+      </div>
+      <!-- Editor -->
+      <div class="template-main">
+        <div class="editor-toolbar">
+          <span style="font-size:12px;font-weight:600;margin-right:8px">Application Received</span>
+          <div class="toolbar-btn" title="Bold"><b>B</b></div>
+          <div class="toolbar-btn" title="Italic"><i>I</i></div>
+          <div class="toolbar-btn" title="Link">🔗</div>
+          <div class="toolbar-btn" title="Token Picker">{ }</div>
+        </div>
+        <div style="padding:8px 14px;border-bottom:1px solid var(--border);background:var(--surface-1);display:flex;gap:8px;align-items:center">
+          <span style="font-size:11px;font-weight:600;color:var(--ink-sec)">Subject:</span>
+          <input style="flex:1;height:28px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-size:12px;background:var(--surface-0)" value="Your Application Has Been Received — {{job_title}}"/>
+        </div>
+        <div class="editor-area">
+          <p>Dear <span class="token-chip">{{candidate_name}}</span>,</p>
+          <br/>
+          <p>Thank you for applying for the position of <span class="token-chip">{{job_title}}</span> at <span class="token-chip">{{company_name}}</span>.</p>
+          <br/>
+          <p>Your Application ID is: <strong><span class="token-chip">{{application_id}}</span></strong></p>
+          <br/>
+          <p>Our team will review your application and get back to you within <span class="token-chip">{{review_sla_days}}</span> business days.</p>
+        </div>
+        <div class="editor-footer">
+          <button class="ef-btn ef-btn-secondary">Preview</button>
+          <button class="ef-btn ef-btn-secondary">Send Test</button>
+          <button class="ef-btn ef-btn-primary">Save Template</button>
+        </div>
+      </div>
+    </div>
+    <div class="spec-note">FR-057 · Token picker modal shows all available merge fields ({{candidate_name}}, {{job_title}}, etc.) · Preview renders with sample data</div>
+  </div>
+</div>
+</body>
+</html>

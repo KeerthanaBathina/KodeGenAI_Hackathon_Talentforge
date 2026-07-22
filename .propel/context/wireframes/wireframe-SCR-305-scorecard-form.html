@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SCR-305 — Scorecard Form | AI Interview App</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--brand:#6366F1;--accent:#06B6D4;--surface-0:#fff;--surface-1:#F8FAFC;--surface-2:#F1F5F9;--border:#E2E8F0;--ink:#0F172A;--ink-sec:#64748B;--ink-ter:#94A3B8;--success:#10B981;--warning:#F59E0B;--danger:#EF4444;--font:'Inter',sans-serif;--heading:'Plus Jakarta Sans',sans-serif;--shadow:0 1px 3px rgba(0,0,0,.06)}
+body{font-family:var(--font);background:var(--surface-1);display:flex;flex-direction:column;min-height:100vh}
+.wf-header{background:#1E293B;color:#fff;padding:10px 24px;font-size:12px;display:flex;justify-content:space-between}
+.wf-tag{background:#6366F1;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600}
+.app-bar{background:var(--surface-0);border-bottom:1px solid var(--border);padding:0 28px;height:52px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow)}
+.breadcrumb{font-size:12px;color:var(--ink-sec)}<br>.breadcrumb a{color:var(--brand);text-decoration:none}
+.page{display:flex;gap:20px;padding:24px 28px}
+.context-panel{width:260px;flex-shrink:0}
+.candidate-ctx{background:var(--surface-0);border:1px solid var(--border);border-radius:14px;padding:18px;box-shadow:var(--shadow);margin-bottom:14px}
+.ctx-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--brand),var(--accent));display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;margin-bottom:10px}
+.ctx-name{font-family:var(--heading);font-size:15px;font-weight:700;margin-bottom:2px}
+.ctx-role{font-size:13px;color:var(--ink-sec);margin-bottom:10px}
+.ctx-field{display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border)}
+.ctx-field:last-child{border-bottom:none}
+.main-form{flex:1}
+.stage-info{background:linear-gradient(135deg,#EEF2FF,#E0F2FE);border:1px solid #C7D2FE;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px}
+.stage-info strong{display:block;font-size:14px;margin-bottom:2px}
+.rubric-card{background:var(--surface-0);border:1px solid var(--border);border-radius:14px;padding:20px;box-shadow:var(--shadow);margin-bottom:14px}
+.rubric-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.rubric-title{font-family:var(--heading);font-size:14px;font-weight:700}
+.rubric-desc{font-size:12px;color:var(--ink-sec);margin-top:2px}
+.rubric-weight{font-size:11px;color:var(--ink-ter);background:var(--surface-2);padding:2px 7px;border-radius:5px}
+.scale-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.scale-label{font-size:11px;color:var(--ink-ter);width:60px;text-align:right}
+.scale-options{display:flex;gap:6px}
+.scale-btn{width:44px;height:44px;border-radius:10px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;cursor:pointer;background:var(--surface-0);color:var(--ink-sec);transition:.15s}
+.scale-btn:hover,.scale-btn.selected{border-color:var(--brand);background:#EEF2FF;color:var(--brand)}
+.scale-btn.selected-4{border-color:var(--success);background:#DCFCE7;color:var(--success)}
+.scale-btn.selected-5{border-color:var(--success);background:var(--success);color:#fff}
+.scale-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--ink-ter);margin-top:4px;padding:0 4px}
+.rubric-notes{width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px;font-family:var(--font);color:var(--ink);margin-top:10px;resize:vertical;min-height:56px}
+.rubric-notes:focus{outline:none;border-color:var(--brand)}
+/* Overall Recommendation */
+.recommendation-card{background:var(--surface-0);border:1px solid var(--border);border-radius:14px;padding:20px;box-shadow:var(--shadow)}
+.rec-options{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+.rec-btn{flex:1;min-width:120px;padding:12px;border:2px solid var(--border);border-radius:10px;text-align:center;cursor:pointer;background:var(--surface-0)}
+.rec-btn.rec-strong-yes{border-color:var(--success);background:#DCFCE7}
+.rec-btn.rec-yes{border-color:#86EFAC;background:#F0FDF4}
+.rec-btn.rec-no{border-color:#FCA5A5;background:var(--danger-s)}
+.rec-icon{font-size:20px;margin-bottom:4px}
+.rec-label{font-size:13px;font-weight:600}
+.btn-row{display:flex;gap:8px;margin-top:20px;justify-content:flex-end}
+.btn-primary{height:40px;padding:0 24px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+.btn-secondary{height:40px;padding:0 18px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;background:transparent;color:var(--ink-sec)}
+.spec-note{background:#FFFBEB;border-left:3px solid #F59E0B;padding:6px 10px;margin-top:8px;font-size:11px;color:#92400E;border-radius:0 4px 4px 0}
+</style>
+</head>
+<body>
+<div class="wf-header">
+  <span><span class="wf-tag">SCR-305</span> &nbsp; Scorecard Form &nbsp;·&nbsp; Route: <code>/hr/interviews/:stageId/scorecard</code> &nbsp;·&nbsp; Role: Technical Interviewer, HR Reviewer</span>
+  <span>FR-041, FR-045 &nbsp;·&nbsp; 2026-07-22</span>
+</div>
+<div class="app-bar">
+  <div>
+    <div style="font-size:12px;color:var(--ink-sec)"><a href="#" style="color:var(--brand)">Interviews</a> › <a href="#" style="color:var(--brand)">Rahul Kumar</a> › Scorecard</div>
+    <div style="font-family:var(--heading);font-size:16px;font-weight:700">Technical Interview Scorecard</div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <button class="btn-secondary" style="height:36px">Save Draft</button>
+    <button class="btn-primary" style="height:36px">Submit Scorecard</button>
+  </div>
+</div>
+<div class="page">
+  <!-- Context Panel -->
+  <div class="context-panel">
+    <div class="candidate-ctx">
+      <div class="ctx-avatar">RK</div>
+      <div class="ctx-name">Rahul Kumar</div>
+      <div class="ctx-role">Senior Frontend Engineer</div>
+      <div class="ctx-field"><span>AI Score</span><strong>82 / 100</strong></div>
+      <div class="ctx-field"><span>Path</span><strong>Auto-Shortlisted</strong></div>
+      <div class="ctx-field"><span>Stage</span><strong>Technical Interview</strong></div>
+      <div class="ctx-field"><span>Interviewer</span><strong>Arun Menon</strong></div>
+      <div class="ctx-field"><span>Duration</span><strong>45 min</strong></div>
+    </div>
+    <div style="background:var(--surface-0);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:12px;box-shadow:var(--shadow)">
+      <div style="font-weight:600;margin-bottom:8px">Score Summary</div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>Problem Solving</span><strong>4/5</strong></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>Technical Depth</span><strong>—</strong></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>Communication</span><strong>3/5</strong></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>Code Quality</span><strong>—</strong></div>
+      <div style="display:flex;justify-content:space-between"><span>System Design</span><strong>—</strong></div>
+      <hr style="margin:8px 0;border:none;border-top:1px solid var(--border)"/>
+      <div style="display:flex;justify-content:space-between"><span>Overall (weighted)</span><strong style="color:var(--brand)">—</strong></div>
+    </div>
+  </div>
+
+  <!-- Main Scorecard Form -->
+  <div class="main-form">
+    <div class="stage-info">
+      <strong>Technical Interview — System Design & Coding</strong>
+      July 25, 2026 · 2:00 PM IST · Google Meet · 45 minutes
+    </div>
+
+    <!-- Rubric: Problem Solving -->
+    <div class="rubric-card">
+      <div class="rubric-header">
+        <div><div class="rubric-title">Problem Solving</div><div class="rubric-desc">Ability to break down complex problems, apply analytical thinking, handle edge cases</div></div>
+        <span class="rubric-weight">Weight: 25%</span>
+      </div>
+      <div class="scale-row">
+        <span class="scale-label">Score</span>
+        <div class="scale-options">
+          <div class="scale-btn">1</div>
+          <div class="scale-btn">2</div>
+          <div class="scale-btn">3</div>
+          <div class="scale-btn selected-4 selected">4</div>
+          <div class="scale-btn">5</div>
+        </div>
+      </div>
+      <div class="scale-labels"><span>Poor</span><span>Below Avg</span><span>Average</span><span>Above Avg</span><span>Excellent</span></div>
+      <textarea class="rubric-notes" placeholder="Notes on problem solving approach…">Candidate demonstrated clear systematic approach. Identified key edge cases in the binary search problem efficiently.</textarea>
+    </div>
+
+    <!-- Rubric: Technical Depth -->
+    <div class="rubric-card">
+      <div class="rubric-header">
+        <div><div class="rubric-title">Technical Depth</div><div class="rubric-desc">Core CS knowledge, language proficiency, framework understanding, best practices</div></div>
+        <span class="rubric-weight">Weight: 30%</span>
+      </div>
+      <div class="scale-row">
+        <span class="scale-label">Score</span>
+        <div class="scale-options">
+          <div class="scale-btn">1</div>
+          <div class="scale-btn">2</div>
+          <div class="scale-btn">3</div>
+          <div class="scale-btn">4</div>
+          <div class="scale-btn">5</div>
+        </div>
+      </div>
+      <div class="scale-labels"><span>Poor</span><span>Below Avg</span><span>Average</span><span>Above Avg</span><span>Excellent</span></div>
+      <textarea class="rubric-notes" placeholder="Notes on technical depth…"></textarea>
+    </div>
+
+    <!-- Rubric: Communication -->
+    <div class="rubric-card">
+      <div class="rubric-header">
+        <div><div class="rubric-title">Communication</div><div class="rubric-desc">Clarity of thought, ability to explain technical concepts, active listening</div></div>
+        <span class="rubric-weight">Weight: 20%</span>
+      </div>
+      <div class="scale-row">
+        <span class="scale-label">Score</span>
+        <div class="scale-options">
+          <div class="scale-btn">1</div>
+          <div class="scale-btn">2</div>
+          <div class="scale-btn selected">3</div>
+          <div class="scale-btn">4</div>
+          <div class="scale-btn">5</div>
+        </div>
+      </div>
+      <div class="scale-labels"><span>Poor</span><span>Below Avg</span><span>Average</span><span>Above Avg</span><span>Excellent</span></div>
+      <textarea class="rubric-notes" placeholder="Notes on communication…">Good verbal communication, though explanations of distributed concepts were brief.</textarea>
+    </div>
+
+    <!-- Overall Recommendation -->
+    <div class="recommendation-card">
+      <div style="font-family:var(--heading);font-size:15px;font-weight:700;margin-bottom:4px">Overall Recommendation</div>
+      <div style="font-size:13px;color:var(--ink-sec)">Based on your assessment, would you recommend this candidate for the next stage?</div>
+      <div class="rec-options">
+        <div class="rec-btn rec-strong-yes"><div class="rec-icon">👍👍</div><div class="rec-label">Strong Yes</div></div>
+        <div class="rec-btn rec-yes"><div class="rec-icon">👍</div><div class="rec-label">Yes</div></div>
+        <div class="rec-btn"><div class="rec-icon">🤔</div><div class="rec-label">Maybe</div></div>
+        <div class="rec-btn rec-no"><div class="rec-icon">👎</div><div class="rec-label">No</div></div>
+      </div>
+      <div class="spec-note">FR-041 · Recommendation feeds into final decision workflow · Cannot change after submission · FR-045</div>
+      <div class="btn-row">
+        <button class="btn-secondary">Save Draft</button>
+        <button class="btn-primary">Submit Scorecard</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

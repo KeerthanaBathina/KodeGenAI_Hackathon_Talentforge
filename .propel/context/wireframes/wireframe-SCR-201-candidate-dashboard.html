@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SCR-010 — Candidate Dashboard | AI Interview App</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-brand-primary: #6366F1;
+      --color-brand-accent: #06B6D4;
+      --color-surface-0: #FFFFFF;
+      --color-surface-1: #F8FAFC;
+      --color-surface-2: #F1F5F9;
+      --color-border: #E2E8F0;
+      --color-ink-primary: #0F172A;
+      --color-ink-secondary: #64748B;
+      --color-ink-tertiary: #94A3B8;
+      --color-success: #10B981;
+      --color-success-surface: #D1FAE5;
+      --color-warning: #F59E0B;
+      --color-warning-surface: #FEF3C7;
+      --color-danger: #EF4444;
+      --color-danger-surface: #FEE2E2;
+      --color-info: #3B82F6;
+      --color-info-surface: #DBEAFE;
+      --font-body: 'Inter', sans-serif;
+      --font-heading: 'Plus Jakarta Sans', sans-serif;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+    }
+    body { font-family: var(--font-body); background: var(--color-surface-1); color: var(--color-ink-primary); min-height: 100vh; display: flex; flex-direction: column; }
+    .wf-header { background: #1E293B; color: white; padding: 10px 40px; font-size: 12px; display: flex; justify-content: space-between; align-items: center; }
+    .wf-tag { background: #6366F1; color: white; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
+    /* NAV-001 */
+    nav { display: flex; align-items: center; justify-content: space-between; padding: 0 40px; height: 64px; background: var(--color-surface-0); border-bottom: 1px solid var(--color-border); box-shadow: var(--shadow-sm); }
+    .nav-logo { display: flex; align-items: center; gap: 8px; font-family: var(--font-heading); font-weight: 700; font-size: 18px; color: var(--color-brand-primary); }
+    .nav-logo-mark { width: 32px; height: 32px; background: var(--color-brand-primary); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: 700; }
+    .nav-links { display: flex; gap: 4px; }
+    .nav-link { padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; color: var(--color-ink-secondary); text-decoration: none; }
+    .nav-link.active { color: var(--color-brand-primary); background: #EEF2FF; }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+    .notification-btn { width: 40px; height: 40px; border-radius: 8px; background: var(--color-surface-1); border: 1px solid var(--color-border); display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; font-size: 18px; }
+    .badge-dot { position: absolute; top: 8px; right: 8px; width: 8px; height: 8px; background: var(--color-danger); border-radius: 50%; border: 2px solid white; }
+    .avatar { width: 36px; height: 36px; background: var(--color-brand-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: 700; cursor: pointer; }
+    /* Page content */
+    .page-content { max-width: 1280px; margin: 0 auto; padding: 32px 40px; width: 100%; }
+    .page-greeting { margin-bottom: 28px; }
+    .page-greeting h1 { font-family: var(--font-heading); font-size: 26px; font-weight: 700; }
+    .page-greeting p { color: var(--color-ink-secondary); font-size: 15px; margin-top: 4px; }
+    /* Profile completion card */
+    .profile-card { background: linear-gradient(135deg, #EEF2FF, #E0F2FE); border: 1px solid #C7D2FE; border-radius: 16px; padding: 24px 28px; margin-bottom: 28px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+    .profile-card-left h3 { font-family: var(--font-heading); font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+    .profile-card-left p { font-size: 13px; color: var(--color-ink-secondary); margin-bottom: 12px; }
+    .progress-bar-wrap { display: flex; align-items: center; gap: 12px; }
+    .progress-bar { height: 8px; border-radius: 4px; background: rgba(255,255,255,0.7); flex: 1; max-width: 240px; }
+    .progress-fill { height: 100%; border-radius: 4px; background: var(--color-brand-primary); width: 65%; }
+    .progress-label { font-size: 13px; font-weight: 600; color: var(--color-brand-primary); }
+    .profile-steps { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .profile-step { font-size: 12px; padding: 4px 10px; border-radius: 20px; border: 1px solid; }
+    .profile-step.done { background: var(--color-success-surface); color: var(--color-success); border-color: #6EE7B7; }
+    .profile-step.todo { background: white; color: var(--color-ink-secondary); border-color: var(--color-border); }
+    .btn-complete-profile { background: var(--color-brand-primary); color: white; border: none; border-radius: 8px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    /* Section header */
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .section-header h2 { font-family: var(--font-heading); font-size: 18px; font-weight: 700; }
+    .section-header a { font-size: 14px; color: var(--color-brand-primary); text-decoration: none; font-weight: 500; }
+    /* Application cards */
+    .apps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-bottom: 40px; }
+    .app-card { background: var(--color-surface-0); border: 1px solid var(--color-border); border-radius: 14px; padding: 22px; box-shadow: var(--shadow-sm); }
+    .app-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .app-job-title { font-family: var(--font-heading); font-size: 16px; font-weight: 700; }
+    .app-dept { font-size: 13px; color: var(--color-ink-secondary); margin-top: 2px; }
+    .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; border: 1px solid; }
+    .badge-success { background: var(--color-success-surface); color: var(--color-success); border-color: #6EE7B7; }
+    .badge-warning { background: var(--color-warning-surface); color: var(--color-warning); border-color: #FCD34D; }
+    .badge-info { background: var(--color-info-surface); color: var(--color-info); border-color: #93C5FD; }
+    .badge-neutral { background: var(--color-surface-2); color: var(--color-ink-secondary); border-color: var(--color-border); }
+    .app-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 16px; }
+    .app-meta-dot { width: 4px; height: 4px; background: var(--color-ink-tertiary); border-radius: 50%; }
+    .app-meta-item { font-size: 13px; color: var(--color-ink-secondary); }
+    .app-card-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--color-border); padding-top: 14px; }
+    .btn-action { background: var(--color-brand-primary); color: white; border: none; border-radius: 7px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-ghost { background: transparent; color: var(--color-ink-secondary); border: 1px solid var(--color-border); border-radius: 7px; padding: 8px 16px; font-size: 13px; font-weight: 500; cursor: pointer; }
+    /* Job recommendations */
+    .jobs-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; margin-bottom: 40px; }
+    .job-card { background: var(--color-surface-0); border: 1px solid var(--color-border); border-radius: 14px; padding: 20px; box-shadow: var(--shadow-sm); }
+    .job-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+    .job-title { font-family: var(--font-heading); font-size: 15px; font-weight: 700; }
+    .bookmark-btn { color: var(--color-ink-tertiary); cursor: pointer; font-size: 16px; }
+    .job-meta { font-size: 12px; color: var(--color-ink-secondary); margin-bottom: 12px; line-height: 1.6; }
+    .match-score { display: flex; align-items: center; gap: 6px; margin-bottom: 14px; }
+    .match-bar { height: 6px; border-radius: 3px; background: var(--color-surface-2); flex: 1; }
+    .match-fill { height: 100%; border-radius: 3px; background: var(--color-brand-accent); }
+    .match-pct { font-size: 12px; font-weight: 600; color: var(--color-brand-accent); }
+    .btn-apply-sm { background: var(--color-brand-primary); color: white; border: none; border-radius: 7px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; width: 100%; }
+    .spec-note { background: #FFFBEB; border-left: 3px solid #F59E0B; padding: 8px 12px; margin-top: 8px; font-size: 12px; color: #92400E; border-radius: 0 4px 4px 0; }
+  </style>
+</head>
+<body>
+  <div class="wf-header">
+    <span><span class="wf-tag">SCR-010</span> &nbsp; Candidate Dashboard &nbsp;·&nbsp; Route: <code>/candidate/dashboard</code> &nbsp;·&nbsp; Role: Applicant</span>
+    <span>FR-007, FR-011 &nbsp;·&nbsp; 2026-07-22</span>
+  </div>
+
+  <!-- NAV-001: Candidate Top Nav -->
+  <nav>
+    <div class="nav-logo">
+      <div class="nav-logo-mark">TF</div>
+      TalentForge
+    </div>
+    <div class="nav-links">
+      <a href="#" class="nav-link active">My Dashboard</a>
+      <a href="#" class="nav-link">Browse Jobs</a>
+      <a href="#" class="nav-link">My Applications</a>
+    </div>
+    <div class="nav-right">
+      <div class="notification-btn">🔔<span class="badge-dot"></span></div>
+      <div class="avatar">JD</div>
+    </div>
+  </nav>
+
+  <div class="page-content">
+    <!-- Welcome -->
+    <div class="page-greeting">
+      <h1>Good morning, Jane 👋</h1>
+      <p>You have 2 active applications and 3 recommended jobs waiting for you.</p>
+    </div>
+
+    <!-- Profile Completion Card (DAT-005 Progress Bar) -->
+    <div class="profile-card">
+      <div class="profile-card-left">
+        <h3>Complete your profile to stand out</h3>
+        <p>A complete profile increases your interview chances by 3×</p>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar"><div class="progress-fill"></div></div>
+          <span class="progress-label">65%</span>
+        </div>
+        <div class="profile-steps">
+          <span class="profile-step done">✓ Contact details</span>
+          <span class="profile-step done">✓ Resume uploaded</span>
+          <span class="profile-step todo">+ Work experience</span>
+          <span class="profile-step todo">+ Skills</span>
+          <span class="profile-step todo">+ Education</span>
+        </div>
+      </div>
+      <button class="btn-complete-profile">Complete Profile →</button>
+    </div>
+    <div class="spec-note">DAT-005 Progress Bar · Profile completion checklist · FR-007</div>
+
+    <!-- Active Applications -->
+    <div class="section-header">
+      <h2>Active Applications</h2>
+      <a href="#">View all →</a>
+    </div>
+    <div class="apps-grid">
+      <!-- App Card 1: Interview stage -->
+      <div class="app-card">
+        <div class="app-card-header">
+          <div>
+            <div class="app-job-title">Senior Frontend Engineer</div>
+            <div class="app-dept">Engineering · Bengaluru</div>
+          </div>
+          <span class="badge badge-info">Technical Interview</span>
+        </div>
+        <div class="app-meta">
+          <span class="app-meta-item">Applied Jul 18</span>
+          <span class="app-meta-dot"></span>
+          <span class="app-meta-item">App #TF-2024-0142</span>
+        </div>
+        <div class="app-card-footer">
+          <button class="btn-action">Schedule Interview</button>
+          <button class="btn-ghost">View Timeline</button>
+        </div>
+      </div>
+      <!-- App Card 2: Screening -->
+      <div class="app-card">
+        <div class="app-card-header">
+          <div>
+            <div class="app-job-title">Product Manager — Growth</div>
+            <div class="app-dept">Product · Remote</div>
+          </div>
+          <span class="badge badge-warning">AI Screening</span>
+        </div>
+        <div class="app-meta">
+          <span class="app-meta-item">Applied Jul 21</span>
+          <span class="app-meta-dot"></span>
+          <span class="app-meta-item">App #TF-2024-0156</span>
+        </div>
+        <div class="app-card-footer">
+          <button class="btn-ghost" style="cursor:default;opacity:0.6">Screening in progress…</button>
+          <button class="btn-ghost">View Timeline</button>
+        </div>
+      </div>
+      <!-- App Card 3: Offer Received -->
+      <div class="app-card" style="border-color:#6EE7B7;background:#F0FDF4;">
+        <div class="app-card-header">
+          <div>
+            <div class="app-job-title">Data Analyst</div>
+            <div class="app-dept">Analytics · Hyderabad</div>
+          </div>
+          <span class="badge badge-success">Offer Received 🎉</span>
+        </div>
+        <div class="app-meta">
+          <span class="app-meta-item">Applied Jul 10</span>
+          <span class="app-meta-dot"></span>
+          <span class="app-meta-item">Offer expires Jul 28</span>
+        </div>
+        <div class="app-card-footer">
+          <button class="btn-action" style="background:#10B981;">Review Offer</button>
+          <button class="btn-ghost">View Timeline</button>
+        </div>
+      </div>
+    </div>
+    <div class="spec-note">DAT-010 Application Card · Context-dependent action buttons · FR-011</div>
+
+    <!-- Recommended Jobs -->
+    <div class="section-header">
+      <h2>Recommended for you</h2>
+      <a href="#">Browse all jobs →</a>
+    </div>
+    <div class="jobs-row">
+      <div class="job-card">
+        <div class="job-card-header">
+          <div class="job-title">Full Stack Developer</div>
+          <span class="bookmark-btn">🔖</span>
+        </div>
+        <p class="job-meta">Engineering · Bengaluru · Full-time<br />Experience: 3–5 years</p>
+        <div class="match-score">
+          <span style="font-size:12px;color:var(--color-ink-secondary);">Match</span>
+          <div class="match-bar"><div class="match-fill" style="width:87%;"></div></div>
+          <span class="match-pct">87%</span>
+        </div>
+        <button class="btn-apply-sm">Apply Now →</button>
+      </div>
+      <div class="job-card">
+        <div class="job-card-header">
+          <div class="job-title">UX Designer</div>
+          <span class="bookmark-btn">🔖</span>
+        </div>
+        <p class="job-meta">Design · Remote · Full-time<br />Experience: 2–4 years</p>
+        <div class="match-score">
+          <span style="font-size:12px;color:var(--color-ink-secondary);">Match</span>
+          <div class="match-bar"><div class="match-fill" style="width:74%;"></div></div>
+          <span class="match-pct">74%</span>
+        </div>
+        <button class="btn-apply-sm">Apply Now →</button>
+      </div>
+      <div class="job-card">
+        <div class="job-card-header">
+          <div class="job-title">DevOps Engineer</div>
+          <span class="bookmark-btn">🔖</span>
+        </div>
+        <p class="job-meta">Infrastructure · Pune · Full-time<br />Experience: 4–6 years</p>
+        <div class="match-score">
+          <span style="font-size:12px;color:var(--color-ink-secondary);">Match</span>
+          <div class="match-bar"><div class="match-fill" style="width:61%;"></div></div>
+          <span class="match-pct">61%</span>
+        </div>
+        <button class="btn-apply-sm">Apply Now →</button>
+      </div>
+    </div>
+    <div class="spec-note">DAT-011 Job Card · Match score via resume parse · BR-accent for score bar · FR-011</div>
+  </div>
+</body>
+</html>

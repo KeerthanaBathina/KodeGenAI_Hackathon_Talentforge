@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SCR-402 — User Management | AI Interview App</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--brand:#6366F1;--surface-0:#fff;--surface-1:#F8FAFC;--surface-2:#F1F5F9;--border:#E2E8F0;--ink:#0F172A;--ink-sec:#64748B;--ink-ter:#94A3B8;--success:#10B981;--success-s:#D1FAE5;--warning:#F59E0B;--danger:#EF4444;--danger-s:#FEE2E2;--info:#3B82F6;--info-s:#DBEAFE;--font:'Inter',sans-serif;--heading:'Plus Jakarta Sans',sans-serif;--shadow:0 1px 3px rgba(0,0,0,.06)}
+body{font-family:var(--font);background:var(--surface-1);display:flex;flex-direction:column;min-height:100vh}
+.wf-header{background:#1E293B;color:#fff;padding:10px 24px;font-size:12px;display:flex;justify-content:space-between}
+.wf-tag{background:#6366F1;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600}
+.app-bar{background:var(--surface-0);border-bottom:1px solid var(--border);padding:0 28px;height:56px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow)}
+.page-title{font-family:var(--heading);font-size:17px;font-weight:700}
+.page{padding:24px 28px;display:flex;gap:20px}
+.main-table{flex:1}
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.search-box{flex:1;max-width:320px;height:38px;border:1px solid var(--border);border-radius:8px;padding:0 12px 0 36px;font-size:13px;font-family:var(--font);color:var(--ink);background:var(--surface-0) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2394A3B8' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.867-3.834zm-5.242 1.656a5 5 0 1 1 0-10 5 5 0 0 1 0 10z'/%3E%3C/svg%3E") 10px center no-repeat}
+.filter-select{height:38px;border:1px solid var(--border);border-radius:8px;padding:0 10px;font-size:13px;background:var(--surface-0);font-family:var(--font);color:var(--ink)}
+.btn-primary{height:38px;padding:0 18px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.data-table{width:100%;border-collapse:collapse;background:var(--surface-0);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
+.data-table th{background:var(--surface-2);padding:11px 16px;text-align:left;font-size:11px;font-weight:600;color:var(--ink-ter);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border)}
+.data-table td{padding:12px 16px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:#F8FAFC}
+.avatar-sm{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;margin-right:8px;vertical-align:middle}
+.role-badge{display:inline-flex;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:500;border:1px solid}
+.rb-admin{background:#FFF3E0;color:#C2410C;border-color:#FDBA74}
+.rb-hr{background:var(--info-s);color:var(--info);border-color:#93C5FD}
+.rb-recruiter{background:#EDE9FE;color:#7C3AED;border-color:#C4B5FD}
+.rb-interviewer{background:var(--success-s);color:var(--success);border-color:#6EE7B7}
+.rb-candidate{background:var(--surface-2);color:var(--ink-sec);border-color:var(--border)}
+.status-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px}
+.dot-active{background:var(--success)}.dot-inactive{background:var(--ink-ter)}.dot-locked{background:var(--danger)}
+.action-link{color:var(--brand);text-decoration:none;font-size:13px;cursor:pointer;margin-right:8px}
+.action-danger{color:var(--danger);font-size:13px;cursor:pointer}
+/* Right panel */
+.detail-panel{width:300px;background:var(--surface-0);border:1px solid var(--border);border-radius:14px;padding:20px;box-shadow:var(--shadow);flex-shrink:0;height:fit-content}
+.dp-avatar{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--brand),#7C3AED);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:700;margin:0 auto 12px}
+.dp-name{font-family:var(--heading);font-size:16px;font-weight:700;text-align:center;margin-bottom:2px}
+.dp-email{font-size:12px;color:var(--ink-sec);text-align:center;margin-bottom:14px}
+.dp-field{display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--border)}
+.dp-field:last-of-type{border-bottom:none}
+.dp-actions{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.dp-btn{height:36px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid}
+.dp-btn-primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+.dp-btn-secondary{background:var(--surface-0);color:var(--ink-sec);border-color:var(--border)}
+.dp-btn-danger{background:var(--danger-s);color:var(--danger);border-color:#FCA5A5}
+.spec-note{background:#FFFBEB;border-left:3px solid #F59E0B;padding:6px 10px;margin-top:10px;font-size:11px;color:#92400E;border-radius:0 4px 4px 0}
+</style>
+</head>
+<body>
+<div class="wf-header">
+  <span><span class="wf-tag">SCR-402</span> &nbsp; User Management &nbsp;·&nbsp; Route: <code>/admin/users</code> &nbsp;·&nbsp; Role: System Admin</span>
+  <span>FR-063 &nbsp;·&nbsp; 2026-07-22</span>
+</div>
+<div class="app-bar">
+  <div class="page-title">User Management</div>
+  <button class="btn-primary">+ Create User</button>
+</div>
+<div class="page">
+  <div class="main-table">
+    <div class="toolbar">
+      <input class="search-box" type="text" placeholder="Search by name or email…" value=""/>
+      <select class="filter-select"><option>All Roles</option><option>Admin</option><option>HR Reviewer</option><option>Recruiter</option><option>Technical Interviewer</option></select>
+      <select class="filter-select"><option>All Statuses</option><option>Active</option><option>Inactive</option><option>Locked</option></select>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>User</th><th>Role</th><th>Status</th><th>Created</th><th>Last Login</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="avatar-sm" style="background:#6366F1">AM</span>Arun Menon <span style="font-size:11px;color:var(--ink-ter)">arun@acme.com</span></td>
+          <td><span class="role-badge rb-admin">Admin</span></td>
+          <td><span class="status-dot dot-active"></span>Active</td>
+          <td>Mar 12, 2026</td>
+          <td>Jul 22, 2026</td>
+          <td><a class="action-link">Edit</a><a class="action-link">View</a></td>
+        </tr>
+        <tr>
+          <td><span class="avatar-sm" style="background:#3B82F6">AR</span>Ananya Roy <span style="font-size:11px;color:var(--ink-ter)">ananya@acme.com</span></td>
+          <td><span class="role-badge rb-hr">HR Reviewer</span></td>
+          <td><span class="status-dot dot-active"></span>Active</td>
+          <td>Apr 2, 2026</td>
+          <td>Jul 21, 2026</td>
+          <td><a class="action-link">Edit</a><a class="action-link">View</a></td>
+        </tr>
+        <tr style="background:#FFFBEB">
+          <td><span class="avatar-sm" style="background:#F59E0B">RJ</span>Ramesh Joshi <span style="font-size:11px;color:var(--ink-ter)">ramesh@acme.com</span></td>
+          <td><span class="role-badge rb-interviewer">Interviewer</span></td>
+          <td><span class="status-dot dot-locked"></span><span style="color:var(--danger)">Locked</span></td>
+          <td>Jan 8, 2026</td>
+          <td>Jun 30, 2026</td>
+          <td><a class="action-link">Edit</a><a class="action-link">Unlock</a><a class="action-danger">Deactivate</a></td>
+        </tr>
+        <tr>
+          <td><span class="avatar-sm" style="background:#8B5CF6">SP</span>Sneha Patel <span style="font-size:11px;color:var(--ink-ter)">sneha@acme.com</span></td>
+          <td><span class="role-badge rb-recruiter">Recruiter</span></td>
+          <td><span class="status-dot dot-active"></span>Active</td>
+          <td>Feb 15, 2026</td>
+          <td>Jul 20, 2026</td>
+          <td><a class="action-link">Edit</a><a class="action-link">View</a></td>
+        </tr>
+        <tr>
+          <td><span class="avatar-sm" style="background:#64748B">JD</span>John Doe <span style="font-size:11px;color:var(--ink-ter)">johndoe@acme.com</span></td>
+          <td><span class="role-badge rb-candidate">Candidate</span></td>
+          <td><span class="status-dot dot-inactive"></span><span style="color:var(--ink-ter)">Inactive</span></td>
+          <td>Jun 1, 2026</td>
+          <td>Jul 5, 2026</td>
+          <td><a class="action-link">Edit</a><a class="action-danger">Delete</a></td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;font-size:13px;color:var(--ink-sec)">
+      <span>Showing 1–5 of 134 users</span>
+      <div style="display:flex;gap:8px">
+        <button class="dp-btn dp-btn-secondary" style="width:auto;padding:0 12px">← Prev</button>
+        <button class="dp-btn dp-btn-secondary" style="width:auto;padding:0 12px">Next →</button>
+      </div>
+    </div>
+    <div class="spec-note">FR-063 · Create user modal: name / email / role / department / send invite · Deactivate = soft delete (retain audit trail)</div>
+  </div>
+  <!-- Detail panel (selected user: Ananya Roy) -->
+  <div class="detail-panel">
+    <div class="dp-avatar">AR</div>
+    <div class="dp-name">Ananya Roy</div>
+    <div class="dp-email">ananya@acme.com</div>
+    <div class="dp-field"><span>Role</span><strong>HR Reviewer</strong></div>
+    <div class="dp-field"><span>Department</span><strong>Human Resources</strong></div>
+    <div class="dp-field"><span>Status</span><strong style="color:var(--success)">Active</strong></div>
+    <div class="dp-field"><span>MFA</span><strong>Enabled (TOTP)</strong></div>
+    <div class="dp-field"><span>Last Login</span><strong>Jul 21, 2026</strong></div>
+    <div class="dp-field"><span>Sessions</span><strong>1 active</strong></div>
+    <div class="dp-actions">
+      <button class="dp-btn dp-btn-primary">Edit User</button>
+      <button class="dp-btn dp-btn-secondary">Reset Password</button>
+      <button class="dp-btn dp-btn-secondary">Revoke Sessions</button>
+      <button class="dp-btn dp-btn-danger">Deactivate Account</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

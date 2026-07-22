@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SCR-301 — HR Dashboard | AI Interview App</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--brand:#6366F1;--accent:#06B6D4;--surface-0:#fff;--surface-1:#F8FAFC;--surface-2:#F1F5F9;--border:#E2E8F0;--ink:#0F172A;--ink-sec:#64748B;--ink-ter:#94A3B8;--success:#10B981;--success-s:#D1FAE5;--warning:#F59E0B;--warning-s:#FEF3C7;--danger:#EF4444;--danger-s:#FEE2E2;--info:#3B82F6;--info-s:#DBEAFE;--font:'Inter',sans-serif;--heading:'Plus Jakarta Sans',sans-serif;--shadow:0 1px 3px rgba(0,0,0,.06)}
+body{font-family:var(--font);background:var(--surface-1);min-height:100vh;display:flex;flex-direction:column}
+.wf-header{background:#1E293B;color:#fff;padding:10px 24px;font-size:12px;display:flex;justify-content:space-between}
+.wf-tag{background:#6366F1;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600}
+.alert-banner{display:flex;align-items:center;gap:10px;padding:10px 24px;font-size:13px;border-bottom:1px solid}
+.alert-danger{background:var(--danger-s);border-color:#FCA5A5;color:#991B1B}
+.alert-btn{background:rgba(0,0,0,.08);border:none;border-radius:5px;padding:3px 10px;font-size:12px;font-weight:500;cursor:pointer;color:inherit}
+.alert-x{margin-left:auto;cursor:pointer;opacity:.6}
+.app-shell{display:flex;flex:1}
+.sidebar{width:220px;background:var(--surface-0);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-header{padding:16px;border-bottom:1px solid var(--border)}
+.sidebar-logo{display:flex;align-items:center;gap:8px;font-family:var(--heading);font-weight:700;font-size:16px;color:var(--brand)}
+.sidebar-logo-mark{width:26px;height:26px;background:var(--brand);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700}
+.sidebar-nav{padding:10px 8px;flex:1}
+.sidebar-label{font-size:10px;font-weight:600;color:var(--ink-ter);text-transform:uppercase;letter-spacing:.08em;padding:8px 10px 4px}
+.sidebar-item{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:7px;font-size:13px;font-weight:500;color:var(--ink-sec);cursor:pointer;margin-bottom:1px;text-decoration:none}
+.sidebar-item.active{background:#EEF2FF;color:var(--brand)}
+.sidebar-badge{margin-left:auto;background:var(--danger);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:600}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.top-bar{background:var(--surface-0);border-bottom:1px solid var(--border);padding:0 28px;height:52px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow)}
+.page-title{font-family:var(--heading);font-size:17px;font-weight:700}
+.top-bar-right{display:flex;gap:10px;align-items:center}
+.notif-btn{width:34px;height:34px;border-radius:8px;background:var(--surface-1);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;font-size:15px}
+.badge-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;background:var(--danger);border-radius:50%;border:1.5px solid #fff}
+.avatar{width:32px;height:32px;background:var(--brand);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700}
+.content{padding:24px 28px;overflow-y:auto}
+/* Metrics */
+.metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.metric-card{background:var(--surface-0);border:1px solid var(--border);border-radius:14px;padding:20px;box-shadow:var(--shadow);cursor:pointer;transition:.15s}
+.metric-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.1);transform:translateY(-2px)}
+.mc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.mc-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.mc-icon-blue{background:var(--info-s)}
+.mc-icon-red{background:var(--danger-s)}
+.mc-icon-green{background:var(--success-s)}
+.mc-icon-amber{background:var(--warning-s)}
+.mc-num{font-family:var(--heading);font-size:36px;font-weight:700;line-height:1;margin-bottom:4px}
+.mc-label{font-size:13px;color:var(--ink-sec)}
+.mc-num-danger{color:var(--danger)}
+/* Alerts section */
+.alerts-section{margin-bottom:24px}
+.section-title{font-family:var(--heading);font-size:16px;font-weight:700;margin-bottom:14px}
+.alert-card{background:var(--surface-0);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow)}
+.alert-icon{font-size:20px;flex-shrink:0}
+.alert-msg{flex:1;font-size:13px}
+.alert-msg strong{display:block;margin-bottom:2px}
+.alert-msg span{color:var(--ink-sec)}
+.btn-alert-action{height:30px;padding:0 14px;background:var(--brand);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.alert-dismiss{color:var(--ink-ter);cursor:pointer;font-size:16px;flex-shrink:0}
+/* Activity feed */
+.activity-feed{background:var(--surface-0);border:1px solid var(--border);border-radius:14px;padding:20px;box-shadow:var(--shadow)}
+.activity-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.activity-item:last-child{border-bottom:none}
+.activity-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--brand),var(--accent));display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;flex-shrink:0}
+.activity-text{flex:1;font-size:13px}
+.activity-text strong{color:var(--ink)}
+.activity-text span{color:var(--ink-sec)}
+.activity-time{font-size:11px;color:var(--ink-ter);flex-shrink:0}
+.spec-note{background:#FFFBEB;border-left:3px solid #F59E0B;padding:8px 12px;margin-top:8px;font-size:12px;color:#92400E;border-radius:0 4px 4px 0}
+</style>
+</head>
+<body>
+<div class="wf-header">
+  <span><span class="wf-tag">SCR-301</span> &nbsp; HR Dashboard &nbsp;·&nbsp; Route: <code>/hr/dashboard</code> &nbsp;·&nbsp; Role: HR Reviewer, Recruiter, HR Manager</span>
+  <span>FR-029, FR-034, FR-036 &nbsp;·&nbsp; 2026-07-22</span>
+</div>
+<!-- FBK-004 Alert Banner -->
+<div class="alert-banner alert-danger">
+  <span>⏰</span><strong>5 candidates have breached review SLA</strong> — Immediate action required.
+  <button class="alert-btn">View overdue queue →</button>
+  <span class="alert-x">✕</span>
+</div>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo"><div class="sidebar-logo-mark">TF</div>TalentForge</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-label">Main</div>
+      <a class="sidebar-item active">📊 Dashboard</a>
+      <a class="sidebar-item">📋 Review Queue <span class="sidebar-badge">24</span></a>
+      <a class="sidebar-item">👥 Candidates</a>
+      <a class="sidebar-item">💼 Requisitions</a>
+      <div class="sidebar-label">Communications</div>
+      <a class="sidebar-item">✉️ Comm. Log</a>
+      <a class="sidebar-item">📅 Interviews</a>
+      <a class="sidebar-item">📈 Analytics</a>
+    </nav>
+  </aside>
+  <div class="main">
+    <div class="top-bar">
+      <span class="page-title">HR Dashboard</span>
+      <div class="top-bar-right">
+        <div class="notif-btn">🔔<span class="badge-dot"></span></div>
+        <div class="avatar">AR</div>
+      </div>
+    </div>
+    <div class="content">
+      <!-- DAT-008 Metrics -->
+      <div class="metrics-grid">
+        <div class="metric-card" style="border-color:#FCA5A5;background:linear-gradient(135deg,#fff,#FFF5F5)">
+          <div class="mc-header"><div class="mc-icon mc-icon-red">📋</div></div>
+          <div class="mc-num mc-num-danger">24</div>
+          <div class="mc-label">Pending Reviews</div>
+          <div style="font-size:12px;color:var(--danger);margin-top:4px">5 SLA breached</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-header"><div class="mc-icon mc-icon-red">⏰</div></div>
+          <div class="mc-num mc-num-danger">5</div>
+          <div class="mc-label">SLA Breaches</div>
+          <div style="font-size:12px;color:var(--ink-sec);margin-top:4px">Overdue candidates</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-header"><div class="mc-icon mc-icon-green">📅</div></div>
+          <div class="mc-num">12</div>
+          <div class="mc-label">Active Interviews</div>
+          <div style="font-size:12px;color:var(--ink-sec);margin-top:4px">Scheduled this week</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-header"><div class="mc-icon mc-icon-amber">✉️</div></div>
+          <div class="mc-num">3</div>
+          <div class="mc-label">Offers Pending Response</div>
+          <div style="font-size:12px;color:var(--ink-sec);margin-top:4px">Awaiting candidate reply</div>
+        </div>
+      </div>
+      <div class="spec-note">DAT-008 Metric Cards · Click each card to navigate to relevant filtered screen · FR-029, FR-034, FR-036</div>
+
+      <!-- Alerts -->
+      <div class="alerts-section">
+        <div class="section-title">Critical Alerts</div>
+        <div class="alert-card" style="border-color:#FCA5A5">
+          <span class="alert-icon">🚨</span>
+          <div class="alert-msg"><strong>Rahul Kumar — SLA Breached 6 hours ago</strong><span>Senior Frontend Engineer · Pending HR Review</span></div>
+          <button class="btn-alert-action">Review Now</button>
+          <span class="alert-dismiss">✕</span>
+        </div>
+        <div class="alert-card" style="border-color:#FCA5A5">
+          <span class="alert-icon">🚨</span>
+          <div class="alert-msg"><strong>4 more candidates — SLA Breached</strong><span>Multiple requisitions · Pending HR Review</span></div>
+          <button class="btn-alert-action">View All</button>
+          <span class="alert-dismiss">✕</span>
+        </div>
+        <div class="alert-card" style="border-color:#FCD34D">
+          <span class="alert-icon">⚠️</span>
+          <div class="alert-msg"><strong>AI Screening Degraded</strong><span>Fallback mode active — resume screening queued for batch processing</span></div>
+          <button class="btn-alert-action" style="background:#F59E0B">View Health</button>
+          <span class="alert-dismiss">✕</span>
+        </div>
+      </div>
+
+      <!-- Activity Feed -->
+      <div class="section-title">Recent Activity</div>
+      <div class="activity-feed">
+        <div class="activity-item">
+          <div class="activity-avatar">PV</div>
+          <div class="activity-text"><strong>Priya Verma</strong> <span>was shortlisted for Data Analyst by HR Reviewer Ananya.</span></div>
+          <span class="activity-time">2 min ago</span>
+        </div>
+        <div class="activity-item">
+          <div class="activity-avatar">SM</div>
+          <div class="activity-text"><strong>Sanjay Mehta</strong> <span>completed Technical Interview for DevOps Engineer. Scorecard submitted.</span></div>
+          <span class="activity-time">25 min ago</span>
+        </div>
+        <div class="activity-item">
+          <div class="activity-avatar">JD</div>
+          <div class="activity-text"><strong>Jane Doe</strong> <span>accepted offer for Senior Frontend Engineer. Start date: Aug 15, 2026.</span></div>
+          <span class="activity-time">1 hour ago</span>
+        </div>
+        <div class="activity-item">
+          <div class="activity-avatar">AK</div>
+          <div class="activity-text"><strong>Arjun Kumar</strong> <span>was rejected at HR Review stage for Product Manager role.</span></div>
+          <span class="activity-time">2 hours ago</span>
+        </div>
+      </div>
+      <div class="spec-note">Activity feed items are clickable → navigate to respective candidate detail screens · Real-time updates via WebSocket (FBK-011)</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

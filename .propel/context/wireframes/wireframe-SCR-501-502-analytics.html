@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SCR-501/502 — Analytics Dashboards | AI Interview App</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--brand:#6366F1;--accent:#06B6D4;--surface-0:#fff;--surface-1:#F8FAFC;--surface-2:#F1F5F9;--border:#E2E8F0;--ink:#0F172A;--ink-sec:#64748B;--ink-ter:#94A3B8;--success:#10B981;--success-s:#D1FAE5;--warning:#F59E0B;--danger:#EF4444;--danger-s:#FEE2E2;--font:'Inter',sans-serif;--heading:'Plus Jakarta Sans',sans-serif;--shadow:0 1px 3px rgba(0,0,0,.06)}
+body{font-family:var(--font);background:var(--surface-1);display:flex;flex-direction:column;min-height:100vh}
+.wf-header{background:#1E293B;color:#fff;padding:10px 24px;font-size:12px;display:flex;justify-content:space-between}
+.wf-tag{background:#6366F1;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600}
+.page{padding:24px 28px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+h2{font-family:var(--heading);font-size:17px;font-weight:700;margin-bottom:4px}
+.scr-tag{display:inline-block;background:#334155;color:#fff;padding:4px 12px;border-radius:6px;font-size:11px;font-weight:600;margin-bottom:10px}
+.card{background:var(--surface-0);border:1px solid var(--border);border-radius:14px;padding:20px;box-shadow:var(--shadow);margin-bottom:14px}
+/* KPI Cards */
+.kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+.kpi-card{background:var(--surface-1);border:1px solid var(--border);border-radius:10px;padding:14px}
+.kpi-num{font-family:var(--heading);font-size:28px;font-weight:700}
+.kpi-label{font-size:12px;color:var(--ink-sec)}
+.kpi-trend{font-size:11px;margin-top:3px}
+.trend-up{color:var(--success)}.trend-down{color:var(--danger)}
+/* Funnel chart */
+.funnel{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.funnel-bar-wrap{display:flex;align-items:center;gap:10px}
+.funnel-label{font-size:12px;color:var(--ink-sec);width:100px;text-align:right;flex-shrink:0}
+.funnel-bar-outer{flex:1;background:var(--surface-2);border-radius:4px;height:28px;overflow:hidden}
+.funnel-bar-inner{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:10px;font-size:12px;font-weight:600;color:#fff;transition:.3s}
+.funnel-count{font-size:12px;color:var(--ink-sec);width:40px;text-align:right;flex-shrink:0}
+/* Conversion table */
+.conv-table{width:100%;border-collapse:collapse;font-size:13px}
+.conv-table th{padding:8px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--ink-ter);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);background:var(--surface-2)}
+.conv-table td{padding:8px 12px;border-bottom:1px solid var(--border)}
+.conv-table tr:last-child td{border-bottom:none}
+/* AI Accuracy charts */
+.chart-placeholder{background:var(--surface-2);border:1px dashed var(--border);border-radius:8px;height:140px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--ink-ter);margin-bottom:10px}
+/* Confusion matrix */
+.confusion-matrix{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:320px;margin:0 auto 10px}
+.cm-cell{border-radius:10px;padding:16px;text-align:center}
+.cm-tp{background:#DCFCE7;border:1px solid #86EFAC}
+.cm-fp{background:var(--danger-s);border:1px solid #FCA5A5}
+.cm-fn{background:#FEF3C7;border:1px solid #FCD34D}
+.cm-tn{background:var(--success-s);border:1px solid #6EE7B7}
+.cm-num{font-family:var(--heading);font-size:26px;font-weight:700}
+.cm-label{font-size:11px;color:var(--ink-sec);margin-top:3px}
+.controls-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.ctrl-select,.ctrl-input{height:34px;border:1px solid var(--border);border-radius:8px;padding:0 10px;font-size:13px;background:var(--surface-0);font-family:var(--font);color:var(--ink)}
+.btn-export{height:32px;padding:0 14px;border:1px solid var(--border);border-radius:7px;font-size:12px;cursor:pointer;background:var(--surface-0);color:var(--ink-sec)}
+.spec-note{background:#FFFBEB;border-left:3px solid #F59E0B;padding:6px 10px;margin-top:6px;font-size:11px;color:#92400E;border-radius:0 4px 4px 0}
+</style>
+</head>
+<body>
+<div class="wf-header">
+  <span><span class="wf-tag">SCR-501 + SCR-502</span> &nbsp; Pipeline Analytics / AI Accuracy Dashboard &nbsp;·&nbsp; Role: HR Manager, Admin</span>
+  <span>FR-069–071 &nbsp;·&nbsp; 2026-07-22</span>
+</div>
+<div class="page">
+
+  <!-- SCR-501: Pipeline Analytics -->
+  <div>
+    <div class="scr-tag">SCR-501 — /analytics/pipeline</div>
+    <h2>Pipeline Analytics</h2>
+    <p style="font-size:13px;color:var(--ink-sec);margin-bottom:14px">Hiring funnel performance and stage conversion metrics.</p>
+    <!-- Date range controls -->
+    <div class="controls-row">
+      <select class="ctrl-select"><option>All Departments</option><option>Engineering</option><option>Product</option><option>HR</option></select>
+      <select class="ctrl-select"><option>Last 30 days</option><option>Last 90 days</option><option>This Quarter</option></select>
+      <button class="btn-export">⬇ Export CSV</button>
+    </div>
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-num">1,247</div><div class="kpi-label">Total Applications</div><div class="kpi-trend trend-up">↑ 12% vs last period</div></div>
+      <div class="kpi-card"><div class="kpi-num" style="color:var(--brand)">18.4%</div><div class="kpi-label">Offer Rate</div><div class="kpi-trend trend-up">↑ 2.1%</div></div>
+      <div class="kpi-card"><div class="kpi-num">23</div><div class="kpi-label">Avg Days to Hire</div><div class="kpi-trend trend-down">↑ 2 days (worsened)</div></div>
+      <div class="kpi-card"><div class="kpi-num" style="color:var(--success)">91.4%</div><div class="kpi-label">AI-Human Agreement</div><div class="kpi-trend trend-up">↑ 0.8%</div></div>
+    </div>
+    <!-- Hiring Funnel -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-family:var(--heading);font-size:14px;font-weight:700">Hiring Funnel</div>
+        <span style="font-size:12px;color:var(--ink-sec)">Jul 2026</span>
+      </div>
+      <div class="funnel">
+        <div class="funnel-bar-wrap">
+          <span class="funnel-label">Applied</span>
+          <div class="funnel-bar-outer"><div class="funnel-bar-inner" style="width:100%;background:var(--brand)">1,247</div></div>
+          <span class="funnel-count">1,247</span>
+        </div>
+        <div class="funnel-bar-wrap">
+          <span class="funnel-label">AI Screened</span>
+          <div class="funnel-bar-outer"><div class="funnel-bar-inner" style="width:100%;background:#7C3AED">1,247</div></div>
+          <span class="funnel-count">1,247</span>
+        </div>
+        <div class="funnel-bar-wrap">
+          <span class="funnel-label">Shortlisted</span>
+          <div class="funnel-bar-outer"><div class="funnel-bar-inner" style="width:60%;background:#8B5CF6">748</div></div>
+          <span class="funnel-count">748</span>
+        </div>
+        <div class="funnel-bar-wrap">
+          <span class="funnel-label">Interviewed</span>
+          <div class="funnel-bar-outer"><div class="funnel-bar-inner" style="width:38%;background:var(--accent)">474</div></div>
+          <span class="funnel-count">474</span>
+        </div>
+        <div class="funnel-bar-wrap">
+          <span class="funnel-label">Offered</span>
+          <div class="funnel-bar-outer"><div class="funnel-bar-inner" style="width:18%;background:var(--success)">229</div></div>
+          <span class="funnel-count">229</span>
+        </div>
+        <div class="funnel-bar-wrap">
+          <span class="funnel-label">Accepted</span>
+          <div class="funnel-bar-outer"><div class="funnel-bar-inner" style="width:14%;background:#059669">175</div></div>
+          <span class="funnel-count">175</span>
+        </div>
+      </div>
+    </div>
+    <!-- Stage Conversion Table -->
+    <div class="card">
+      <div style="font-family:var(--heading);font-size:14px;font-weight:700;margin-bottom:10px">Stage Conversion Rates</div>
+      <table class="conv-table">
+        <thead><tr><th>Stage</th><th>Count</th><th>Conversion</th><th>Avg Time</th></tr></thead>
+        <tbody>
+          <tr><td>Applied → AI Screened</td><td>1,247</td><td style="color:var(--success)">100%</td><td>&lt; 1 min</td></tr>
+          <tr><td>Screened → Shortlisted</td><td>748</td><td>60.0%</td><td>2.1 days</td></tr>
+          <tr><td>Shortlisted → Interviewed</td><td>474</td><td>63.4%</td><td>4.8 days</td></tr>
+          <tr><td>Interviewed → Offered</td><td>229</td><td>48.3%</td><td>7.2 days</td></tr>
+          <tr><td>Offered → Accepted</td><td>175</td><td style="color:var(--success)">76.4%</td><td>5.1 days</td></tr>
+        </tbody>
+      </table>
+      <div class="spec-note">FR-069, FR-070 · CSV export includes all rows with date range · Click stage row to drill down by department / job family</div>
+    </div>
+  </div>
+
+  <!-- SCR-502: AI Accuracy Dashboard -->
+  <div>
+    <div class="scr-tag">SCR-502 — /analytics/ai-accuracy</div>
+    <h2>AI Accuracy Dashboard</h2>
+    <p style="font-size:13px;color:var(--ink-sec);margin-bottom:14px">Monitor AI model agreement and decision quality over time.</p>
+    <div class="controls-row">
+      <select class="ctrl-select"><option>gemini-hire-v2.3 (current)</option><option>gemini-hire-v2.2</option></select>
+      <input type="date" class="ctrl-input" value="2026-06-01"/>
+      <input type="date" class="ctrl-input" value="2026-07-22"/>
+    </div>
+    <!-- Agreement Rate Chart -->
+    <div class="card">
+      <div style="font-family:var(--heading);font-size:14px;font-weight:700;margin-bottom:6px">Human–AI Agreement Rate Over Time</div>
+      <div style="font-size:12px;color:var(--ink-sec);margin-bottom:10px">Rolling 7-day average &nbsp;·&nbsp; gemini-hire-v2.3</div>
+      <div class="chart-placeholder">📈 Line chart: Daily agreement % (y-axis: 80–100%) vs date (x-axis) · Target line: 90% · Model upgrade marker on Jul 15</div>
+      <div style="display:flex;gap:14px;font-size:12px;margin-top:6px">
+        <span style="color:var(--brand)">● Agreement Rate (current avg: 91.4%)</span>
+        <span style="color:var(--danger)">— Target (90%)</span>
+      </div>
+    </div>
+    <!-- Confusion Matrix -->
+    <div class="card">
+      <div style="font-family:var(--heading);font-size:14px;font-weight:700;margin-bottom:14px">Confusion Matrix</div>
+      <div class="confusion-matrix">
+        <div class="cm-cell cm-tp">
+          <div class="cm-num" style="color:var(--success)">612</div>
+          <div class="cm-label">True Positive</div>
+          <div style="font-size:11px;color:var(--success)">AI shortlisted, HR agreed</div>
+        </div>
+        <div class="cm-cell cm-fp">
+          <div class="cm-num" style="color:var(--danger)">38</div>
+          <div class="cm-label">False Positive</div>
+          <div style="font-size:11px;color:var(--danger)">AI shortlisted, HR rejected</div>
+        </div>
+        <div class="cm-cell cm-fn">
+          <div class="cm-num" style="color:#92400E">24</div>
+          <div class="cm-label">False Negative</div>
+          <div style="font-size:11px;color:#92400E">AI rejected, HR shortlisted</div>
+        </div>
+        <div class="cm-cell cm-tn">
+          <div class="cm-num" style="color:var(--success)">573</div>
+          <div class="cm-label">True Negative</div>
+          <div style="font-size:11px;color:var(--success)">AI rejected, HR agreed</div>
+        </div>
+      </div>
+      <div style="background:var(--surface-1);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:12px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>Precision</span><strong>94.1%</strong></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>Recall</span><strong>96.2%</strong></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>F1 Score</span><strong>95.1%</strong></div>
+        <div style="display:flex;justify-content:space-between"><span>Overall Agreement</span><strong style="color:var(--brand)">91.4%</strong></div>
+      </div>
+      <div class="spec-note">FR-071 · Confusion matrix calculated from HR override decisions · Updates daily at 00:00 UTC</div>
+    </div>
+    <!-- Drift Alert -->
+    <div style="background:#FEF3C7;border:1px solid #FCD34D;border-radius:10px;padding:14px;font-size:13px">
+      <div style="font-weight:600;margin-bottom:4px">⚠ Model Drift Alert (Informational)</div>
+      <div style="color:#92400E">Agreement rate dropped 1.2% over the last 14 days. Consider reviewing model thresholds in SCR-408.</div>
+      <a href="#" style="display:block;margin-top:8px;font-size:12px;color:var(--brand)">→ Go to AI Model Config</a>
+    </div>
+  </div>
+</div>
+</body>
+</html>

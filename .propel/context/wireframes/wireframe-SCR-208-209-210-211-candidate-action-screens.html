@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SCR-208/209/210/211 — Candidate Action Screens | AI Interview App</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--brand:#6366F1;--surface-0:#fff;--surface-1:#F8FAFC;--surface-2:#F1F5F9;--border:#E2E8F0;--ink:#0F172A;--ink-sec:#64748B;--ink-ter:#94A3B8;--success:#10B981;--success-s:#D1FAE5;--warning:#F59E0B;--warning-s:#FEF3C7;--danger:#EF4444;--danger-s:#FEE2E2;--info:#3B82F6;--info-s:#DBEAFE;--font:'Inter',sans-serif;--heading:'Plus Jakarta Sans',sans-serif}
+body{font-family:var(--font);background:var(--surface-1);min-height:100vh;display:flex;flex-direction:column}
+.wf-header{background:#1E293B;color:#fff;padding:10px 40px;font-size:12px;display:flex;justify-content:space-between}
+.wf-tag{background:#6366F1;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600}
+nav{display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:64px;background:var(--surface-0);border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:8px;font-family:var(--heading);font-weight:700;font-size:18px;color:var(--brand)}
+.logo-mark{width:32px;height:32px;background:var(--brand);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700}
+.page{padding:32px 40px;max-width:1400px;margin:0 auto;width:100%}
+.screens-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}
+.screen-wrapper{background:var(--surface-1);border:1px solid #CBD5E1;border-radius:16px;overflow:hidden}
+.screen-label{background:#334155;color:#fff;padding:8px 16px;font-size:12px;font-weight:600;display:flex;gap:8px;align-items:center}
+.scr-tag{background:#6366F1;border-radius:4px;padding:1px 6px;font-size:11px}
+.screen-body{padding:20px}
+/* Shared card */
+.card{background:var(--surface-0);border:1px solid var(--border);border-radius:14px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.card h2{font-family:var(--heading);font-size:18px;font-weight:700;margin-bottom:8px}
+.card p{font-size:14px;color:var(--ink-sec);line-height:1.6;margin-bottom:16px}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:500;border:1px solid;margin-bottom:12px}
+.badge-info{background:var(--info-s);color:var(--info);border-color:#93C5FD}
+.badge-warn{background:var(--warning-s);color:var(--warning);border-color:#FCD34D}
+.badge-danger{background:var(--danger-s);color:var(--danger);border-color:#FCA5A5}
+.badge-neutral{background:var(--surface-2);color:var(--ink-sec);border-color:var(--border)}
+.detail-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.detail-item{background:var(--surface-1);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:13px}
+.detail-label{color:var(--ink-ter);font-size:11px;display:block;margin-bottom:2px}
+.detail-value{font-weight:600;color:var(--ink)}
+.countdown-big{font-family:var(--heading);font-size:28px;font-weight:700;margin:12px 0}
+.btn-primary{width:100%;height:44px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font);margin-bottom:8px}
+.btn-secondary{width:100%;height:40px;background:transparent;border:1px solid var(--border);border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:var(--font);color:var(--ink-sec);margin-bottom:8px}
+.btn-danger{width:100%;height:40px;background:var(--danger-s);border:1px solid #FCA5A5;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:var(--font);color:var(--danger);margin-bottom:8px}
+.offer-summary{background:linear-gradient(135deg,#EEF2FF,#E0F2FE);border:1px solid #C7D2FE;border-radius:10px;padding:16px;margin-bottom:16px}
+.offer-field{display:flex;justify-content:space-between;font-size:14px;padding:5px 0;border-bottom:1px solid rgba(99,102,241,.1)}
+.offer-field:last-child{border-bottom:none}
+.spec-note{background:#FFFBEB;border-left:3px solid #F59E0B;padding:6px 10px;margin-top:8px;font-size:11px;color:#92400E;border-radius:0 4px 4px 0}
+</style>
+</head>
+<body>
+<div class="wf-header">
+  <span><span class="wf-tag">SCR-208/209/210/211</span> &nbsp; Candidate Action Screens &nbsp;·&nbsp; Role: Applicant</span>
+  <span>FR-037, FR-043, FR-053, FR-056, FR-012, BR-03, BR-17 &nbsp;·&nbsp; 2026-07-22</span>
+</div>
+<nav>
+  <div class="logo"><div class="logo-mark">TF</div>TalentForge</div>
+  <div style="width:36px;height:36px;background:var(--brand);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700">JD</div>
+</nav>
+<div class="page">
+  <div class="screens-grid">
+
+    <!-- SCR-208: Interview Confirmation -->
+    <div class="screen-wrapper">
+      <div class="screen-label"><span class="scr-tag">SCR-208</span> Interview Confirmation &nbsp;·&nbsp; /candidate/interviews/:id/confirm</div>
+      <div class="screen-body">
+        <div class="card">
+          <span class="badge badge-info">Technical Interview — Scheduled</span>
+          <h2>Confirm Your Interview</h2>
+          <p>Please confirm your attendance for the upcoming interview. You may also request a reschedule if needed.</p>
+          <div class="detail-row">
+            <div class="detail-item"><span class="detail-label">📅 Date</span><span class="detail-value">July 25, 2026</span></div>
+            <div class="detail-item"><span class="detail-label">⏰ Time</span><span class="detail-value">2:00 PM IST</span></div>
+            <div class="detail-item"><span class="detail-label">⏱ Duration</span><span class="detail-value">60 minutes</span></div>
+            <div class="detail-item"><span class="detail-label">👤 Interviewer</span><span class="detail-value">Arun Menon</span></div>
+          </div>
+          <div style="background:var(--info-s);border:1px solid #93C5FD;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px;display:flex;gap:8px;align-items:center">
+            🔗 <a href="#" style="color:var(--info);font-weight:500">Join via Google Meet →</a>
+          </div>
+          <a href="#" style="display:block;font-size:13px;color:var(--brand);margin-bottom:14px;font-weight:500">📆 Add to Google Calendar</a>
+          <button class="btn-primary">✓ Confirm Attendance</button>
+          <button class="btn-secondary">Request Reschedule</button>
+          <button class="btn-danger">Decline Interview</button>
+          <div class="spec-note">FR-037, FR-043 · Decline triggers withdraw flow modal · Reschedule opens calendar picker</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCR-209: Offer Review -->
+    <div class="screen-wrapper">
+      <div class="screen-label"><span class="scr-tag">SCR-209</span> Offer Review &nbsp;·&nbsp; /candidate/offers/:id</div>
+      <div class="screen-body">
+        <div class="card">
+          <span class="badge badge-info" style="background:var(--success-s);color:var(--success);border-color:#6EE7B7">🎉 Offer Received</span>
+          <h2>Your Offer — Senior Frontend Engineer</h2>
+          <div class="offer-summary">
+            <div class="offer-field"><span>Job Title</span><strong>Senior Frontend Engineer</strong></div>
+            <div class="offer-field"><span>Start Date</span><strong>August 15, 2026</strong></div>
+            <div class="offer-field"><span>Annual CTC</span><strong>₹22 LPA</strong></div>
+            <div class="offer-field"><span>Offer Expires</span><strong style="color:var(--warning)">July 28, 2026</strong></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:16px;font-size:13px;color:var(--ink-sec);align-items:center">
+            <span>⏰ Respond by:</span>
+            <span class="countdown-big" style="font-size:18px;color:var(--warning);margin:0">6 days remaining</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:14px">
+            <button class="btn-secondary" style="margin:0;flex:1">⬇ Download Offer Letter</button>
+            <button class="btn-secondary" style="margin:0;flex:1">🖨 Print</button>
+          </div>
+          <button class="btn-primary" style="background:var(--success)">✓ Accept Offer</button>
+          <button class="btn-danger">✗ Decline Offer</button>
+          <button class="btn-secondary">Request Extension</button>
+          <div class="spec-note">FR-053, FR-056 · Accept/Decline open MOD-004/MOD-005 confirmation modals · Countdown: green &gt;7d, yellow 3–7d, red &lt;3d</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCR-210: Application Blocked (Cooling Period) -->
+    <div class="screen-wrapper">
+      <div class="screen-label"><span class="scr-tag">SCR-210</span> Cooling Period Block &nbsp;·&nbsp; /candidate/apply/:id?blocked=cooling_period</div>
+      <div class="screen-body">
+        <div class="card" style="text-align:center">
+          <div style="font-size:48px;margin-bottom:16px">⏳</div>
+          <span class="badge badge-warn">Cooling Period Active</span>
+          <h2 style="margin-top:8px">You've recently applied for this position</h2>
+          <p>You can reapply after the cooling period ends.</p>
+          <div style="background:var(--warning-s);border:1px solid #FCD34D;border-radius:10px;padding:16px;margin-bottom:20px;text-align:left">
+            <div style="font-size:13px;font-weight:600;color:#92400E;margin-bottom:4px">Reapplication available on:</div>
+            <div style="font-size:18px;font-weight:700;color:#78350F">August 17, 2026</div>
+            <div style="font-size:12px;color:#92400E;margin-top:4px">25 days · 14 hours remaining</div>
+          </div>
+          <button class="btn-secondary">View My Application</button>
+          <button class="btn-primary" style="margin-top:4px">Browse Other Jobs →</button>
+          <div class="spec-note">FR-012, BR-03 · Cooling period duration configurable in SCR-406 Business Rules (default 30 days)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCR-211: Requisition Closed -->
+    <div class="screen-wrapper">
+      <div class="screen-label"><span class="scr-tag">SCR-211</span> Requisition Closed &nbsp;·&nbsp; /candidate/jobs/:id?status=closed</div>
+      <div class="screen-body">
+        <div class="card" style="text-align:center">
+          <div style="font-size:48px;margin-bottom:16px">🔒</div>
+          <span class="badge badge-neutral">Position Closed</span>
+          <h2 style="margin-top:8px">This Position is No Longer Available</h2>
+          <p>This job posting has been closed and is no longer accepting applications.</p>
+          <div style="background:var(--surface-1);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:20px;text-align:left">
+            <div style="font-size:13px;color:var(--ink-sec)">Reasons may include:</div>
+            <ul style="font-size:13px;color:var(--ink-sec);margin-top:6px;padding-left:16px;line-height:1.8">
+              <li>All positions have been filled</li>
+              <li>Requisition deadline has passed</li>
+              <li>Position has been put on hold</li>
+            </ul>
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;margin-bottom:16px;justify-content:center">
+            <input type="checkbox" style="width:16px;height:16px;accent-color:var(--brand)"/>
+            Notify me if this role reopens
+          </label>
+          <button class="btn-secondary">View Similar Jobs</button>
+          <button class="btn-primary" style="margin-top:4px">Browse All Open Positions →</button>
+          <div class="spec-note">BR-17 · Shown when requisition is closed/slots filled/deadline passed</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
