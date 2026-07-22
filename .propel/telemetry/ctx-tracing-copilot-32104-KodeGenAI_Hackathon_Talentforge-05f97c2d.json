@@ -1,0 +1,47 @@
+{
+  "schema_url": "https://opentelemetry.io/schemas/1.36.0",
+  "resource": {
+    "service.name": "propeliq.ctx-tracker",
+    "gen_ai.framework": "copilot",
+    "user.name": "MahasriMurugesan",
+    "user.full_name": "Mahasri",
+    "user.id": "MahasriMurugesan",
+    "user.email": "mahasri.murugesan@kanini.com",
+    "host.name": "KANINI-LTP-331",
+    "os.type": "windows",
+    "os.version": "11",
+    "host.arch": "AMD64"
+  },
+  "gen_ai.conversation.id": "copilot-32104-KodeGenAI_Hackathon_Talentforge-05f97c2d",
+  "gen_ai.provider.name": "openai",
+  "gen_ai.operation.name": "chat",
+  "gen_ai.request.model": null,
+  "gen_ai.system_instructions": [],
+  "context_window": {
+    "limit_tokens": 128000,
+    "counting_method": "tiktoken"
+  },
+  "created_at": "2026-07-22T17:58:14",
+  "updated_at": "2026-07-22T17:58:14",
+  "_cumulative_input_tokens": 7,
+  "turns": [
+    {
+      "turn_id": 1,
+      "event.name": "gen_ai.client.inference.operation.details",
+      "start_time": "2026-07-22T17:58:14",
+      "gen_ai.operation.name": "chat",
+      "gen_ai.input.messages": [
+        {
+          "role": "user",
+          "parts": [
+            {
+              "type": "text",
+              "content": "/plan-development-tasks"
+            }
+          ]
+        }
+      ],
+      "gen_ai.usage.input_tokens": 7
+    }
+  ]
+}
