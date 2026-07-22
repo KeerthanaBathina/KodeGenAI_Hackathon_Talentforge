@@ -12,7 +12,7 @@
     "os.version": "11",
     "host.arch": "AMD64"
   },
-  "gen_ai.conversation.id": "copilot-9724-KodeGenAI_Hackathon_Talentforge-05f97c2d",
+  "gen_ai.conversation.id": "copilot-6604-KodeGenAI_Hackathon_Talentforge-05f97c2d",
   "gen_ai.provider.name": "openai",
   "gen_ai.operation.name": "chat",
   "gen_ai.request.model": null,
@@ -21,14 +21,14 @@
     "limit_tokens": 128000,
     "counting_method": "tiktoken"
   },
-  "created_at": "2026-07-22T17:46:54",
-  "updated_at": "2026-07-22T18:35:28",
-  "_cumulative_input_tokens": 14,
+  "created_at": "2026-07-22T18:53:58",
+  "updated_at": "2026-07-22T18:53:58",
+  "_cumulative_input_tokens": 7,
   "turns": [
     {
       "turn_id": 1,
       "event.name": "gen_ai.client.inference.operation.details",
-      "start_time": "2026-07-22T17:46:54",
+      "start_time": "2026-07-22T18:53:58",
       "gen_ai.operation.name": "chat",
       "gen_ai.input.messages": [
         {
@@ -42,24 +42,6 @@
         }
       ],
       "gen_ai.usage.input_tokens": 7
-    },
-    {
-      "turn_id": 2,
-      "event.name": "gen_ai.client.inference.operation.details",
-      "start_time": "2026-07-22T18:35:28",
-      "gen_ai.operation.name": "chat",
-      "gen_ai.input.messages": [
-        {
-          "role": "user",
-          "parts": [
-            {
-              "type": "text",
-              "content": "/plan-development-tasks"
-            }
-          ]
-        }
-      ],
-      "gen_ai.usage.input_tokens": 14
     }
   ]
 }
