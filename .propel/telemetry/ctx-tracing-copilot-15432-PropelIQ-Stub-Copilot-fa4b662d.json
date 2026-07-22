@@ -1,0 +1,47 @@
+{
+  "schema_url": "https://opentelemetry.io/schemas/1.36.0",
+  "resource": {
+    "service.name": "propeliq.ctx-tracker",
+    "gen_ai.framework": "copilot",
+    "user.name": "Administrator",
+    "user.full_name": "Keerthanabathina",
+    "user.id": "Administrator",
+    "user.email": "keerthanabathina53@gmail.com",
+    "host.name": "KANINI-LTP-521",
+    "os.type": "windows",
+    "os.version": "11",
+    "host.arch": "AMD64"
+  },
+  "gen_ai.conversation.id": "copilot-15432-PropelIQ-Stub-Copilot-fa4b662d",
+  "gen_ai.provider.name": "openai",
+  "gen_ai.operation.name": "chat",
+  "gen_ai.request.model": null,
+  "gen_ai.system_instructions": [],
+  "context_window": {
+    "limit_tokens": 128000,
+    "counting_method": "estimated"
+  },
+  "created_at": "2026-07-21T12:52:58",
+  "updated_at": "2026-07-21T12:52:58",
+  "_cumulative_input_tokens": 4,
+  "turns": [
+    {
+      "turn_id": 1,
+      "event.name": "gen_ai.client.inference.operation.details",
+      "start_time": "2026-07-21T12:52:58",
+      "gen_ai.operation.name": "chat",
+      "gen_ai.input.messages": [
+        {
+          "role": "user",
+          "parts": [
+            {
+              "type": "text",
+              "content": "/create-figma-spec "
+            }
+          ]
+        }
+      ],
+      "gen_ai.usage.input_tokens": 4
+    }
+  ]
+}
