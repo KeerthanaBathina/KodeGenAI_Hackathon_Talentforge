@@ -3,7 +3,7 @@ id: task_002
 us_id: us_001
 epic: EP-DATA
 title: "Define Application Pipeline Prisma Models — Applications through AuditEvents with FK onDelete Policies"
-status: not-started
+status: done
 layer: backend
 effort: 5h
 priority: critical

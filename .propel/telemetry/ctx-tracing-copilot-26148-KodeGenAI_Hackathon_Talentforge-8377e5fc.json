@@ -1,0 +1,47 @@
+{
+  "schema_url": "https://opentelemetry.io/schemas/1.36.0",
+  "resource": {
+    "service.name": "propeliq.ctx-tracker",
+    "gen_ai.framework": "copilot",
+    "user.name": "SiddharthRajendran",
+    "user.full_name": "siddharth20s",
+    "user.id": "SiddharthRajendran",
+    "user.email": "Siddharth20s@users.noreply.github.com",
+    "host.name": "KANINI-LTP-714",
+    "os.type": "windows",
+    "os.version": "11",
+    "host.arch": "AMD64"
+  },
+  "gen_ai.conversation.id": "copilot-26148-KodeGenAI_Hackathon_Talentforge-8377e5fc",
+  "gen_ai.provider.name": "openai",
+  "gen_ai.operation.name": "chat",
+  "gen_ai.request.model": null,
+  "gen_ai.system_instructions": [],
+  "context_window": {
+    "limit_tokens": 128000,
+    "counting_method": "estimated"
+  },
+  "created_at": "2026-07-23T15:17:37",
+  "updated_at": "2026-07-23T15:17:37",
+  "_cumulative_input_tokens": 1207,
+  "turns": [
+    {
+      "turn_id": 1,
+      "event.name": "gen_ai.client.inference.operation.details",
+      "start_time": "2026-07-23T15:17:37",
+      "gen_ai.operation.name": "chat",
+      "gen_ai.input.messages": [
+        {
+          "role": "user",
+          "parts": [
+            {
+              "type": "text",
+              "content": "15:15:41.590 Running build in Washington, D.C., USA (East) \u00e2\u20ac\u201c iad1\r\n15:15:41.591 Build machine configuration: 2 cores, 8 GB\r\n15:15:41.693 Cloning github.com/KeerthanaBathina/KodeGenAI_Hackathon_Talentforge (Branch: siddharth, Commit: 4c60ff4)\r\n15:15:41.694 Previous build caches not available.\r\n15:15:42.126 Cloning completed: 433.000ms\r\n15:15:42.565 Running \"vercel build\"\r\n15:15:42.591 Vercel CLI 56.5.0\r\n15:15:42.915 Running \"install\" command: `npm ci`...\r\n15:15:43.526 npm error code EUSAGE\r\n15:15:43.532 npm error\r\n15:15:43.533 npm error The `npm ci` command can only install with an existing package-lock.json or\r\n15:15:43.533 npm error npm-shrinkwrap.json with lockfileVersion >= 1. Run an install with npm@5 or\r\n15:15:43.533 npm error later to generate a package-lock.json file, then try again.\r\n15:15:43.534 npm error\r\n15:15:43.534 npm error Clean install a project\r\n15:15:43.534 npm error\r\n15:15:43.535 npm error Usage:\r\n15:15:43.535 npm error npm ci\r\n15:15:43.535 npm error\r\n15:15:43.536 npm error Options:\r\n15:15:43.536 npm error [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]\r\n15:15:43.536 npm error [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]\r\n15:15:43.536 npm error [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]\r\n15:15:43.537 npm error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts]\r\n15:15:43.537 npm error [--allow-git <all|none|root>] [--no-audit] [--no-bin-links] [--no-fund]\r\n15:15:43.537 npm error [--dry-run]\r\n15:15:43.538 npm error [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]\r\n15:15:43.538 npm error [--workspaces] [--include-workspace-root] [--install-links]\r\n15:15:43.538 npm error\r\n15:15:43.539 npm error   --install-strategy\r\n15:15:43.539 npm error     Sets the strategy for installing packages in node_modules.\r\n15:15:43.539 npm error\r\n15:15:43.539 npm error   --legacy-bundling\r\n15:15:43.539 npm error     Instead of hoisting package installs in `node_modules`, install packages\r\n15:15:43.540 npm error\r\n15:15:43.540 npm error   --global-style\r\n15:15:43.540 npm error     Only install direct dependencies in the top level `node_modules`,\r\n15:15:43.540 npm error\r\n15:15:43.540 npm error   --omit\r\n15:15:43.540 npm error     Dependency types to omit from the installation tree on disk.\r\n15:15:43.540 npm error\r\n15:15:43.541 npm error   --include\r\n15:15:43.541 npm error     Option that allows for defining which types of dependencies to install.\r\n15:15:43.541 npm error\r\n15:15:43.542 npm error   --strict-peer-deps\r\n15:15:43.542 npm error     If set to `true`, and `--legacy-peer-deps` is not set, then _any_\r\n15:15:43.542 npm error\r\n15:15:43.542 npm error   --foreground-scripts\r\n15:15:43.542 npm error     Run all build scripts (ie, `preinstall`, `install`, and\r\n15:15:43.542 npm error\r\n15:15:43.542 npm error   --ignore-scripts\r\n15:15:43.542 npm error     If true, npm does not run scripts specified in package.json files.\r\n15:15:43.542 npm error\r\n15:15:43.542 npm error   --allow-git\r\n15:15:43.542 npm error     Limits the ability for npm to fetch dependencies from git references.\r\n15:15:43.542 npm error\r\n15:15:43.542 npm error   --audit\r\n15:15:43.542 npm error     When \"true\" submit audit reports alongside the current npm command to the\r\n15:15:43.542 npm error\r\n15:15:43.543 npm error   --bin-links\r\n15:15:43.543 npm error     Tells npm to create symlinks (or `.cmd` shims on Windows) for package\r\n15:15:43.543 npm error\r\n15:15:43.543 npm error   --fund\r\n15:15:43.543 npm error     When \"true\" displays the message at the end of each `npm install`\r\n15:15:43.543 npm error\r\n15:15:43.543 npm error   --dry-run\r\n15:15:43.543 npm error     Indicates that you don't want npm to make any changes and that it should\r\n15:15:43.543 npm error\r\n15:15:43.543 npm error   -w|--workspace\r\n15:15:43.543 npm error     Enable running a command in the context of the configured workspaces of the\r\n15:15:43.543 npm error\r\n15:15:43.543 npm error   --workspaces\r\n15:15:43.543 npm error     Set to true to run the command in the context of **all** configured\r\n15:15:43.543 npm error\r\n15:15:43.543 npm error   --include-workspace-root\r\n15:15:43.543 npm error     Include the workspace root when workspaces are enabled for a command.\r\n15:15:43.543 npm error\r\n15:15:43.543 npm error   --install-links\r\n15:15:43.543 npm error     When set file: protocol dependencies will be packed and installed as\r\n15:15:43.543 npm error\r\n15:15:43.543 npm error\r\n15:15:43.543 npm error aliases: clean-install, ic, install-clean, isntall-clean\r\n15:15:43.544 npm error\r\n15:15:43.544 npm error Run \"npm help ci\" for more info\r\n15:15:43.544 npm error A complete log of this run can be found in: /vercel/.npm/_logs/2026-07-23T09_45_43_050Z-debug-0.log\r\n15:15:43.577 Error: Command \"npm ci\" exited with 1"
+            }
+          ]
+        }
+      ],
+      "gen_ai.usage.input_tokens": 1207
+    }
+  ]
+}

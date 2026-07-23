@@ -20,6 +20,270 @@
 				"sessionEnd"
 			],
 			"problemMatcher": []
+		},
+		{
+			"label": "EPDATA Prisma Status Generate",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx prisma migrate status; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; npx prisma generate"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "EPDATA Build Real Migration SQL",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script | Out-File -FilePath prisma/migrations/202607230001_add_foundation_pipeline_schema/migration.sql -Encoding utf8"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "EPDATA Apply Migrations",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx prisma migrate deploy; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; npx prisma generate"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "EPDATA Rewrite Migration SQL No BOM",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; cmd /c \"npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > prisma\\migrations\\202607230001_add_foundation_pipeline_schema\\migration.sql\""
+			],
+			"isBackground": false
+		},
+		{
+			"label": "EPDATA Resolve Failed Migration",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx prisma migrate resolve --rolled-back 202607230001_add_foundation_pipeline_schema"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "EPDATA Deploy Migrations Retry",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx prisma migrate deploy"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "EPDATA Rewrite Migration SQL ASCII",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script | Set-Content -Path prisma/migrations/202607230001_add_foundation_pipeline_schema/migration.sql -Encoding ascii"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "EPDATA Deploy Migrations Final",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx prisma migrate deploy; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; npx prisma migrate status; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; npx prisma generate"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "EPDATA Resolve and Reapply RLS Migration",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx prisma migrate resolve --rolled-back 202607230002_enable_rls_policies; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; npx prisma migrate deploy; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; npx prisma migrate status; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; npx prisma generate"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "EPDATA Reapply RLS After Column Fix",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx prisma migrate resolve --rolled-back 202607230002_enable_rls_policies; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; npx prisma migrate deploy; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; npx prisma migrate status; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; npx prisma generate"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "EPDATA Validate Table Count and RLS",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; @\"\nSELECT COUNT(*) AS table_count\nFROM information_schema.tables\nWHERE table_schema = 'public'\n  AND table_type = 'BASE TABLE';\n\"@ | npx prisma db execute --stdin; @\"\nSELECT relname AS table_name, relrowsecurity AS rls_enabled\nFROM pg_class\nWHERE relname IN ('candidates','applications','screenings','reviews','decisions')\nORDER BY relname;\n\"@ | npx prisma db execute --stdin"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "EPDATA Run SQL Validation Queries",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx prisma db execute --file scripts/sql/table-count.sql; npx prisma db execute --file scripts/sql/rls-status.sql; npx prisma db execute --file scripts/sql/fk-check.sql"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "EPDATA Load Test Indexes",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm run load-test:indexes"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "EPDATA Load Test Indexes Retry",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm run load-test:indexes"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "EPDATA Load Test Indexes Final Output",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm run load-test:indexes"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "EPDATA Load Test Indexes After Phone Fix",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm run load-test:indexes"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "EPDATA Load Test Recheck",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm run load-test:indexes"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "EPDATA Check psql",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"psql --version"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "EPDATA Migrate Status",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx prisma migrate status"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "EPDATA Query Table and Columns",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; node -e \"const { PrismaClient } = require('@prisma/client'); const prisma = new PrismaClient(); (async () => { const tableCount = await prisma.$queryRawUnsafe(\\\"SELECT COUNT(*)::int AS table_count FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'\\\"); console.log('TABLE_COUNT', JSON.stringify(tableCount)); const cols = await prisma.$queryRawUnsafe(\\\"SELECT table_name, column_name, data_type, is_nullable, column_default FROM information_schema.columns WHERE table_schema='public' AND table_name IN ('candidates','applications','screenings','users') ORDER BY table_name, ordinal_position\\\"); console.log('COLUMN_SPOT_CHECK', JSON.stringify(cols, null, 2)); await prisma.$disconnect(); })().catch(async (e)=>{ console.error(e); await prisma.$disconnect(); process.exit(1); });\""
+			],
+			"isBackground": false
+		},
+		{
+			"label": "EPDATA Run Evidence Validation Script",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; node scripts/validate-us001-evidence.js"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "EPDATA Test RLS Script",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm run test:rls"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "EPDATA Test RLS Script Fallback",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm run test:rls"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "EPDATA Git Diff Summary",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location d:\\Kanini\\KodeGenAI_Hackathon_Talentforge; git status --short"
+			],
+			"isBackground": false
 		}
 	]
 }

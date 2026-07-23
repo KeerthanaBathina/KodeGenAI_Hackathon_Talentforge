@@ -1,0 +1,47 @@
+{
+  "schema_url": "https://opentelemetry.io/schemas/1.36.0",
+  "resource": {
+    "service.name": "propeliq.ctx-tracker",
+    "gen_ai.framework": "copilot",
+    "user.name": "SiddharthRajendran",
+    "user.full_name": "siddharth20s",
+    "user.id": "SiddharthRajendran",
+    "user.email": "Siddharth20s@users.noreply.github.com",
+    "host.name": "KANINI-LTP-714",
+    "os.type": "windows",
+    "os.version": "11",
+    "host.arch": "AMD64"
+  },
+  "gen_ai.conversation.id": "copilot-21112-KodeGenAI_Hackathon_Talentforge-8377e5fc",
+  "gen_ai.provider.name": "openai",
+  "gen_ai.operation.name": "chat",
+  "gen_ai.request.model": null,
+  "gen_ai.system_instructions": [],
+  "context_window": {
+    "limit_tokens": 128000,
+    "counting_method": "estimated"
+  },
+  "created_at": "2026-07-23T15:21:13",
+  "updated_at": "2026-07-23T15:21:13",
+  "_cumulative_input_tokens": 549,
+  "turns": [
+    {
+      "turn_id": 1,
+      "event.name": "gen_ai.client.inference.operation.details",
+      "start_time": "2026-07-23T15:21:13",
+      "gen_ai.operation.name": "chat",
+      "gen_ai.input.messages": [
+        {
+          "role": "user",
+          "parts": [
+            {
+              "type": "text",
+              "content": "15:19:16.959 Running build in Washington, D.C., USA (East) \u00e2\u20ac\u201c iad1\r\n15:19:16.960 Build machine configuration: 2 cores, 8 GB\r\n15:19:17.090 Cloning github.com/KeerthanaBathina/KodeGenAI_Hackathon_Talentforge (Branch: siddharth, Commit: 7376151)\r\n15:19:17.091 Previous build caches not available.\r\n15:19:17.866 Cloning completed: 776.000ms\r\n15:19:18.303 Running \"vercel build\"\r\n15:19:18.322 Vercel CLI 56.5.0\r\n15:19:18.593 Running \"install\" command: `cd frontend && npm ci`...\r\n15:19:20.924 npm warn deprecated whatwg-encoding@3.1.1: Use @exodus/bytes instead for a more spec-conformant and faster implementation\r\n15:19:21.206 npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported\r\n15:19:21.734 npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.\r\n15:19:22.777 npm warn deprecated @humanwhocodes/config-array@0.11.14: Use @eslint/config-array instead\r\n15:19:22.826 npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead\r\n15:19:22.870 npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting <email>\r\n15:19:24.253 npm warn deprecated glob@10.3.10: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting <email>\r\n15:19:24.313 npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting <email>\r\n15:19:29.599 npm warn deprecated eslint@8.57.0: This version is no longer supported. Please see https://eslint.org/version-support for other options."
+            }
+          ]
+        }
+      ],
+      "gen_ai.usage.input_tokens": 549
+    }
+  ]
+}

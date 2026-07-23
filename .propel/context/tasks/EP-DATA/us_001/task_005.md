@@ -3,7 +3,7 @@ id: task_005
 us_id: us_001
 epic: EP-DATA
 title: "Validate All Schema Scenarios — FK Integrity, Unique Constraints, Index Performance, RLS — DoD Sign-off"
-status: not-started
+status: done
 layer: backend
 effort: 3h
 priority: critical
