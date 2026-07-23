@@ -3,7 +3,7 @@ id: task_003
 us_id: us_004
 epic: EP-TECH
 title: "Unified CD Orchestration Workflow for Simultaneous Frontend and Backend Deployment"
-status: not-started
+status: done
 layer: ci-cd
 effort: 3h
 priority: critical

@@ -3,7 +3,7 @@ id: task_005
 us_id: us_003
 epic: EP-TECH
 title: "Validate Prisma Startup, Redis PING, Rate Limiting, and P95 — Definition of Done Sign-off"
-status: not-started
+status: in-progress
 layer: infrastructure
 effort: 2h
 priority: critical
@@ -258,6 +258,19 @@ Create `.propel/context/tasks/EP-TECH/us_003/validation-evidence.md`:
 - [ ] Scenario 1 validated — `db_ms` < 100 across 10 samples (evidence logged)
 - [ ] Scenario 2 validated — `redis_ms` < 50 across 10 samples (evidence logged)
 - [ ] Scenario 3 validated — HTTP 429 on 101st request, `Retry-After` header present (evidence logged)
+
+## Progress Update (2026-07-23)
+
+### Completed
+
+- Validation scripts and middleware instrumentation are implemented in the backend codebase.
+- Evidence template created: `.propel/context/tasks/EP-TECH/us_003/validation-evidence.md`.
+
+### Current Blockers
+
+- `backend/.env` is not present in the workspace, so runtime checks cannot connect to Supabase/Upstash.
+- Without live credentials and reachable services, scenarios 1/2/4 cannot be executed.
+- Scenario 3 depends on the app running with valid env configuration.
 - [ ] Scenario 4 validated — P95 < 500 ms, 0 errors (load test output logged)
 - [ ] `/ping` test route removed from `health.ts`
 - [ ] `npm run type-check` exits 0 after route removal

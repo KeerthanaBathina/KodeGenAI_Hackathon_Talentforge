@@ -3,7 +3,7 @@ id: task_001
 us_id: us_002
 epic: EP-TECH
 title: "Scaffold Express.js TypeScript Backend with Health and Ready Endpoints"
-status: not-started
+status: done
 layer: backend
 effort: 4h
 priority: critical

@@ -1,0 +1,263 @@
+name: Security Audit
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - frontend/package-lock.json
+      - backend/package-lock.json
+      - .github/workflows/security-audit.yml
+  schedule:
+    - cron: '0 8 * * 1'
+
+jobs:
+  audit-frontend:
+    name: Frontend npm Audit
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit (HIGH+)
+        id: audit
+        shell: bash
+        run: |
+          set +e
+          npm audit --audit-level=high --json > /tmp/audit-frontend.json
+          audit_exit=$?
+          set -e
+
+          echo "exit_code=${audit_exit}" >> "$GITHUB_OUTPUT"
+
+          if [ "${audit_exit}" = "0" ]; then
+            echo "audit_failed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "audit_failed=true" >> "$GITHUB_OUTPUT"
+
+          node <<'NODE'
+          const fs = require('fs');
+          const inputPath = '/tmp/audit-frontend.json';
+          const outputPath = '/tmp/audit-frontend-summary.md';
+          let data = {};
+          try {
+            data = JSON.parse(fs.readFileSync(inputPath, 'utf8'));
+          } catch {
+            fs.writeFileSync(outputPath, '| Unknown | HIGH | Unknown | Unknown |');
+            process.exit(0);
+          }
+
+          const vulnerabilities = Object.values(data.vulnerabilities || {})
+            .filter((v) => ['high', 'critical'].includes(String(v.severity).toLowerCase()))
+            .map((v) => {
+              const via = Array.isArray(v.via) ? v.via.find((entry) => typeof entry === 'object' && entry && entry.source) : undefined;
+              const advisory = via && typeof via.source === 'number' ? `GHSA-${via.source}` : 'Unknown';
+              const fix = v.fixAvailable
+                ? (typeof v.fixAvailable === 'object' && v.fixAvailable.name ? `${v.fixAvailable.name}` : 'Yes')
+                : 'No';
+              return `| ${v.name} | ${String(v.severity).toUpperCase()} | ${advisory} | ${fix} |`;
+            });
+
+          fs.writeFileSync(outputPath, vulnerabilities.length ? vulnerabilities.join('\n') : '| Unknown | HIGH | Unknown | Unknown |');
+          NODE
+
+          {
+            echo "summary<<EOF"
+            cat /tmp/audit-frontend-summary.md
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Post audit failure as PR comment
+        if: steps.audit.outputs.audit_failed == 'true' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const summary = `${{ steps.audit.outputs.summary }}`;
+            const body = [
+              '## Frontend Security Audit Failed',
+              '',
+              'HIGH or CRITICAL vulnerabilities found in frontend/ dependencies.',
+              '',
+              '| Package | Severity | Advisory | Fix Available |',
+              '|---------|----------|----------|---------------|',
+              summary,
+              '',
+              'Run `cd frontend && npm audit fix` to remediate patchable vulnerabilities.'
+            ].join('\n');
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+
+            const existing = comments.find((comment) =>
+              comment.user.login === 'github-actions[bot]' &&
+              comment.body.includes('Frontend Security Audit Failed')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body
+              });
+            }
+
+      - name: Fail job on HIGH+ vulnerabilities
+        if: steps.audit.outputs.audit_failed == 'true'
+        run: |
+          echo "npm audit found HIGH or CRITICAL vulnerabilities in frontend/."
+          exit 1
+
+  audit-backend:
+    name: Backend npm Audit
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit (HIGH+)
+        id: audit
+        shell: bash
+        run: |
+          set +e
+          npm audit --audit-level=high --json > /tmp/audit-backend.json
+          audit_exit=$?
+          set -e
+
+          echo "exit_code=${audit_exit}" >> "$GITHUB_OUTPUT"
+
+          if [ "${audit_exit}" = "0" ]; then
+            echo "audit_failed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "audit_failed=true" >> "$GITHUB_OUTPUT"
+
+          node <<'NODE'
+          const fs = require('fs');
+          const inputPath = '/tmp/audit-backend.json';
+          const outputPath = '/tmp/audit-backend-summary.md';
+          let data = {};
+          try {
+            data = JSON.parse(fs.readFileSync(inputPath, 'utf8'));
+          } catch {
+            fs.writeFileSync(outputPath, '| Unknown | HIGH | Unknown | Unknown |');
+            process.exit(0);
+          }
+
+          const vulnerabilities = Object.values(data.vulnerabilities || {})
+            .filter((v) => ['high', 'critical'].includes(String(v.severity).toLowerCase()))
+            .map((v) => {
+              const via = Array.isArray(v.via) ? v.via.find((entry) => typeof entry === 'object' && entry && entry.source) : undefined;
+              const advisory = via && typeof via.source === 'number' ? `GHSA-${via.source}` : 'Unknown';
+              const fix = v.fixAvailable
+                ? (typeof v.fixAvailable === 'object' && v.fixAvailable.name ? `${v.fixAvailable.name}` : 'Yes')
+                : 'No';
+              return `| ${v.name} | ${String(v.severity).toUpperCase()} | ${advisory} | ${fix} |`;
+            });
+
+          fs.writeFileSync(outputPath, vulnerabilities.length ? vulnerabilities.join('\n') : '| Unknown | HIGH | Unknown | Unknown |');
+          NODE
+
+          {
+            echo "summary<<EOF"
+            cat /tmp/audit-backend-summary.md
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Post audit failure as PR comment
+        if: steps.audit.outputs.audit_failed == 'true' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const summary = `${{ steps.audit.outputs.summary }}`;
+            const body = [
+              '## Backend Security Audit Failed',
+              '',
+              'HIGH or CRITICAL vulnerabilities found in backend/ dependencies.',
+              '',
+              '| Package | Severity | Advisory | Fix Available |',
+              '|---------|----------|----------|---------------|',
+              summary,
+              '',
+              'Run `cd backend && npm audit fix` to remediate patchable vulnerabilities.'
+            ].join('\n');
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+
+            const existing = comments.find((comment) =>
+              comment.user.login === 'github-actions[bot]' &&
+              comment.body.includes('Backend Security Audit Failed')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body
+              });
+            }
+
+      - name: Fail job on HIGH+ vulnerabilities
+        if: steps.audit.outputs.audit_failed == 'true'
+        run: |
+          echo "npm audit found HIGH or CRITICAL vulnerabilities in backend/."
+          exit 1

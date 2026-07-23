@@ -3,7 +3,7 @@ id: task_002
 us_id: us_003
 epic: EP-TECH
 title: "Formalise Upstash Redis Typed Client Singleton with Sub-50ms PING Health Check"
-status: not-started
+status: done
 layer: backend
 effort: 2h
 priority: critical

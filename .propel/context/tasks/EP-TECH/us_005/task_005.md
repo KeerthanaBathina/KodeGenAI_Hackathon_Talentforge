@@ -3,7 +3,7 @@ id: task_005
 us_id: us_005
 epic: EP-TECH
 title: "Validate All Security, Logging, and Observability Scenarios — DoD Sign-off"
-status: not-started
+status: in-progress
 layer: backend
 effort: 3h
 priority: critical

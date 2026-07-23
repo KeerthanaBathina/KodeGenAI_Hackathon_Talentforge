@@ -3,7 +3,7 @@ id: task_001
 us_id: us_001
 epic: EP-TECH
 title: "Scaffold Next.js 14 App Router Project with TypeScript Strict Mode"
-status: not-started
+status: done
 layer: frontend
 effort: 3h
 priority: critical

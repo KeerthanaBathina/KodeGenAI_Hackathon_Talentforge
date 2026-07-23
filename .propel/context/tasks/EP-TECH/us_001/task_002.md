@@ -3,7 +3,7 @@ id: task_002
 us_id: us_001
 epic: EP-TECH
 title: "Configure Vercel Project Link and Environment Variable Scoping"
-status: not-started
+status: in-progress
 layer: infrastructure
 effort: 2h
 priority: critical
@@ -189,6 +189,29 @@ Environment variables are managed in the Vercel dashboard only — never in sour
 - [ ] Vercel dashboard shows 3 scoped entries for `NEXT_PUBLIC_API_URL`
 - [ ] Vercel project linked to GitHub repository (visible in Vercel dashboard)
 - [ ] `vercel-setup.md` or equivalent documentation committed
+
+## Progress Update (2026-07-23)
+
+### Verified Complete in Working Tree
+
+- `frontend/vercel.json` exists and matches task specification.
+- `frontend/.gitignore` contains `.vercel`.
+- `frontend/.nvmrc` exists with value `20`.
+- `frontend/next.config.js` has `productionBrowserSourceMaps: false`.
+- `frontend/docs/vercel-setup.md` exists.
+
+### Verified via Vercel CLI
+
+- Project exists: `ai-interview-app-frontend`.
+- Project ID: `prj_sZVBjBOgnEObO6VZhV5htgFPvu8l`.
+- Org ID from `.vercel/project.json`: `team_XNgMTTTeuLbbg8lQImuMcn0K`.
+
+### Remaining to Close TASK-002
+
+- Configure required Vercel environment variables and scopes (none are currently set).
+- Set Vercel project Node.js version to `20.x` (currently `24.x`).
+- Confirm GitHub repository integration is connected in Vercel dashboard.
+- Commit pending frontend and workflow files so "committed" DoD items can be marked complete.
 
 ## Traceability
 

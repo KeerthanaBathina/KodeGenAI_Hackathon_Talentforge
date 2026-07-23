@@ -3,7 +3,7 @@ id: task_002
 us_id: us_004
 epic: EP-TECH
 title: "Extend CI Workflows with Unit Test Jobs and npm Audit Security Scan"
-status: not-started
+status: done
 layer: ci-cd
 effort: 4h
 priority: critical
