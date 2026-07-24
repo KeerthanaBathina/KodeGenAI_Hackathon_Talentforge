@@ -69,6 +69,12 @@ enum ResumeScanStatus {
   infected
 }
 
+enum ScreeningRecommendation {
+  shortlist
+  manual_review
+  reject
+}
+
 enum ReviewDecision {
   shortlisted
   rejected
@@ -360,6 +366,20 @@ model ScoringThreshold {
   @@map("scoring_thresholds")
 }
 
+model ScreeningThreshold {
+  id                  String   @id @default(uuid()) @db.Uuid
+  shortlistThreshold  Int
+  borderlineMin       Int
+  borderlineMax       Int
+  rejectThreshold     Int
+  version             Int      @default(1)
+  effectiveFrom       DateTime @default(now()) @db.Timestamptz
+  createdAt           DateTime @default(now()) @db.Timestamptz
+
+  @@index([effectiveFrom(sort: Desc)], name: "idx_screening_thresholds_effective")
+  @@map("screening_thresholds")
+}
+
 model Requisition {
   id                  String            @id @default(uuid()) @db.Uuid
   title               String            @db.VarChar(255)
@@ -371,6 +391,10 @@ model Requisition {
   filledSlots         Int               @default(0)
   status              RequisitionStatus @default(draft)
   eligibilityCriteria Json              @db.JsonB
+  requiredSkills      String[]          @default([])
+  preferredSkills     String[]          @default([])
+  minExperienceYears  Int               @default(0)
+  educationLevel      String?
   openedAt            DateTime?
   closedAt            DateTime?
   createdAt           DateTime          @default(now())
@@ -391,6 +415,7 @@ model Application {
   candidateId               String            @db.Uuid
   requisitionId             String            @db.Uuid
   status                    ApplicationStatus @default(submitted)
+  manualReviewReason        String?           @db.VarChar(100)
   path                      ApplicationPath?
   pathOverridden            Boolean           @default(false)
   pathOverrideJustification String?           @db.Text
@@ -428,6 +453,7 @@ model Resume {
   mimeType      String           @db.VarChar(100)
   scanStatus    ResumeScanStatus @default(pending)
   scanResult    Json?            @db.JsonB
+  parsedData    Json?            @db.JsonB
   uploadedAt    DateTime         @default(now())
   application   Application      @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
@@ -435,17 +461,22 @@ model Resume {
 }
 
 model Screening {
-  id            String   @id @default(uuid()) @db.Uuid
-  applicationId String   @db.Uuid
-  modelVersion  String   @db.VarChar(50)
-  score         Int
-  confidence    Decimal  @db.Decimal(5, 4)
-  factorsJson   Json     @db.JsonB
-  evaluatedAt   DateTime @default(now())
-  version       Int      @default(1)
-  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  id                 String                    @id @default(uuid()) @db.Uuid
+  applicationId      String                    @db.Uuid
+  score              Int
+  recommendation     ScreeningRecommendation?
+  factors            Json                      @db.JsonB
+  thresholdVersion   Int?
+  screenedAt         DateTime                  @default(now())
+  modelVersion       String?                   @db.VarChar(50)
+  confidence         Decimal?                  @db.Decimal(5, 4)
+  evaluatedAt        DateTime                  @default(now())
+  version            Int                       @default(1)
+  application        Application               @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
   @@index([applicationId, version(sort: Desc)], name: "idx_screenings_application_version")
+  @@index([recommendation], name: "idx_screenings_recommendation")
+  @@index([screenedAt(sort: Desc)], name: "idx_screenings_screened_at")
   @@map("screenings")
 }
 

@@ -4,12 +4,16 @@ import { createApp } from './app';
 import { env } from './config/env';
 import prisma from './db/prisma';
 import { initSocketServer } from './socket';
+import { startSystemHealthWorker } from './workers/systemHealthWorker';
 import logger from './utils/logger';
 
 const app = createApp();
 const server = http.createServer(app);
 const io = initSocketServer(server);
 const port = Number.parseInt(env.PORT, 10);
+
+// Start system health monitoring
+startSystemHealthWorker();
 
 server.listen(port, () => {
   logger.info({ port, env: env.NODE_ENV }, '[server] Listening');

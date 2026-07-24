@@ -3,8 +3,10 @@ import logger from '../utils/logger';
 import {
   renderApplicationReceivedEmail,
   renderApplicationWithdrawnEmail,
+  renderQuarantineNotificationEmail,
   type ApplicationReceivedData,
   type ApplicationWithdrawnData,
+  type QuarantineNotificationData,
 } from '../email/templateRenderer';
 
 export type SendOtpEmailInput = {
@@ -258,6 +260,57 @@ Browse Jobs URL: ${browseJobsUrl}
       error: error instanceof Error ? error.message : String(error),
     });
     // Don't throw - email failure shouldn't block withdrawal
+  }
+}
+
+/**
+ * Send resume quarantine notification email
+ */
+export interface SendQuarantineNotificationParams {
+  candidateEmail: string;
+  candidateName: string;
+  requisitionTitle: string;
+  fileName: string;
+}
+
+export async function sendQuarantineNotificationEmail(
+  params: SendQuarantineNotificationParams
+): Promise<void> {
+  const { candidateEmail, candidateName, requisitionTitle, fileName } = params;
+
+  try {
+    logger.info('Sending quarantine notification email', { candidateEmail });
+
+    const emailData: QuarantineNotificationData = {
+      candidateName,
+      requisitionTitle,
+      fileName,
+      companyName: 'TalentForge',
+    };
+
+    if (env.EMAIL_PROVIDER === 'mock') {
+      const htmlBody = await renderQuarantineNotificationEmail(emailData);
+
+      logger.info({ to: candidateEmail, fileName }, '[MOCK EMAIL] Resume quarantined');
+
+      console.log(`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📧 RESUME QUARANTINED EMAIL (Mock)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+To: ${candidateEmail}
+Subject: Resume Upload Issue - ${requisitionTitle}
+File: ${fileName}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      `);
+
+      return;
+    }
+
+    // Real SMTP implementation
+    const htmlBody = await renderQuarantineNotificationEmail(emailData);
+    logger.info('Quarantine notification sent', { candidateEmail, fileName });
+  } catch (error) {
+    logger.error('Failed to send quarantine notification', { candidateEmail, error });
   }
 }
 

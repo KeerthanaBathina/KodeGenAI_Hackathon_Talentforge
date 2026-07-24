@@ -32,7 +32,14 @@ const envSchema = z.object({
   PRIVACY_POLICY_VERSION: z.string().default('1.0'),
   OTEL_EXPORTER_OTLP_ENDPOINT: z.string().url('OTEL_EXPORTER_OTLP_ENDPOINT must be a valid URL').optional(),
   OTEL_EXPORTER_OTLP_HEADERS: z.string().optional(),
-  OTEL_SERVICE_NAME: z.string().default('ai-interview-backend')
+  OTEL_SERVICE_NAME: z.string().default('ai-interview-backend'),
+  // Resume Upload & Scanning
+  SCAN_WEBHOOK_SECRET: z.string().min(32, 'SCAN_WEBHOOK_SECRET must be at least 32 characters').default('dev-only-scan-webhook-secret-change-in-production'),
+  WORKER_TOKEN: z.string().min(32, 'WORKER_TOKEN must be at least 32 characters').default('dev-only-worker-token-change-in-production'),
+  // Redis for BullMQ
+  REDIS_HOST: z.string().default('localhost'),
+  REDIS_PORT: z.string().default('6379'),
+  REDIS_PASSWORD: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

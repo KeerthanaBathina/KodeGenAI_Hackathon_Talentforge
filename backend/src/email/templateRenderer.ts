@@ -23,6 +23,21 @@ export interface ApplicationWithdrawnData {
     browseJobsUrl: string;
 }
 
+export interface QuarantineNotificationData {
+    candidateName: string;
+    requisitionTitle: string;
+    companyName: string;
+    fileName: string;
+}
+
+export interface ApplicationRejectedData {
+    candidateName: string;
+    requisitionTitle: string;
+    companyName: string;
+    applicationId: string;
+    careersUrl: string;
+}
+
 /**
  * Render application received email template
  */
@@ -55,6 +70,44 @@ export async function renderApplicationWithdrawnEmail(
         return template(data);
     } catch (error) {
         logger.error('Failed to render application withdrawn email template', {
+            error: error instanceof Error ? error.message : String(error),
+        });
+        throw error;
+    }
+}
+
+/**
+ * Render resume quarantine notification email template
+ */
+export async function renderQuarantineNotificationEmail(
+    data: QuarantineNotificationData
+): Promise<string> {
+    try {
+        const templatePath = path.join(__dirname, 'templates', 'resume-quarantined.html');
+        const templateContent = await fs.readFile(templatePath, 'utf-8');
+        const template = Handlebars.compile(templateContent);
+        return template(data);
+    } catch (error) {
+        logger.error('Failed to render quarantine notification email template', {
+            error: error instanceof Error ? error.message : String(error),
+        });
+        throw error;
+    }
+}
+
+/**
+ * Render application rejected email template
+ */
+export async function renderApplicationRejectedEmail(
+    data: ApplicationRejectedData
+): Promise<string> {
+    try {
+        const templatePath = path.join(__dirname, 'templates', 'application-rejected.html');
+        const templateContent = await fs.readFile(templatePath, 'utf-8');
+        const template = Handlebars.compile(templateContent);
+        return template(data);
+    } catch (error) {
+        logger.error('Failed to render application rejected email template', {
             error: error instanceof Error ? error.message : String(error),
         });
         throw error;
