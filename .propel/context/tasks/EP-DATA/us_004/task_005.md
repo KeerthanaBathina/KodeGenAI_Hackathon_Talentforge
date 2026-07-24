@@ -3,7 +3,7 @@ id: task_005
 us_id: us_004
 epic: EP-DATA
 title: "Validate All Migration Framework Scenarios and Sign Off US-004 DoD"
-status: not-started
+status: done
 layer: backend
 effort: 3h
 priority: high

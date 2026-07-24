@@ -3,7 +3,7 @@ id: task_003
 us_id: us_002
 epic: EP-DATA
 title: "Add Versioning Columns to approval_policies and Seed Compensation-Band Approver Chains"
-status: not-started
+status: done
 layer: backend
 effort: 3h
 priority: high

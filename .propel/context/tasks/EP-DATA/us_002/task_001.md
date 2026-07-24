@@ -3,7 +3,7 @@ id: task_001
 us_id: us_002
 epic: EP-DATA
 title: "Add Versioned scoring_thresholds Table with Effective-Date Isolation"
-status: not-started
+status: done
 layer: backend
 effort: 4h
 priority: high

@@ -3,7 +3,7 @@ id: task_002
 us_id: us_002
 epic: EP-DATA
 title: "Seed reason_codes Table with Standard Rejection, Withdrawal, and Cancellation Codes"
-status: not-started
+status: done
 layer: backend
 effort: 2h
 priority: high

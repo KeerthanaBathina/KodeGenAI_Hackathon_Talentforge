@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "prisma": {
-    "schema": "prisma/schema.prisma"
+    "schema": "prisma/schema.prisma",
+    "seed": "tsx prisma/seed.ts"
   },
   "engines": {
     "node": ">=20"
@@ -16,8 +17,16 @@
     "lint": "eslint \"src/**/*.ts\" \"scripts/**/*.ts\"",
     "load-test:db": "tsx scripts/load-test-db.ts",
     "load-test:indexes": "tsx scripts/load-test-indexes.ts",
+    "load-test:audit": "tsx scripts/load-test-audit.ts",
+    "migrate:deploy": "prisma migrate deploy",
+    "migrate:status": "prisma migrate status",
+    "migrate:diff": "prisma migrate diff --from-schema-datamodel prisma/schema.prisma --to-schema-datasource prisma/schema.prisma --exit-code --script",
+    "rollback:pre": "tsx scripts/verify-rollback.ts pre",
+    "rollback:post": "tsx scripts/verify-rollback.ts post",
+    "zero-downtime:test": "tsx scripts/test-zero-downtime-migration.ts",
     "test:rls": "tsx scripts/test-rls.ts",
     "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },

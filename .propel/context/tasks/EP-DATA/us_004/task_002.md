@@ -3,7 +3,7 @@ id: task_002
 us_id: us_004
 epic: EP-DATA
 title: "Create Environment-Specific Seed Scripts — seed.dev.ts and seed.staging.ts"
-status: not-started
+status: done
 layer: backend
 effort: 4h
 priority: high

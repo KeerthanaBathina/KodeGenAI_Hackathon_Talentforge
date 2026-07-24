@@ -3,7 +3,7 @@ id: task_005
 us_id: us_002
 epic: EP-DATA
 title: "Validate All Configuration Policy Scenarios — Effective-Date Isolation, Seeds, Token Rendering, Approver Chains — DoD Sign-off"
-status: not-started
+status: done
 layer: backend
 effort: 2h
 priority: high

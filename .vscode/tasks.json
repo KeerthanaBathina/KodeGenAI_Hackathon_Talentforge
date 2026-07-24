@@ -284,6 +284,574 @@
 				"Set-Location d:\\Kanini\\KodeGenAI_Hackathon_Talentforge; git status --short"
 			],
 			"isBackground": false
+		},
+		{
+			"label": "US002 Prisma Validate",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx prisma validate"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 Prisma Migrate Dev",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx prisma migrate dev --name add_us002_configuration_policy_support"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 Build Migration SQL via Diff",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; New-Item -ItemType Directory -Path prisma/migrations/202607240001_add_us002_configuration_policy_support -Force | Out-Null; $sql = npx prisma migrate diff --from-url \"$env:DATABASE_URL\" --to-schema-datamodel prisma/schema.prisma --script; Set-Content -Path prisma/migrations/202607240001_add_us002_configuration_policy_support/migration.sql -Value $sql -Encoding ascii"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 Build Migration SQL via Datasource Diff",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; $sql = npx prisma migrate diff --from-schema-datasource prisma/schema.prisma --to-schema-datamodel prisma/schema.prisma --script; Set-Content -Path prisma/migrations/202607240001_add_us002_configuration_policy_support/migration.sql -Value $sql -Encoding ascii"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 Prisma Migrate Deploy",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx prisma migrate deploy"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 Prisma Generate",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx prisma generate"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 Prisma Seed",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx prisma db seed"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 Unit Tests Targeted",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm test -- src/db/__tests__/scoringThresholds.test.ts src/db/__tests__/approvalPolicies.test.ts src/services/__tests__/templateRenderer.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 Type Check",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm run type-check"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 Validation Evidence Script",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx tsx scripts/validate-us002-evidence.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 Validation Evidence Script Retry",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx tsx scripts/validate-us002-evidence.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 Prisma Migrate Status",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx prisma migrate status"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 Full Backend Tests",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm test"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 Final Git Status",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location d:\\Kanini\\KodeGenAI_Hackathon_Talentforge; git status --short"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 Prisma Validate",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx prisma validate"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 Prisma Migrate Deploy",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx prisma migrate deploy"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 Prisma Generate",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx prisma generate"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 Unit Tests",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm test -- src/services/__tests__/auditService.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 Integration Tests",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm run test:integration"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 Load Test Audit",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm run load-test:audit"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 Integration Tests Retry",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm run test:integration"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 Load Test Retry",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm run load-test:audit"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 Evidence Script",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx tsx scripts/validate-us003-evidence.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 Full Tests and Typecheck",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm test; npm run type-check"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 Load Test Final",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm run load-test:audit"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 Evidence Script Final",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx tsx scripts/validate-us003-evidence.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 Migrate Status",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx prisma migrate status"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 Evidence Recheck",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm run load-test:audit; npx tsx scripts/validate-us003-evidence.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 Evidence With RLS Check",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx tsx scripts/validate-us003-evidence.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 Final Status Check",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location d:\\Kanini\\KodeGenAI_Hackathon_Talentforge; git status --short"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 Backend Typecheck",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm run type-check"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 Backend Tests",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm test"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 Seed Staging",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; $env:NODE_ENV='staging'; npx prisma db seed"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 Seed Development First",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; $env:NODE_ENV='development'; npx prisma db seed"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 Seed Development Second",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; $env:NODE_ENV='development'; npx prisma db seed"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 Seed Staging Corrected",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; $env:NODE_ENV = 'staging'; npx prisma db seed"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 Seed Dev Corrected Run1",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; $env:NODE_ENV = 'development'; npx prisma db seed"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 Seed Dev Corrected Run2",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; $env:NODE_ENV = 'development'; npx prisma db seed"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 Seed Staging via CMD",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && set NODE_ENV=staging&& npx prisma db seed"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 Seed Dev via CMD",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && set NODE_ENV=development&& npx prisma db seed"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 Seed Entity Counts",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && node -e \"const {PrismaClient}=require('@prisma/client');const p=new PrismaClient();(async()=>{const q=async(sql)=>p.$queryRawUnsafe(sql);const rows=[];rows.push({entity:'users_roles_fixture',count:(await q(\\\"select count(*)::int as c from users where email in ('admin@dev.local','recruiter@dev.local','hr-reviewer@dev.local','hr-manager@dev.local','tech@dev.local')\\\"))[0].c});rows.push({entity:'candidates_fixture',count:(await q(\\\"select count(*)::int as c from candidates where email in ('alice@dev.local','bob@dev.local','carol@dev.local')\\\"))[0].c});rows.push({entity:'requisitions_fixture',count:(await q(\\\"select count(*)::int as c from requisitions where id in ('00000004-0000-0000-0000-000000000001','00000004-0000-0000-0000-000000000002')\\\"))[0].c});rows.push({entity:'applications_fixture',count:(await q(\\\"select count(*)::int as c from applications where id in ('00000005-0000-0000-0000-000000000001','00000005-0000-0000-0000-000000000002','00000005-0000-0000-0000-000000000003')\\\"))[0].c});rows.push({entity:'screenings_fixture',count:(await q(\\\"select count(*)::int as c from screenings where id in ('00000006-0000-0000-0000-000000000001','00000006-0000-0000-0000-000000000002')\\\"))[0].c});console.log(JSON.stringify(rows,null,2));await p.$disconnect();})().catch(async(e)=>{console.error(e);await p.$disconnect();process.exit(1);});\""
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 Validate Evidence Script",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npx tsx scripts/validate-us004-evidence.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 Migrate Diff Clean",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run migrate:diff"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 Migrate Status",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run migrate:status"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 Migrate Diff Clean Retry",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run migrate:diff"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 Validate Evidence Script Retry",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npx tsx scripts/validate-us004-evidence.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 Migrate Diff Final",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run migrate:diff"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 Validate Evidence Script Final",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npx tsx scripts/validate-us004-evidence.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 Validate Evidence Updated",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npx tsx scripts/validate-us004-evidence.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 Type Check Final",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run type-check"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 Unit Tests Final",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm test"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 Migrate Status Final",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run migrate:status"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 Migrate Diff Final Recheck",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run migrate:diff"
+			],
+			"isBackground": false
 		}
 	]
 }

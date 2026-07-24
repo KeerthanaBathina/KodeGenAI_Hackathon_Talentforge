@@ -3,7 +3,7 @@ id: task_002
 us_id: us_003
 epic: EP-DATA
 title: "Install PostgreSQL Immutability Trigger trg_audit_events_immutable via Migration"
-status: not-started
+status: done
 layer: backend
 effort: 3h
 priority: critical

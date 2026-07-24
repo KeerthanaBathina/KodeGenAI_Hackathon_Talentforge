@@ -154,6 +154,8 @@ model User {
   decisions             Decision[]    @relation("DecisionMaker")
   approvals             Approval[]    @relation("Approver")
   jobFamiliesCreated    JobFamily[]   @relation("JobFamilyCreator")
+  scoringThresholdsAuthored ScoringThreshold[] @relation("ThresholdAuthor")
+  approvalPoliciesAuthored  ApprovalPolicy[]   @relation("ApprovalPolicyAuthor")
   auditEvents           AuditEvent[]  @relation("AuditActor")
 
   @@map("users")
@@ -202,8 +204,9 @@ model JobFamily {
   effectiveFrom            DateTime
   createdById              String   @db.Uuid
   createdAt                DateTime @default(now())
-  createdBy                User         @relation("JobFamilyCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdBy                User               @relation("JobFamilyCreator", fields: [createdById], references: [id], onDelete: Restrict)
   requisitions             Requisition[]
+  scoringThresholds        ScoringThreshold[]
 
   @@map("job_families")
 }
@@ -245,9 +248,29 @@ model ApprovalPolicy {
   compensationBandMax Decimal  @db.Decimal(12, 2)
   requiredApprovers   Json     @db.JsonB
   active              Boolean  @default(true)
+  effectiveFrom       DateTime @default(dbgenerated("'1970-01-01 00:00:00+00'::timestamp with time zone")) @db.Timestamptz
+  createdById         String?  @db.Uuid
   createdAt           DateTime @default(now())
+  createdBy           User?    @relation("ApprovalPolicyAuthor", fields: [createdById], references: [id], onDelete: SetNull)
 
+  @@index([compensationBandMin, compensationBandMax, effectiveFrom(sort: Desc)], name: "idx_approval_policies_band_effective")
   @@map("approval_policies")
+}
+
+model ScoringThreshold {
+  id                       String   @id @default(uuid()) @db.Uuid
+  jobFamilyId              String   @db.Uuid
+  aiShortlistThreshold     Decimal  @db.Decimal(5, 4)
+  confidenceThreshold      Decimal  @db.Decimal(5, 4)
+  experienceThresholdYears Int
+  effectiveFrom            DateTime @db.Timestamptz
+  createdById              String   @db.Uuid
+  createdAt                DateTime @default(now()) @db.Timestamptz
+  jobFamily                JobFamily @relation(fields: [jobFamilyId], references: [id], onDelete: Restrict)
+  createdBy                User      @relation("ThresholdAuthor", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([jobFamilyId, effectiveFrom(sort: Desc)], name: "idx_scoring_thresholds_jf_effective")
+  @@map("scoring_thresholds")
 }
 
 model Requisition {
@@ -452,7 +475,8 @@ model AuditEvent {
   entityId    String   @db.Uuid
   payloadJson Json     @db.JsonB
   ipAddress   String?  @db.Inet
-  createdAt   DateTime @default(now())
+  userAgent   String?  @db.VarChar(512)
+  createdAt   DateTime @default(now()) @db.Timestamptz
   actor       User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
 
   @@index([entityType, entityId, createdAt(sort: Desc)], name: "idx_audit_events_entity")
