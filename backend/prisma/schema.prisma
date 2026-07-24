@@ -44,6 +44,7 @@ enum JobType {
 }
 
 enum ApplicationStatus {
+  draft
   submitted
   screening
   pending_review
@@ -374,9 +375,14 @@ model Requisition {
   closedAt            DateTime?
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
-  jobFamily           JobFamily     @relation(fields: [jobFamilyId], references: [id], onDelete: Restrict)
+  jobFamily           JobFamily         @relation(fields: [jobFamilyId], references: [id], onDelete: Restrict)
   applications        Application[]
 
+  @@index([status], name: "idx_requisitions_status")
+  @@index([department], name: "idx_requisitions_department")
+  @@index([location], name: "idx_requisitions_location")
+  @@index([jobType], name: "idx_requisitions_job_type")
+  @@index([status, openedAt(sort: Desc), createdAt(sort: Desc)], name: "idx_requisitions_status_opened_created")
   @@map("requisitions")
 }
 
@@ -389,6 +395,8 @@ model Application {
   pathOverridden            Boolean           @default(false)
   pathOverrideJustification String?           @db.Text
   pathOverrideApproverId    String?           @db.Uuid
+  draftData                 Json?             @db.JsonB
+  draftSavedAt              DateTime?
   submittedAt               DateTime          @default(now())
   createdAt                 DateTime          @default(now())
   updatedAt                 DateTime          @updatedAt
@@ -406,6 +414,8 @@ model Application {
   @@index([requisitionId, status], name: "idx_applications_requisition_status")
   @@index([candidateId, status], name: "idx_applications_candidate_status")
   @@index([status, submittedAt(sort: Desc)], name: "idx_applications_status_submitted_at")
+  @@index([candidateId, requisitionId, status], name: "idx_applications_candidate_req_status")
+  @@unique([candidateId, requisitionId, status], name: "unique_candidate_requisition_draft")
   @@map("applications")
 }
 

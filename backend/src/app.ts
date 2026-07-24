@@ -8,6 +8,8 @@ import { requestAuditLogger, requestLogger } from './middleware/requestLogger';
 import authRouter from './routes/auth';
 import profileRouter from './routes/profile';
 import consentRouter from './routes/consent';
+import requisitionRouter from './routes/requisitions';
+import applicationsRouter from './routes/applications';
 import { buildSecurityHeaders } from './middleware/securityHeaders';
 import healthRouter from './routes/health';
 
@@ -40,6 +42,8 @@ export function createApp() {
   app.use('/api/auth', authRouter);
   app.use('/api/profile', profileRouter);
   app.use('/api/consent', consentRouter);
+  app.use('/api/requisitions', requisitionRouter);
+  app.use('/api/applications', applicationsRouter);
   app.use('/', healthRouter);
 
   return app;

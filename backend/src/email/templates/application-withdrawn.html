@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application Withdrawn</title>
+</head>
+
+<body
+    style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
+    <div
+        style="background-color: #6b7280; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+        <h1 style="margin: 0; font-size: 28px; font-weight: 700;">Application Withdrawn</h1>
+    </div>
+
+    <div
+        style="background-color: white; padding: 30px; border-radius: 0 0 8px 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <p style="font-size: 16px; margin-bottom: 20px;">Dear {{candidateName}},</p>
+
+        <p style="font-size: 16px; margin-bottom: 25px;">
+            This confirms that you have withdrawn your application for <strong>{{requisitionTitle}}</strong>
+            at <strong>{{companyName}}</strong>.
+        </p>
+
+        <div
+            style="background-color: #f3f4f6; padding: 25px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #6b7280;">
+            <h2 style="margin-top: 0; margin-bottom: 15px; color: #374151; font-size: 20px;">Withdrawal Confirmation
+            </h2>
+            <table style="width: 100%; font-size: 14px;">
+                <tr>
+                    <td style="padding: 8px 0; color: #6b7280; font-weight: 500;">Reference ID:</td>
+                    <td style="padding: 8px 0; font-weight: 600; font-family: monospace; color: #374151;">
+                        {{applicationId}}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #6b7280; font-weight: 500;">Position:</td>
+                    <td style="padding: 8px 0; font-weight: 600;">{{requisitionTitle}}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #6b7280; font-weight: 500;">Withdrawn:</td>
+                    <td style="padding: 8px 0; font-weight: 600;">{{withdrawnAt}}</td>
+                </tr>
+            </table>
+        </div>
+
+        <p style="font-size: 15px; color: #6b7280; margin-bottom: 25px; line-height: 1.6;">
+            Your application has been removed from the review queue. This action cannot be undone.
+        </p>
+
+        <h3 style="color: #10b981; font-size: 18px; margin-top: 30px; margin-bottom: 15px;">We'd Love to See You Again
+        </h3>
+        <p style="font-size: 15px; margin-bottom: 25px; line-height: 1.6;">
+            We appreciate your interest in joining our team. We encourage you to explore other
+            opportunities with us that may be a better fit.
+        </p>
+
+        <div style="margin: 35px 0; text-align: center;">
+            <a href="{{browseJobsUrl}}" style="background-color: #10b981; color: white; padding: 14px 35px; 
+                text-decoration: none; border-radius: 6px; display: inline-block; 
+                font-weight: 600; font-size: 16px;">
+                🔍 Browse Open Positions
+            </a>
+        </div>
+
+        <div
+            style="background-color: #dbeafe; border: 1px solid #bfdbfe; border-radius: 6px; padding: 15px; margin-top: 30px;">
+            <p style="font-size: 14px; color: #1e40af; margin: 0; line-height: 1.5;">
+                <strong>📧 Stay Connected</strong><br>
+                Set up job alerts to be notified when new positions matching your interests become available.
+            </p>
+        </div>
+    </div>
+
+    <div
+        style="background-color: #f3f4f6; padding: 20px; text-align: center; font-size: 13px; color: #6b7280; margin-top: 20px; border-radius: 8px;">
+        <p style="margin: 0 0 10px 0;">This is an automated message. Please do not reply to this email.</p>
+        <p style="margin: 0;">&copy; 2026 {{companyName}}. All rights reserved.</p>
+    </div>
+</body>
+
+</html>
