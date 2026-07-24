@@ -5,6 +5,7 @@ import { env } from './config/env';
 import { httpsRedirect } from './middleware/httpsRedirect';
 import { rateLimitMiddleware } from './middleware/rateLimit.middleware';
 import { requestAuditLogger, requestLogger } from './middleware/requestLogger';
+import authRouter from './routes/auth';
 import { buildSecurityHeaders } from './middleware/securityHeaders';
 import healthRouter from './routes/health';
 
@@ -34,6 +35,7 @@ export function createApp() {
 
   app.use(rateLimitMiddleware);
 
+  app.use('/api/auth', authRouter);
   app.use('/', healthRouter);
 
   return app;

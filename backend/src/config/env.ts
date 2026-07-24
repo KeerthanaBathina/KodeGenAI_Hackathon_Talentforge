@@ -13,6 +13,10 @@ const envSchema = z.object({
   SUPABASE_URL: z.string().url('SUPABASE_URL must be a valid URL'),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY is required'),
   FRONTEND_URL: z.string().url('FRONTEND_URL must be a valid URL'),
+  OTP_HASH_SALT: z.string().min(16, 'OTP_HASH_SALT must be at least 16 characters').default('dev-only-otp-salt-change-me'),
+  OTP_EXPIRY_MINUTES: z.coerce.number().int().min(1).max(60).default(15),
+  EMAIL_PROVIDER: z.enum(['mock', 'smtp']).default('mock'),
+  EMAIL_FROM: z.string().email('EMAIL_FROM must be a valid email').default('no-reply@ai-interview.local'),
   OTEL_EXPORTER_OTLP_ENDPOINT: z.string().url('OTEL_EXPORTER_OTLP_ENDPOINT must be a valid URL').optional(),
   OTEL_EXPORTER_OTLP_HEADERS: z.string().optional(),
   OTEL_SERVICE_NAME: z.string().default('ai-interview-backend')

@@ -19,8 +19,13 @@ enum UserRole {
 
 enum CandidateStatus {
   pending
+  pending_verification
   active
   anonymized
+}
+
+enum OtpChallengePurpose {
+  registration
 }
 
 enum RequisitionStatus {
@@ -164,16 +169,44 @@ model User {
 model Candidate {
   id               String          @id @default(uuid()) @db.Uuid
   email            String          @unique @db.VarChar(255)
-  phone            String          @unique @db.VarChar(50)
-  consentVersion   String          @db.VarChar(20)
-  consentTimestamp DateTime
-  status           CandidateStatus @default(pending)
+  phone            String?         @unique @db.VarChar(50)
+  consentVersion   String          @default("1.0") @db.VarChar(20)
+  consentTimestamp DateTime        @default(now())
+  status           CandidateStatus @default(pending_verification)
+  candidatePublicId String?        @unique @db.VarChar(64)
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
   profile          Profile?
   applications     Application[]
+  credential       CandidateCredential?
+  otpChallenges    CandidateOtpChallenge[]
 
   @@map("candidates")
+}
+
+model CandidateCredential {
+  candidateId  String   @id @db.Uuid
+  passwordHash String   @db.VarChar(255)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  candidate    Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@map("candidate_credentials")
+}
+
+model CandidateOtpChallenge {
+  id        String              @id @default(uuid()) @db.Uuid
+  candidateId String            @db.Uuid
+  purpose   OtpChallengePurpose @default(registration)
+  otpHash   String              @db.VarChar(128)
+  expiresAt DateTime
+  consumedAt DateTime?
+  createdAt DateTime            @default(now())
+  candidate Candidate           @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([candidateId, purpose, createdAt(sort: Desc)], name: "idx_candidate_otp_challenge_lookup")
+  @@index([expiresAt], name: "idx_candidate_otp_expires_at")
+  @@map("candidate_otp_challenges")
 }
 
 model Profile {

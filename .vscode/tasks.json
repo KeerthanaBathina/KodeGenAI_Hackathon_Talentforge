@@ -852,6 +852,276 @@
 				"cd backend && npm run migrate:diff"
 			],
 			"isBackground": false
+		},
+		{
+			"label": "US001 Backend Typecheck",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run type-check"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 Backend Test",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm test"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Frontend Install Playwright Dep",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm install"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Backend Prisma Generate US001",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npx prisma generate"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Backend Typecheck US001",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run type-check"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Frontend Typecheck US001",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm run type-check"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Backend Typecheck US001 Retry",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run type-check"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Backend Tests US001",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm test"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Frontend Tests US001",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm test"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Backend Tests US001 Retry",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm test"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Frontend Tests US001 Retry",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm test"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Frontend Playwright US001",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm run test:e2e"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Backend Migrate Status US001",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run migrate:status"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Backend Apply Migration US001",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run migrate:deploy"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Frontend Install Playwright Browsers",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npx playwright install chromium"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Backend Apply Migration US001 Retry",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run migrate:deploy"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Backend Migrate Status US001 Retry",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run migrate:status"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Frontend Playwright US001 Retry",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm run test:e2e"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Backend Resolve Failed Migration US001",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npx prisma migrate resolve --rolled-back 202607240003_add_candidate_registration_otp"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Backend Deploy Migration US001 Final",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run migrate:deploy"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Backend Migrate Status US001 Final",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run migrate:status"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Frontend Tests US001 Final",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm test"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Frontend Playwright US001 Final",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm run test:e2e"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Frontend Playwright US001 CSP Retry",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm run test:e2e"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Frontend Playwright US001 Final Pass",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm run test:e2e"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Backend Typecheck Post-US001",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run type-check"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Frontend Typecheck Post-US001",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm run type-check"
+			],
+			"isBackground": false
 		}
 	]
 }

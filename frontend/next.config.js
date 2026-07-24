@@ -10,11 +10,11 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob:",
       "font-src 'self'",
-      "connect-src 'self' https://*.supabase.co https://*.railway.app",
+      "connect-src 'self' http://localhost:* http://127.0.0.1:* https://*.supabase.co https://*.railway.app",
       "frame-ancestors 'none'"
     ].join('; ')
   }
