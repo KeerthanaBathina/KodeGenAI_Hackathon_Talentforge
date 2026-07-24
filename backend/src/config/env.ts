@@ -17,6 +17,19 @@ const envSchema = z.object({
   OTP_EXPIRY_MINUTES: z.coerce.number().int().min(1).max(60).default(15),
   EMAIL_PROVIDER: z.enum(['mock', 'smtp']).default('mock'),
   EMAIL_FROM: z.string().email('EMAIL_FROM must be a valid email').default('no-reply@ai-interview.local'),
+  // JWT Configuration (RS256 or HS256)
+  JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters').optional(),
+  JWT_PRIVATE_KEY: z.string().optional(),
+  JWT_PUBLIC_KEY: z.string().optional(),
+  JWT_EXPIRES_IN: z.string().default('24h'),
+  // OAuth Configuration
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_REDIRECT_URI: z.string().url().optional(),
+  GITHUB_CLIENT_ID: z.string().optional(),
+  GITHUB_CLIENT_SECRET: z.string().optional(),
+  GITHUB_REDIRECT_URI: z.string().url().optional(),
+  PRIVACY_POLICY_VERSION: z.string().default('1.0'),
   OTEL_EXPORTER_OTLP_ENDPOINT: z.string().url('OTEL_EXPORTER_OTLP_ENDPOINT must be a valid URL').optional(),
   OTEL_EXPORTER_OTLP_HEADERS: z.string().optional(),
   OTEL_SERVICE_NAME: z.string().default('ai-interview-backend')
@@ -27,6 +40,12 @@ const parsed = envSchema.safeParse(process.env);
 if (!parsed.success) {
   console.error('[env] Missing or invalid environment variables');
   console.error(parsed.error.flatten().fieldErrors);
+  process.exit(1);
+}
+
+// Validate JWT configuration
+if (!parsed.data.JWT_SECRET && (!parsed.data.JWT_PRIVATE_KEY || !parsed.data.JWT_PUBLIC_KEY)) {
+  console.error('[env] JWT configuration error: Either JWT_SECRET or both JWT_PRIVATE_KEY and JWT_PUBLIC_KEY must be set');
   process.exit(1);
 }
 

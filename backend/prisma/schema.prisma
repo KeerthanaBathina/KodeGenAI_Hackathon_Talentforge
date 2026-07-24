@@ -144,6 +144,14 @@ enum ReasonCodeCategory {
   decision
 }
 
+enum OnboardingSection {
+  basic_info
+  skills
+  education
+  work_history
+  privacy_consent
+}
+
 model User {
   id                    String        @id @default(uuid()) @db.Uuid
   email                 String        @unique @db.VarChar(255)
@@ -167,20 +175,30 @@ model User {
 }
 
 model Candidate {
-  id               String          @id @default(uuid()) @db.Uuid
-  email            String          @unique @db.VarChar(255)
-  phone            String?         @unique @db.VarChar(50)
-  consentVersion   String          @default("1.0") @db.VarChar(20)
-  consentTimestamp DateTime        @default(now())
-  status           CandidateStatus @default(pending_verification)
-  candidatePublicId String?        @unique @db.VarChar(64)
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  profile          Profile?
-  applications     Application[]
-  credential       CandidateCredential?
-  otpChallenges    CandidateOtpChallenge[]
+  id                    String          @id @default(uuid()) @db.Uuid
+  email                 String          @unique @db.VarChar(255)
+  phone                 String?         @unique @db.VarChar(50)
+  consentVersion        String          @default("1.0") @db.VarChar(20)
+  consentTimestamp      DateTime        @default(now())
+  status                CandidateStatus @default(pending_verification)
+  candidatePublicId     String?         @unique @db.VarChar(64)
+  
+  // Account Security & Lockout
+  failedLoginAttempts   Int             @default(0)
+  lockedUntil           DateTime?
+  lastLoginAttemptAt    DateTime?
+  lastSuccessfulLoginAt DateTime?
+  
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  profile               Profile?
+  applications          Application[]
+  credential            CandidateCredential?
+  otpChallenges         CandidateOtpChallenge[]
+  passwordResetTokens   PasswordResetToken[]
+  privacyConsents       PrivacyConsent[]
 
+  @@index([email, lockedUntil], name: "idx_candidate_lockout_check")
   @@map("candidates")
 }
 
@@ -209,20 +227,55 @@ model CandidateOtpChallenge {
   @@map("candidate_otp_challenges")
 }
 
-model Profile {
-  id              String   @id @default(uuid()) @db.Uuid
-  candidateId     String   @unique @db.Uuid
-  fullName        String   @db.VarChar(255)
-  experienceYears Int
-  skills          String[] @db.Text
-  education       Json     @db.JsonB
-  rawParseJson    Json     @db.JsonB
-  editedById      String?  @db.Uuid
-  editedAt        DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+model PasswordResetToken {
+  id          String    @id @default(uuid()) @db.Uuid
+  candidateId String    @db.Uuid
+  token       String    @unique @db.VarChar(255)
+  expiresAt   DateTime
+  usedAt      DateTime?
+  ipAddress   String?   @db.VarChar(45)
+  userAgent   String?   @db.Text
+  createdAt   DateTime  @default(now())
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([candidateId, expiresAt], name: "idx_password_reset_candidate_expiry")
+  @@index([expiresAt], name: "idx_password_reset_expiry")
+  @@map("password_reset_tokens")
+}
+
+model PrivacyConsent {
+  id              String    @id @default(uuid()) @db.Uuid
+  candidateId     String    @db.Uuid
+  policyVersion   String    @db.VarChar(20)
+  acceptedAt      DateTime  @default(now())
+  ipAddress       String    @db.VarChar(45)
+  userAgent       String?   @db.Text
+  revokedAt       DateTime?
+  createdAt       DateTime  @default(now())
   candidate       Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  editedBy        User?     @relation("ProfileEditor", fields: [editedById], references: [id], onDelete: SetNull)
+
+  @@index([candidateId, policyVersion], name: "idx_privacy_consent_candidate_version")
+  @@index([acceptedAt], name: "idx_privacy_consent_accepted")
+  @@map("privacy_consents")
+}
+
+model Profile {
+  id                           String              @id @default(uuid()) @db.Uuid
+  candidateId                  String              @unique @db.Uuid
+  fullName                     String              @db.VarChar(255)
+  experienceYears              Int
+  skills                       String[]            @db.Text
+  education                    Json                @db.JsonB
+  workHistory                  Json?               @db.JsonB
+  profileCompletionPercentage  Int                 @default(0)
+  lastCompletedSection         OnboardingSection?
+  rawParseJson                 Json                @db.JsonB
+  editedById                   String?             @db.Uuid
+  editedAt                     DateTime?
+  createdAt                    DateTime            @default(now())
+  updatedAt                    DateTime            @updatedAt
+  candidate                    Candidate           @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  editedBy                     User?               @relation("ProfileEditor", fields: [editedById], references: [id], onDelete: SetNull)
 
   @@map("profiles")
 }

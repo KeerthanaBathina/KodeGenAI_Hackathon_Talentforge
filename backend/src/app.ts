@@ -6,6 +6,8 @@ import { httpsRedirect } from './middleware/httpsRedirect';
 import { rateLimitMiddleware } from './middleware/rateLimit.middleware';
 import { requestAuditLogger, requestLogger } from './middleware/requestLogger';
 import authRouter from './routes/auth';
+import profileRouter from './routes/profile';
+import consentRouter from './routes/consent';
 import { buildSecurityHeaders } from './middleware/securityHeaders';
 import healthRouter from './routes/health';
 
@@ -36,7 +38,11 @@ export function createApp() {
   app.use(rateLimitMiddleware);
 
   app.use('/api/auth', authRouter);
+  app.use('/api/profile', profileRouter);
+  app.use('/api/consent', consentRouter);
   app.use('/', healthRouter);
 
   return app;
 }
+
+export const app = createApp();
