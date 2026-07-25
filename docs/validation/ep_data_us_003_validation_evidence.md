@@ -120,3 +120,87 @@ npm run type-check -> exit 0
 ## Final status
 
 All US-003 acceptance criteria validated with evidence.
+
+## 2026-07-25 incremental validation (US-003 path classification + override)
+
+### Backend unit: threshold configuration and fallback behavior
+
+```text
+> npm --prefix backend run test -- src/services/__tests__/manualReviewQueueService.reasonCode.test.ts
+
+✓ src/services/__tests__/manualReviewQueueService.reasonCode.test.ts (5)
+  ✓ throws InvalidReasonCodeError when reason code is not active or not allowed
+  ✓ persists status, review, queued email, interview handoff, and audit event for shortlist
+  ✓ uses configured threshold from scoringThreshold for classification
+  ✓ falls back to default threshold when no threshold row exists
+  ✓ falls back to default threshold and logs warning for malformed threshold values
+```
+
+### Backend integration: manual review queue override route contract
+
+```text
+> npm --prefix backend run test:integration -- src/routes/__tests__/manualReviewQueue.integration.test.ts
+
+✓ src/routes/__tests__/manualReviewQueue.integration.test.ts (14)
+```
+
+### Frontend component: override modal gating and submission
+
+```text
+> npm --prefix frontend run test -- src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx
+
+✓ src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx (9)
+```
+
+### Note
+
+Global frontend type-check currently fails due pre-existing parse errors in `src/app/jobs/[id]/apply/page.tsx` unrelated to US-003 path classification changes.
+
+### Frontend E2E: recruiter override flow and justification gating
+
+```text
+> npm --prefix frontend run test:e2e -- tests/us003-path-classification-override.spec.ts
+
+✓ tests/us003-path-classification-override.spec.ts (1)
+```
+
+Validated behavior:
+
+- Classified path badge is visible on manual review queue rows.
+- Override modal enforces justification minimum length of 20 characters.
+- Confirm override remains disabled for short justification.
+- Valid override submission sends expected payload (`newPath`, `justification`) and completes successfully.
+
+## 2026-07-25 final closure check
+
+### Backend unit
+
+```text
+> npm --prefix backend run test -- src/services/__tests__/manualReviewQueueService.reasonCode.test.ts
+
+✓ src/services/__tests__/manualReviewQueueService.reasonCode.test.ts (5)
+```
+
+### Backend integration
+
+```text
+> npm --prefix backend run test:integration -- src/routes/__tests__/manualReviewQueue.integration.test.ts
+
+✓ src/routes/__tests__/manualReviewQueue.integration.test.ts (14)
+```
+
+### Frontend component
+
+```text
+> npm --prefix frontend run test -- src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx
+
+✓ src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx (9)
+```
+
+### Frontend E2E
+
+```text
+> npm --prefix frontend run test:e2e -- tests/us003-path-classification-override.spec.ts
+
+✓ tests/us003-path-classification-override.spec.ts (1)
+```

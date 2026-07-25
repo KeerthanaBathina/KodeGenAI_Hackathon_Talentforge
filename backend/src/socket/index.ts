@@ -2,10 +2,67 @@ import { Server as HttpServer } from 'http';
 import { Server as SocketServer, Socket } from 'socket.io';
 import { env } from '../config/env';
 import logger from '../utils/logger';
+import { JwtService } from '../services/jwtService';
+import { REVIEW_QUEUE_HR_ROOM } from '../services/reviewQueueRealtimeService';
 
 export type AppSocketServer = SocketServer;
+const HR_REVIEWER_ROLES = new Set(['hr_reviewer', 'hr_manager']);
 
 let io: AppSocketServer | null = null;
+
+function getAuthTokenFromSocket(socket: Socket): string | null {
+  const authToken = socket.handshake.auth?.token;
+  if (typeof authToken === 'string' && authToken.trim()) {
+    return authToken;
+  }
+
+  const cookieHeader = socket.handshake.headers.cookie;
+  if (!cookieHeader) {
+    return null;
+  }
+
+  const cookies = cookieHeader.split(';');
+  for (const cookie of cookies) {
+    const [rawKey, ...rawValueParts] = cookie.trim().split('=');
+    if (rawKey !== 'auth_token') {
+      continue;
+    }
+
+    const rawValue = rawValueParts.join('=');
+    if (!rawValue) {
+      return null;
+    }
+
+    return decodeURIComponent(rawValue);
+  }
+
+  return null;
+}
+
+function joinHrRoomIfEligible(socket: Socket): void {
+  const token = getAuthTokenFromSocket(socket);
+  if (!token) {
+    return;
+  }
+
+  try {
+    const payload = JwtService.verify(token);
+    if (!HR_REVIEWER_ROLES.has(payload.role)) {
+      return;
+    }
+
+    socket.join(REVIEW_QUEUE_HR_ROOM);
+    logger.info(
+      { socketId: socket.id, role: payload.role },
+      '[socket] Joined HR review room'
+    );
+  } catch (error) {
+    logger.warn(
+      { socketId: socket.id, error },
+      '[socket] Ignoring invalid auth token for room assignment'
+    );
+  }
+}
 
 export function initSocketServer(httpServer: HttpServer): AppSocketServer {
   if (io) {
@@ -25,6 +82,7 @@ export function initSocketServer(httpServer: HttpServer): AppSocketServer {
 
   io.on('connection', (socket: Socket) => {
     logger.info({ socketId: socket.id }, '[socket] Client connected');
+    joinHrRoomIfEligible(socket);
 
     socket.emit('connected', {
       socketId: socket.id,
@@ -49,4 +107,13 @@ export function getSocketServer(): AppSocketServer {
     throw new Error('Socket.IO server has not been initialized.');
   }
   return io;
+}
+
+export async function resetSocketServerForTests(): Promise<void> {
+  if (!io) {
+    return;
+  }
+
+  await io.close();
+  io = null;
 }

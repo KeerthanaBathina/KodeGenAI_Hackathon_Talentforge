@@ -17,6 +17,8 @@ interface Application {
     status: string;
     submittedAt: string;
     requisitionId: string;
+    path?: 'fresher' | 'experienced' | null;
+    pathOverridden?: boolean;
 }
 
 type ApplicationStatus =
@@ -225,6 +227,31 @@ export default function ApplicationTrackingPage() {
                             </p>
                         </div>
                     </div>
+
+                    {application.path && (
+                        <div>
+                            <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Interview Path</p>
+                            <span
+                                style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '0.375rem',
+                                    borderRadius: '999px',
+                                    padding: '0.35rem 0.75rem',
+                                    backgroundColor: '#eef2ff',
+                                    border: '1px solid #c7d2fe',
+                                    color: '#1f2937',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700,
+                                    textTransform: 'capitalize',
+                                }}
+                                aria-label={`Interview path ${application.path}${application.pathOverridden ? ' overridden' : ''}`}
+                            >
+                                {application.path}
+                                {application.pathOverridden ? ' (overridden)' : ''}
+                            </span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Withdrawn/Rejected Status */}

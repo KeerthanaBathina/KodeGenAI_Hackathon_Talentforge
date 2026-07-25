@@ -1122,6 +1122,1207 @@
 				"cd frontend && npm run type-check"
 			],
 			"isBackground": false
+		},
+		{
+			"label": "US001 TASK001 Backend SLA Unit Test",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run test -- src/services/__tests__/reviewQueueSla.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 TASK001 Backend Service Tests",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run test -- src/services/__tests__/reviewQueueSla.test.ts src/services/__tests__/manualReviewQueueService.task001.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 TASK001 Git Status",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"git status --short backend/src/routes/manualReviewQueue.ts backend/src/services/manualReviewQueueService.ts backend/src/services/reviewQueueSla.ts backend/src/config/env.ts backend/src/services/__tests__/reviewQueueSla.test.ts backend/src/services/__tests__/manualReviewQueueService.task001.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 TASK001 Targeted Test Suite",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run test -- src/services/__tests__/reviewQueueSla.test.ts src/services/__tests__/manualReviewQueueService.task001.test.ts src/routes/__tests__/manualReviewQueue.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 TASK001 Route Integration Test Only",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run test -- src/routes/__tests__/manualReviewQueue.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 TASK001 Route Integration Via Integration Config",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npx vitest run --config vitest.integration.config.ts src/routes/__tests__/manualReviewQueue.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 TASK001 Final Changed Files",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"git status --short backend/src/middleware/authorize.ts backend/src/routes/__tests__/manualReviewQueue.integration.test.ts backend/src/services/__tests__/manualReviewQueueService.task001.test.ts .propel/context/tasks/EP-004/us_001/task_001.md"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 TASK002 Realtime Unit Tests",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run test -- src/services/__tests__/reviewQueueRealtimeService.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 TASK002 Socket Integration Test",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npx vitest run --config vitest.integration.config.ts src/socket/__tests__/reviewQueueRoom.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 TASK002 Realtime Unit Tests Retry",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run test -- src/services/__tests__/reviewQueueRealtimeService.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 TASK002 Socket Integration Retry",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npx vitest run --config vitest.integration.config.ts src/socket/__tests__/reviewQueueRoom.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 TASK002 Realtime Unit Tests Final",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run test -- src/services/__tests__/reviewQueueRealtimeService.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 TASK002 Changed Files Status",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"git status --short backend/src/services/reviewQueueRealtimeService.ts backend/src/socket/index.ts backend/src/server.ts backend/src/services/__tests__/reviewQueueRealtimeService.test.ts backend/src/socket/__tests__/reviewQueueRoom.integration.test.ts .propel/context/tasks/EP-004/us_001/task_002.md"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 TASK003 Frontend Targeted Tests",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm run test -- src/components/manualReview/__tests__/slaUtils.test.ts src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 TASK003 Frontend Targeted Tests Retry",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm run test -- src/components/manualReview/__tests__/slaUtils.test.ts src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 TASK003 Frontend Targeted Tests Final",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm run test -- src/components/manualReview/__tests__/slaUtils.test.ts src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 TASK003 Frontend Tests Pass Check",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm run test -- src/components/manualReview/__tests__/slaUtils.test.ts src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 TASK003 Changed Files",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"git status --short frontend/src/lib/api/manualReview.ts frontend/src/components/manualReview/slaUtils.ts frontend/src/components/manualReview/ManualReviewQueueTable.tsx frontend/src/components/manualReview/ReviewReasonBadge.tsx frontend/src/components/manualReview/__tests__/slaUtils.test.ts frontend/src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx .propel/context/tasks/EP-004/us_001/task_003.md"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 TASK004 Frontend Targeted Tests",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm run test -- src/app/hr/manual-review/__tests__/page.test.tsx src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx src/components/manualReview/__tests__/slaUtils.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 TASK004 Frontend Tests Retry",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm run test -- src/app/hr/manual-review/__tests__/page.test.tsx src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx src/components/manualReview/__tests__/slaUtils.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 TASK004 Changed Files",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"git status --short frontend/src/app/hr/manual-review/page.tsx frontend/src/app/hr/manual-review/__tests__/page.test.tsx frontend/src/lib/reviewQueueRealtime.ts frontend/src/types/socket-io-client.d.ts frontend/src/components/manualReview/ManualReviewQueueTable.tsx .propel/context/tasks/EP-004/us_001/task_004.md"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 TASK005 Backend Unit Tests",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run test -- src/services/__tests__/reviewQueueSla.test.ts src/services/__tests__/manualReviewQueueService.task001.test.ts src/services/__tests__/reviewQueueRealtimeService.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 TASK005 Backend Integration Tests",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npx vitest run --config vitest.integration.config.ts src/routes/__tests__/manualReviewQueue.integration.test.ts src/socket/__tests__/reviewQueueRoom.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 TASK005 Frontend Unit and Component Tests",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm run test -- src/components/manualReview/__tests__/slaUtils.test.ts src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx src/app/hr/manual-review/__tests__/page.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 TASK005 Playwright US001 Spec",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npx playwright test tests/us001-manual-review-queue.spec.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 TASK005 Playwright Spec Retry",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npx playwright test tests/us001-manual-review-queue.spec.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 TASK005 Final Changed Files",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"git status --short backend/src/services/__tests__/reviewQueueSla.test.ts frontend/tests/us001-manual-review-queue.spec.ts docs/validation/ep_004_us_001_validation_evidence.md .propel/context/tasks/EP-004/us_001/task_005.md"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK001 Route and Service Tests",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm run test -- src/routes/__tests__/manualReviewQueue.integration.test.ts src/services/__tests__/manualReviewQueueService.reasonCode.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK001 Route and Service Tests Retry",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm run test -- src/routes/__tests__/manualReviewQueue.integration.test.ts src/services/__tests__/manualReviewQueueService.reasonCode.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK001 Route Integration Test",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx vitest run --config vitest.integration.config.ts src/routes/__tests__/manualReviewQueue.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK001 Changed Files",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"git status --short backend/src/routes/manualReviewQueue.ts backend/src/services/manualReviewQueueService.ts backend/src/routes/__tests__/manualReviewQueue.integration.test.ts backend/src/services/__tests__/manualReviewQueue.integration.test.ts backend/src/services/__tests__/manualReviewQueueService.reasonCode.test.ts .propel/context/tasks/EP-004/us_002/task_001.md"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK002 Targeted Tests",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm run test -- src/services/__tests__/manualReviewQueueService.reasonCode.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK002 Route Integration Recheck",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx vitest run --config vitest.integration.config.ts src/routes/__tests__/manualReviewQueue.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK002 Changed Files",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"git status --short backend/src/services/manualReviewQueueService.ts backend/src/routes/manualReviewQueue.ts backend/src/routes/__tests__/manualReviewQueue.integration.test.ts backend/src/services/__tests__/manualReviewQueueService.reasonCode.test.ts .propel/context/tasks/EP-004/us_002/task_002.md"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK003 Frontend Table Tests",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location frontend; npm run test -- src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK003 Frontend Table Tests Retry",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location frontend; npm run test -- src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK003 Backend Route Integration",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx vitest run --config vitest.integration.config.ts src/routes/__tests__/manualReviewQueue.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK003 Changed Files",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"git status --short backend/src/routes/manualReviewQueue.ts backend/src/services/manualReviewQueueService.ts backend/src/routes/__tests__/manualReviewQueue.integration.test.ts frontend/src/lib/api/manualReview.ts frontend/src/components/manualReview/ManualReviewQueueTable.tsx frontend/src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx .propel/context/tasks/EP-004/us_002/task_003.md"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK004 Backend Service Integration",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm run test -- src/services/__tests__/manualReviewQueue.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK004 Backend Service Integration Retry",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx vitest run --config vitest.integration.config.ts src/services/__tests__/manualReviewQueue.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK004 Prisma Generate",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx prisma generate"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK004 Backend Service Integration Recheck",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx vitest run --config vitest.integration.config.ts src/services/__tests__/manualReviewQueue.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK004 Backend Route Integration Recheck",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx vitest run --config vitest.integration.config.ts src/routes/__tests__/manualReviewQueue.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK004 Frontend Table Recheck",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location frontend; npm run test -- src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK004 Changed Files",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"git status --short backend/src/services/manualReviewQueueService.ts backend/src/routes/manualReviewQueue.ts backend/src/routes/__tests__/manualReviewQueue.integration.test.ts backend/src/services/__tests__/manualReviewQueue.integration.test.ts .propel/context/tasks/EP-004/us_002/task_004.md"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK005 Backend Unit",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm run test -- src/services/__tests__/manualReviewQueueService.reasonCode.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK005 Backend Route Integration",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx vitest run --config vitest.integration.config.ts src/routes/__tests__/manualReviewQueue.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK005 Backend Service Integration",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx vitest run --config vitest.integration.config.ts src/services/__tests__/manualReviewQueue.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK005 Frontend Component",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location frontend; npm run test -- src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK005 Playwright",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location frontend; npx playwright test tests/us002-decision-flow.spec.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK005 Changed Files",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"git status --short frontend/tests/us002-decision-flow.spec.ts docs/validation/ep_004_us_002_validation_evidence.md .propel/context/tasks/EP-004/us_002/task_005.md"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 Frontend Realtime Table Test",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location frontend; npm run test -- src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx src/app/hr/manual-review/__tests__/page.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 Frontend Realtime Table Test Retry",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location frontend; npm run test -- src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx src/app/hr/manual-review/__tests__/page.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 Playwright Queue Spec",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location frontend; npx playwright test tests/us001-manual-review-queue.spec.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 Validate Vitest",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location frontend; npm run test -- src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx src/app/hr/manual-review/__tests__/page.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US001 Validate Playwright",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location frontend; npx playwright test tests/us001-manual-review-queue.spec.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 Validate Backend Unit",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm run test -- src/services/__tests__/manualReviewQueueService.reasonCode.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 Validate Backend Route Integration",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx vitest run --config vitest.integration.config.ts src/routes/__tests__/manualReviewQueue.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 Validate Frontend Component",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location frontend; npm run test -- src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 Validate Playwright",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location frontend; npx playwright test tests/us002-decision-flow.spec.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 Validate Backend Service Integration (May Block)",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx vitest run --config vitest.integration.config.ts src/services/__tests__/manualReviewQueue.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 Revalidate Backend Unit",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm run test -- src/services/__tests__/manualReviewQueueService.reasonCode.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 Revalidate Backend Route Integration",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx vitest run --config vitest.integration.config.ts src/routes/__tests__/manualReviewQueue.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 Revalidate Frontend Component",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location frontend; npm run test -- src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 Revalidate Playwright",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location frontend; npx playwright test tests/us002-decision-flow.spec.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 Revalidate Backend Service Integration",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx vitest run --config vitest.integration.config.ts src/services/__tests__/manualReviewQueue.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "BugFix Validate US001 Vitest",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location frontend; npm run test -- src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx src/app/hr/manual-review/__tests__/page.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "BugFix Validate US001 Playwright",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location frontend; npx playwright test tests/us001-manual-review-queue.spec.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 Validate Backend Unit Latest",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm run test -- src/services/__tests__/manualReviewQueueService.reasonCode.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 Validate Backend Route Integration Latest",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx vitest run --config vitest.integration.config.ts src/routes/__tests__/manualReviewQueue.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 Validate Frontend Component Latest",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location frontend; npm run test -- src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 Validate Playwright Latest",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location frontend; npx playwright test tests/us002-decision-flow.spec.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 Validate Backend Service Integration Latest",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx vitest run --config vitest.integration.config.ts src/services/__tests__/manualReviewQueue.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "BugFix Vaidate Backend Unit",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npm run test -- src/services/__tests__/manualReviewQueueService.reasonCode.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "BugFix Vaidate Backend Route Integration",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx vitest run --config vitest.integration.config.ts src/routes/__tests__/manualReviewQueue.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "BugFix Vaidate Frontend Component",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location frontend; npm run test -- src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "BugFix Vaidate Playwright",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location frontend; npx playwright test tests/us002-decision-flow.spec.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "BugFix Vaidate Backend Service Integration",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend; npx vitest run --config vitest.integration.config.ts src/services/__tests__/manualReviewQueue.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 Backend Route Integration Tests Targeted",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"test",
+				"--",
+				"src/routes/__tests__/manualReviewQueue.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 Backend Route Integration Tests Targeted BackendDir",
+			"type": "shell",
+			"command": "npm --prefix backend run test -- src/routes/__tests__/manualReviewQueue.integration.test.ts",
+			"isBackground": false
+		},
+		{
+			"label": "US003 Backend Integration Test Route File",
+			"type": "shell",
+			"command": "npm --prefix backend run test:integration -- src/routes/__tests__/manualReviewQueue.integration.test.ts",
+			"isBackground": false
+		},
+		{
+			"label": "US003 Frontend Unit Test Queue Table",
+			"type": "shell",
+			"command": "npm --prefix frontend run test -- src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx",
+			"isBackground": false
+		},
+		{
+			"label": "US003 Backend Type Check Quick",
+			"type": "shell",
+			"command": "npm --prefix backend run type-check",
+			"isBackground": false
+		},
+		{
+			"label": "US003 Frontend Type Check Quick",
+			"type": "shell",
+			"command": "npm --prefix frontend run type-check",
+			"isBackground": false
+		},
+		{
+			"label": "US003 Frontend Typecheck Recheck After Track Path Badge",
+			"type": "shell",
+			"command": "npm --prefix frontend run type-check",
+			"isBackground": false
+		},
+		{
+			"label": "US003 Frontend Unit Test Queue Table Recheck",
+			"type": "shell",
+			"command": "npm --prefix frontend run test -- src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx",
+			"isBackground": false
+		},
+		{
+			"label": "US003 Backend Route Integration Recheck",
+			"type": "shell",
+			"command": "npm --prefix backend run test:integration -- src/routes/__tests__/manualReviewQueue.integration.test.ts",
+			"isBackground": false
+		},
+		{
+			"label": "US003 Threshold Tests Targeted",
+			"type": "shell",
+			"command": "npm --prefix backend run test -- src/services/__tests__/manualReviewQueueService.reasonCode.test.ts",
+			"isBackground": false
+		},
+		{
+			"label": "US003 Playwright Path Override E2E",
+			"type": "shell",
+			"command": "npm --prefix frontend run test:e2e -- tests/us003-path-classification-override.spec.ts",
+			"isBackground": false
+		},
+		{
+			"label": "US003 Playwright Path Override E2E Retry",
+			"type": "shell",
+			"command": "npm --prefix frontend run test:e2e -- tests/us003-path-classification-override.spec.ts",
+			"isBackground": false
+		},
+		{
+			"label": "US003 Evidence Sanity Re-run E2E",
+			"type": "shell",
+			"command": "npm --prefix frontend run test:e2e -- tests/us003-path-classification-override.spec.ts",
+			"isBackground": false
+		},
+		{
+			"label": "US003 Final Backend Unit Threshold",
+			"type": "shell",
+			"command": "npm --prefix backend run test -- src/services/__tests__/manualReviewQueueService.reasonCode.test.ts",
+			"isBackground": false
+		},
+		{
+			"label": "US003 Final Backend Route Integration",
+			"type": "shell",
+			"command": "npm --prefix backend run test:integration -- src/routes/__tests__/manualReviewQueue.integration.test.ts",
+			"isBackground": false
+		},
+		{
+			"label": "US003 Final Frontend Component",
+			"type": "shell",
+			"command": "npm --prefix frontend run test -- src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx",
+			"isBackground": false
+		},
+		{
+			"label": "US003 Final Frontend E2E",
+			"type": "shell",
+			"command": "npm --prefix frontend run test:e2e -- tests/us003-path-classification-override.spec.ts",
+			"isBackground": false
+		},
+		{
+			"label": "US004 TASK001 Route Tests",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test:integration",
+				"--",
+				"src/routes/__tests__/manualReviewQueue.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 TASK001 Service Integration Tests",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test:integration",
+				"--",
+				"src/services/__tests__/manualReviewQueue.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 TASK001 Service Unit Smoke",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test",
+				"--",
+				"src/services/__tests__/manualReviewQueueService.reasonCode.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 TASK001 Route Tests Recheck",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test:integration",
+				"--",
+				"src/routes/__tests__/manualReviewQueue.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 TASK002 Realtime Unit Tests",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test",
+				"--",
+				"src/services/__tests__/reviewQueueRealtimeService.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 TASK002 Route Regression",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test:integration",
+				"--",
+				"src/routes/__tests__/manualReviewQueue.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 TASK002 Screening Unit Regression",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test",
+				"--",
+				"src/services/__tests__/screeningService.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 TASK002 Screening Realtime Regression",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test",
+				"--",
+				"src/services/__tests__/lowConfidenceEscalation.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 TASK002 Screening Integration Runner",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test:integration",
+				"--",
+				"src/services/__tests__/screeningService.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 TASK003 Frontend Component Tests",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"--prefix",
+				"frontend",
+				"run",
+				"test",
+				"--",
+				"src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 TASK003 Frontend Tests Single Worker",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"--prefix",
+				"frontend",
+				"run",
+				"test",
+				"--",
+				"--pool=threads",
+				"--poolOptions.threads.maxThreads=1",
+				"src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 TASK003 Frontend Tests High Memory",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"$env:NODE_OPTIONS='--max-old-space-size=8192'; npm --prefix frontend run test -- src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 TASK003 Frontend Tests High Memory Retry",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"set NODE_OPTIONS=--max-old-space-size=8192 && npm --prefix frontend run test -- src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 TASK004 Frontend Page Tests",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"set NODE_OPTIONS=--max-old-space-size=8192 && npm --prefix frontend run test -- src/app/hr/manual-review/__tests__/page.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 TASK004 Frontend Component Regression",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"set NODE_OPTIONS=--max-old-space-size=8192 && npm --prefix frontend run test -- src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 TASK004 Frontend Page Recheck",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"set NODE_OPTIONS=--max-old-space-size=8192 && npm --prefix frontend run test -- src/app/hr/manual-review/__tests__/page.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 TASK004 Frontend Component Final Regression",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"set NODE_OPTIONS=--max-old-space-size=8192 && npm --prefix frontend run test -- src/components/manualReview/__tests__/ManualReviewQueueTable.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 TASK004 Page Typecheck Test",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"set NODE_OPTIONS=--max-old-space-size=8192 && npm --prefix frontend run test -- src/app/hr/manual-review/__tests__/page.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 Page Recheck",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"set NODE_OPTIONS=--max-old-space-size=8192 && npm --prefix frontend run test -- src/app/hr/manual-review/__tests__/page.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Frontend Typecheck US004 TASK005",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"npm --prefix frontend run type-check"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 Bulk Reject E2E",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"set NODE_OPTIONS=--max-old-space-size=8192 && npm --prefix frontend run test:e2e -- frontend/tests/us004-bulk-reject-realtime.spec.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US004 Bulk Reject E2E Retry",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"set NODE_OPTIONS=--max-old-space-size=8192 && npm --prefix frontend run test:e2e -- frontend/tests/us004-bulk-reject-realtime.spec.ts"
+			],
+			"isBackground": false
 		}
 	]
 }

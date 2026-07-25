@@ -4,6 +4,7 @@ import { getActiveThresholds, getRecommendation } from './thresholdService';
 import { processRejection } from './rejectionService';
 import { auditEvent } from './auditService';
 import { calculateConfidence, requiresManualReview, formatConfidenceForDb } from './confidenceService';
+import { emitQueueNewApplicationEvent } from './reviewQueueRealtimeService';
 import logger from '../utils/logger';
 
 export interface ScreeningResult {
@@ -143,6 +144,16 @@ export async function performScreening(applicationId: string): Promise<Screening
                 manualReviewReason,
             },
         });
+
+        if (newStatus === 'pending_review') {
+            const candidateName = application.candidate.profile?.fullName?.trim() || 'Unknown Candidate';
+            await emitQueueNewApplicationEvent({
+                applicationId,
+                candidateName,
+                requisitionTitle: application.requisition.title,
+                queuedAt: new Date().toISOString(),
+            });
+        }
 
         // 7. Log audit event
         await auditEvent({

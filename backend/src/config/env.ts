@@ -40,6 +40,7 @@ const envSchema = z.object({
   REDIS_HOST: z.string().default('localhost'),
   REDIS_PORT: z.string().default('6379'),
   REDIS_PASSWORD: z.string().optional(),
+  REVIEW_QUEUE_SLA_HOURS: z.coerce.number().int().min(1).max(168).default(48),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -6,11 +6,16 @@ import prisma from './db/prisma';
 import { initSocketServer } from './socket';
 import { startSystemHealthWorker } from './workers/systemHealthWorker';
 import logger from './utils/logger';
+import {
+  startReviewQueueRealtimeTicker,
+  stopReviewQueueRealtimeTicker,
+} from './services/reviewQueueRealtimeService';
 
 const app = createApp();
 const server = http.createServer(app);
 const io = initSocketServer(server);
 const port = Number.parseInt(env.PORT, 10);
+startReviewQueueRealtimeTicker(io);
 
 // Start system health monitoring
 startSystemHealthWorker();
@@ -21,6 +26,7 @@ server.listen(port, () => {
 
 const shutdown = (signal: string) => {
   logger.info({ signal }, '[server] Shutdown signal received');
+  stopReviewQueueRealtimeTicker();
 
   io.close(async () => {
     logger.info('[socket] All socket connections closed');
