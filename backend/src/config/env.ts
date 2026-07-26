@@ -17,6 +17,11 @@ const envSchema = z.object({
   OTP_EXPIRY_MINUTES: z.coerce.number().int().min(1).max(60).default(15),
   EMAIL_PROVIDER: z.enum(['mock', 'smtp']).default('mock'),
   EMAIL_FROM: z.string().email('EMAIL_FROM must be a valid email').default('no-reply@ai-interview.local'),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().min(1).max(65535).optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_SECURE: z.coerce.boolean().optional(),
   // JWT Configuration (RS256 or HS256)
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters').optional(),
   JWT_PRIVATE_KEY: z.string().optional(),

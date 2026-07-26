@@ -21,8 +21,8 @@ import {
     emitReviewQueueBadgeCount,
     subscribeToQueueNewApplication,
     subscribeToReviewQueueBadgeCount,
-    type QueueNewApplicationPayload,
     type ReviewQueueBadgeCountPayload,
+    type QueueNewApplicationPayload,
 } from '@/lib/reviewQueueRealtime';
 
 type QueueFilterState = Pick<

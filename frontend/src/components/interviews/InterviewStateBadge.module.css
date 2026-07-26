@@ -1,0 +1,34 @@
+.badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-scheduled {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.badge-completed {
+    background-color: #e8f5e9;
+    color: #388e3c;
+}
+
+.badge-cancelled {
+    background-color: #ffebee;
+    color: #d32f2f;
+}
+
+.badge-noshow {
+    background-color: #fff3e0;
+    color: #f57c00;
+}
+
+.badge-rescheduled {
+    background-color: #f3e5f5;
+    color: #7b1fa2;
+}

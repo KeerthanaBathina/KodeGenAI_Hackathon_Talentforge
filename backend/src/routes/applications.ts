@@ -12,6 +12,7 @@ import {
     canWithdrawApplication,
     WithdrawalError,
 } from '../services/applicationWithdrawalService';
+import { getApplicationStageStatus } from '../services/stagePrerequisiteService';
 import { authenticate } from '../middleware/authenticate';
 import logger from '../utils/logger';
 import prisma from '../db/prisma';
@@ -402,6 +403,43 @@ router.patch('/:id/withdraw', authenticate, async (req, res) => {
             error: {
                 code: 'INTERNAL_SERVER_ERROR',
                 message: 'An error occurred while withdrawing the application',
+            },
+        });
+    }
+});
+
+// ==================== Interview Stage Status ====================
+
+/**
+ * GET /api/applications/:id/stage-status
+ * Get interview stage status for an application
+ */
+router.get('/:id/stage-status', authenticate, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const stageStatus = await getApplicationStageStatus(id);
+
+        return res.status(200).json(stageStatus);
+    } catch (error) {
+        if (error instanceof Error && error.message.includes('not found')) {
+            return res.status(404).json({
+                error: {
+                    code: 'APPLICATION_NOT_FOUND',
+                    message: 'Application not found',
+                },
+            });
+        }
+
+        logger.error('Error fetching stage status', {
+            error: error instanceof Error ? error.message : String(error),
+            applicationId: req.params.id,
+        });
+
+        return res.status(500).json({
+            error: {
+                code: 'INTERNAL_SERVER_ERROR',
+                message: 'An error occurred while fetching stage status',
             },
         });
     }

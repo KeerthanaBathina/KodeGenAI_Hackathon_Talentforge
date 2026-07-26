@@ -38,6 +38,21 @@ export interface ApplicationRejectedData {
     careersUrl: string;
 }
 
+export interface InterviewReminderData {
+    recipientName: string;
+    positionTitle: string;
+    interviewDateTime: string;
+    duration: number;
+    interviewType: string;
+    meetingLink?: string;
+    location?: string;
+    panelists?: Array<{
+        name: string;
+        role: string;
+    }>;
+    companyName: string;
+}
+
 /**
  * Render application received email template
  */
@@ -108,6 +123,44 @@ export async function renderApplicationRejectedEmail(
         return template(data);
     } catch (error) {
         logger.error('Failed to render application rejected email template', {
+            error: error instanceof Error ? error.message : String(error),
+        });
+        throw error;
+    }
+}
+
+/**
+ * Render 24-hour interview reminder email template
+ */
+export async function renderInterviewReminder24hEmail(
+    data: InterviewReminderData
+): Promise<string> {
+    try {
+        const templatePath = path.join(__dirname, 'templates', 'interview-reminder-24h.html');
+        const templateContent = await fs.readFile(templatePath, 'utf-8');
+        const template = Handlebars.compile(templateContent);
+        return template(data);
+    } catch (error) {
+        logger.error('Failed to render 24h interview reminder email template', {
+            error: error instanceof Error ? error.message : String(error),
+        });
+        throw error;
+    }
+}
+
+/**
+ * Render 1-hour interview reminder email template
+ */
+export async function renderInterviewReminder1hEmail(
+    data: InterviewReminderData
+): Promise<string> {
+    try {
+        const templatePath = path.join(__dirname, 'templates', 'interview-reminder-1h.html');
+        const templateContent = await fs.readFile(templatePath, 'utf-8');
+        const template = Handlebars.compile(templateContent);
+        return template(data);
+    } catch (error) {
+        logger.error('Failed to render 1h interview reminder email template', {
             error: error instanceof Error ? error.message : String(error),
         });
         throw error;

@@ -2323,6 +2323,516 @@
 				"set NODE_OPTIONS=--max-old-space-size=8192 && npm --prefix frontend run test:e2e -- frontend/tests/us004-bulk-reject-realtime.spec.ts"
 			],
 			"isBackground": false
+		},
+		{
+			"label": "US005 Interview Scheduling Service Test",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"set NODE_OPTIONS=--max-old-space-size=8192 && npm --prefix backend run test -- src/services/__tests__/interviewSchedulingService.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US005 Interview Scheduling Service Integration",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"set NODE_OPTIONS=--max-old-space-size=8192 && npm --prefix backend run test:integration -- src/services/__tests__/interviewSchedulingService.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US005 Interview Route Integration",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"set NODE_OPTIONS=--max-old-space-size=8192 && npm --prefix backend run test:integration -- src/routes/__tests__/interviews.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US005 Interview Route Integration Retry",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"set NODE_OPTIONS=--max-old-space-size=8192 && npm --prefix backend run test:integration -- src/routes/__tests__/interviews.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US005 Interview Planner Frontend Tests",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"set NODE_OPTIONS=--max-old-space-size=8192 && npm --prefix frontend run test -- src/app/hr/interviews/[applicationId]/__tests__/page.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US005 Install Nodemailer and Run Invite Tests",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm install && npm run test -- src/services/__tests__/interviewInviteService.test.ts src/services/__tests__/interviewSchedulingService.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US005 Run Scheduling Integration Test",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run test -- src/services/__tests__/interviewSchedulingService.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US005 Run Scheduling Integration via Integration Config",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run test:integration -- src/services/__tests__/interviewSchedulingService.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US005 Integration Test With Env Vars",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && set DATABASE_URL=postgresql://user:pass@localhost:5432/db && set DIRECT_URL=postgresql://user:pass@localhost:5432/db && set UPSTASH_REDIS_REST_URL=https://example.upstash.io && set UPSTASH_REDIS_REST_TOKEN=test-token && set SUPABASE_URL=https://example.supabase.co && set SUPABASE_SERVICE_ROLE_KEY=test-key && set FRONTEND_URL=http://localhost:3000 && set OTP_HASH_SALT=1234567890123456 && set JWT_SECRET=12345678901234567890123456789012 && set SCAN_WEBHOOK_SECRET=12345678901234567890123456789012 && set WORKER_TOKEN=12345678901234567890123456789012 && npm run test:integration -- src/services/__tests__/interviewSchedulingService.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK001 Token Service Tests",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npx prisma format && npm run test -- src/services/__tests__/panelistConfirmationService.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK001 Token Service Tests Retry",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npx prisma format && npm run test -- src/services/__tests__/panelistConfirmationService.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK001 Token Service Tests Final",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npx prisma format && npm run test -- src/services/__tests__/panelistConfirmationService.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK001 Integration Tests",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && set DATABASE_URL=postgresql://user:pass@localhost:5432/db && set DIRECT_URL=postgresql://user:pass@localhost:5432/db && set UPSTASH_REDIS_REST_URL=https://example.upstash.io && set UPSTASH_REDIS_REST_TOKEN=test-token && set SUPABASE_URL=https://example.supabase.co && set SUPABASE_SERVICE_ROLE_KEY=test-key && set FRONTEND_URL=http://localhost:3000 && set OTP_HASH_SALT=1234567890123456 && set JWT_SECRET=12345678901234567890123456789012 && set SCAN_WEBHOOK_SECRET=12345678901234567890123456789012 && set WORKER_TOKEN=12345678901234567890123456789012 && npm run test:integration -- src/routes/__tests__/panelistAssignment.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK001 Integration Tests Unit Mode",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run test -- src/routes/__tests__/panelistAssignment.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK002 Backend Typecheck",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run type-check"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK002 Frontend Component Tests",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm run test -- src/components/interviews/__tests__"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK002 Frontend Component Tests Retry",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm run test -- src/components/interviews/__tests__"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK002 Frontend Component Tests Final",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm run test -- src/components/interviews/__tests__"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK002 Frontend Tests Pass",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm run test -- src/components/interviews/__tests__"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK002 Component Tests",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm run test -- src/components/__tests__/PanelistAssignment.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK002 Component Tests Retry",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm run test -- src/components/__tests__/PanelistAssignment.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK002 Component Tests Final",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm run test -- src/components/__tests__/PanelistAssignment.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK003 WebSocket Integration Tests",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && set DATABASE_URL=postgresql://user:pass@localhost:5432/db && set DIRECT_URL=postgresql://user:pass@localhost:5432/db && set UPSTASH_REDIS_REST_URL=https://example.upstash.io && set UPSTASH_REDIS_REST_TOKEN=test-token && set SUPABASE_URL=https://example.supabase.co && set SUPABASE_SERVICE_ROLE_KEY=test-key && set FRONTEND_URL=http://localhost:3000 && set OTP_HASH_SALT=1234567890123456 && set JWT_SECRET=12345678901234567890123456789012 && set SCAN_WEBHOOK_SECRET=12345678901234567890123456789012 && set WORKER_TOKEN=12345678901234567890123456789012 && npm run test:integration -- src/routes/__tests__/panelistConfirmationWebSocket.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK003 WebSocket Integration Tests Retry",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && set DATABASE_URL=postgresql://user:pass@localhost:5432/db && set DIRECT_URL=postgresql://user:pass@localhost:5432/db && set UPSTASH_REDIS_REST_URL=https://example.upstash.io && set UPSTASH_REDIS_REST_TOKEN=test-token && set SUPABASE_URL=https://example.supabase.co && set SUPABASE_SERVICE_ROLE_KEY=test-key && set FRONTEND_URL=http://localhost:3000 && set OTP_HASH_SALT=1234567890123456 && set JWT_SECRET=12345678901234567890123456789012 && set SCAN_WEBHOOK_SECRET=12345678901234567890123456789012 && set WORKER_TOKEN=12345678901234567890123456789012 && npm run test:integration -- src/routes/__tests__/panelistConfirmationWebSocket.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK003 Unit Tests",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run test -- src/routes/__tests__/panelistAssignment.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK003 TypeScript Check",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npx tsc --noEmit"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK003 TypeScript Check interviews.ts",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npx tsc --noEmit src/routes/interviews.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK004 Backend Tests",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run test -- src/routes/__tests__/candidateNotificationGuard.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK004 Backend Tests Retry",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run test -- src/routes/__tests__/candidateNotificationGuard.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK004 Frontend Tests",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm run test -- src/components/__tests__/UnconfirmedPanelistWarningModal.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK004 Backend Tests Final",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run test -- src/routes/__tests__/candidateNotificationGuard.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK004 Frontend Tests Final",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm run test -- src/components/__tests__/UnconfirmedPanelistWarningModal.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK004 Backend Tests Final Retry",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run test -- src/routes/__tests__/candidateNotificationGuard.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK005 Frontend Component Tests PanelistAssignment",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm test -- src/components/__tests__/PanelistAssignment.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK005 Frontend Component Tests Modal",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm test -- src/components/__tests__/UnconfirmedPanelistWarningModal.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK001 Prisma Generate",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npx prisma generate"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK001 Prisma Migrate Dev",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npx prisma migrate dev --name add_scorecard_models"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK002 TypeCheck",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run type-check"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK002 Run Tests",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm test -- src/routes/__tests__/scorecards.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK002 Run Tests Retry",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm test -- src/routes/__tests__/scorecards.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK002 Run Tests Final",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm test -- src/routes/__tests__/scorecards.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK002 Tests Revised",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm test -- src/routes/__tests__/scorecards.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK002 Tests With Auth Mock",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm test -- src/routes/__tests__/scorecards.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK002 Tests All Pass",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm test -- src/routes/__tests__/scorecards.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK002 Tests Final Run",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm test -- src/routes/__tests__/scorecards.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK002 Tests Clean Run",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm test -- src/routes/__tests__/scorecards.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK003 Run Tests",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm test -- src/components/__tests__/ScorecardForm.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK003 Tests Retry",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm test -- src/components/__tests__/ScorecardForm.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK004 Backend Tests",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm test -- src/routes/__tests__/scorecards.submit.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK004 Backend TypeCheck",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm run type-check"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK004 Tests Final",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm test -- src/routes/__tests__/scorecards.submit.test.ts"
+			],
+			"isBackground": false
 		}
 	]
 }

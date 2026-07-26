@@ -269,9 +269,150 @@ export async function seedScreeningThresholds(prisma: PrismaClient): Promise<voi
   console.log('  Default screening thresholds created (v1)');
 }
 
+const RUBRIC_TEMPLATES: Array<{
+  stageType: string;
+  dimensionName: string;
+  displayOrder: number;
+  description: string;
+}> = [
+  // Technical Interview Rubric
+  {
+    stageType: 'technical',
+    dimensionName: 'Problem Solving',
+    displayOrder: 1,
+    description: 'Ability to break down complex problems, identify patterns, and develop logical solutions. Considers edge cases and demonstrates analytical thinking.'
+  },
+  {
+    stageType: 'technical',
+    dimensionName: 'Code Quality',
+    displayOrder: 2,
+    description: 'Code is clean, readable, maintainable, and follows best practices. Proper variable naming, code organization, and adherence to language conventions.'
+  },
+  {
+    stageType: 'technical',
+    dimensionName: 'System Design',
+    displayOrder: 3,
+    description: 'Understanding of scalable architecture, trade-offs between different design choices, and ability to design systems considering performance, reliability, and maintainability.'
+  },
+  {
+    stageType: 'technical',
+    dimensionName: 'Communication',
+    displayOrder: 4,
+    description: 'Ability to articulate technical concepts clearly, explain thought process, ask clarifying questions, and collaborate effectively during problem-solving.'
+  },
+
+  // Cultural Fit Interview Rubric
+  {
+    stageType: 'cultural_fit',
+    dimensionName: 'Values Alignment',
+    displayOrder: 1,
+    description: 'Demonstrates alignment with company core values through past actions and decision-making. Shows genuine interest in and understanding of company mission.'
+  },
+  {
+    stageType: 'cultural_fit',
+    dimensionName: 'Team Collaboration',
+    displayOrder: 2,
+    description: 'Works effectively with diverse team members, contributes to positive team dynamics, and demonstrates willingness to help others succeed.'
+  },
+  {
+    stageType: 'cultural_fit',
+    dimensionName: 'Growth Mindset',
+    displayOrder: 3,
+    description: 'Seeks feedback, learns from failures, continuously improves skills, and demonstrates adaptability in changing environments.'
+  },
+  {
+    stageType: 'cultural_fit',
+    dimensionName: 'Leadership Potential',
+    displayOrder: 4,
+    description: 'Takes initiative, influences others positively, demonstrates accountability, and shows potential for growing into leadership roles regardless of current level.'
+  },
+
+  // Behavioral Interview Rubric
+  {
+    stageType: 'behavioral',
+    dimensionName: 'Situational Judgment',
+    displayOrder: 1,
+    description: 'Demonstrates sound judgment in complex or ambiguous situations. Considers multiple perspectives and makes decisions aligned with ethical and professional standards.'
+  },
+  {
+    stageType: 'behavioral',
+    dimensionName: 'Past Experience',
+    displayOrder: 2,
+    description: 'Provides specific, relevant examples from past work. Clearly explains actions taken, challenges faced, and measurable outcomes achieved (STAR method).'
+  },
+  {
+    stageType: 'behavioral',
+    dimensionName: 'Conflict Resolution',
+    displayOrder: 3,
+    description: 'Handles disagreements constructively, seeks win-win solutions, and maintains professional relationships during and after conflicts.'
+  },
+  {
+    stageType: 'behavioral',
+    dimensionName: 'Decision Making',
+    displayOrder: 4,
+    description: 'Makes timely decisions with available information, considers risks and trade-offs, and learns from outcomes to improve future decisions.'
+  },
+
+  // HR/Final Interview Rubric
+  {
+    stageType: 'hr',
+    dimensionName: 'Communication Skills',
+    displayOrder: 1,
+    description: 'Communicates clearly and professionally in verbal and written form. Listens actively and adapts communication style to audience.'
+  },
+  {
+    stageType: 'hr',
+    dimensionName: 'Motivation & Interest',
+    displayOrder: 2,
+    description: 'Shows genuine enthusiasm for the role and company. Has researched the organization and can articulate why this opportunity aligns with career goals.'
+  },
+  {
+    stageType: 'hr',
+    dimensionName: 'Cultural Fit',
+    displayOrder: 3,
+    description: 'Demonstrates behaviors and values consistent with company culture. Shows potential to thrive in the work environment and contribute to team success.'
+  },
+  {
+    stageType: 'hr',
+    dimensionName: 'Long-term Potential',
+    displayOrder: 4,
+    description: 'Career trajectory suggests potential for growth within the organization. Shows ambition balanced with realistic expectations about career development.'
+  }
+];
+
+export async function seedRubricTemplates(prisma: PrismaClient): Promise<void> {
+  console.log('Seeding rubric_templates ...');
+
+  for (const template of RUBRIC_TEMPLATES) {
+    await prisma.rubricTemplate.upsert({
+      where: {
+        stageType_dimensionName: {
+          stageType: template.stageType,
+          dimensionName: template.dimensionName
+        }
+      },
+      update: {
+        displayOrder: template.displayOrder,
+        description: template.description,
+        isActive: true
+      },
+      create: {
+        stageType: template.stageType,
+        dimensionName: template.dimensionName,
+        displayOrder: template.displayOrder,
+        description: template.description,
+        isActive: true
+      }
+    });
+  }
+
+  console.log(`  ${RUBRIC_TEMPLATES.length} rubric templates upserted.`);
+}
+
 export async function runSharedSeeds(prisma: PrismaClient): Promise<void> {
   await seedReasonCodes(prisma);
   await seedApprovalPolicies(prisma);
   await seedEmailTemplates(prisma);
   await seedScreeningThresholds(prisma);
+  await seedRubricTemplates(prisma);
 }
