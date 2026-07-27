@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Assessment is Ready</title>
+</head>
+
+<body
+    style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
+    <div
+        style="background-color: #10b981; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+        <h1 style="margin: 0; font-size: 28px; font-weight: 700;">🎯 Your Assessment is Ready</h1>
+    </div>
+
+    <div
+        style="background-color: white; padding: 30px; border-radius: 0 0 8px 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <p style="font-size: 16px; margin-bottom: 20px;">Dear {{candidateName}},</p>
+
+        <p style="font-size: 16px; margin-bottom: 25px;">Great news! Your application for
+            <strong>{{requisitionTitle}}</strong> at <strong>{{companyName}}</strong> has progressed to the assessment
+            stage.</p>
+
+        <div
+            style="background-color: #d1fae5; padding: 25px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #10b981;">
+            <h2 style="margin-top: 0; margin-bottom: 15px; color: #065f46; font-size: 20px;">Assessment Details</h2>
+            <table style="width: 100%; font-size: 14px;">
+                <tr>
+                    <td style="padding: 8px 0; color: #6b7280; font-weight: 500;">Application ID:</td>
+                    <td style="padding: 8px 0; font-weight: 600; font-family: monospace; color: #059669;">
+                        {{applicationId}}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #6b7280; font-weight: 500;">Position:</td>
+                    <td style="padding: 8px 0; font-weight: 600;">{{requisitionTitle}}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #6b7280; font-weight: 500;">Provider:</td>
+                    <td style="padding: 8px 0; font-weight: 600;">{{providerName}}</td>
+                </tr>
+                {{#if expiresAt}}
+                <tr>
+                    <td style="padding: 8px 0; color: #6b7280; font-weight: 500;">Valid Until:</td>
+                    <td style="padding: 8px 0; font-weight: 600; color: #dc2626;">{{expiresAt}}</td>
+                </tr>
+                {{/if}}
+            </table>
+        </div>
+
+        <div style="text-align: center; margin: 35px 0;">
+            <a href="{{testUrl}}"
+                style="display: inline-block; background-color: #10b981; color: white; padding: 16px 40px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 18px; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);">
+                Start Your Assessment
+            </a>
+        </div>
+
+        <h3 style="color: #065f46; font-size: 18px; margin-top: 30px; margin-bottom: 15px;">Important Information</h3>
+        <ul style="padding-left: 20px; margin-bottom: 30px;">
+            <li style="margin-bottom: 10px; font-size: 15px;">Please complete the assessment as soon as possible.</li>
+            {{#if expiresAt}}
+            <li style="margin-bottom: 10px; font-size: 15px;">Your assessment link will expire on
+                <strong>{{expiresAt}}</strong>.</li>
+            {{/if}}
+            <li style="margin-bottom: 10px; font-size: 15px;">Find a quiet, distraction-free environment before
+                starting.</li>
+            <li style="margin-bottom: 10px; font-size: 15px;">Ensure you have a stable internet connection.</li>
+            <li style="margin-bottom: 10px; font-size: 15px;">The assessment should be completed in one sitting.</li>
+            <li style="margin-bottom: 10px; font-size: 15px;">Your results will be reviewed by our hiring team.</li>
+        </ul>
+
+        <div
+            style="background-color: #fef3c7; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #f59e0b;">
+            <p style="margin: 0; font-size: 14px; color: #92400e;">
+                <strong>⚠️ Note:</strong> If you didn't request this assessment or believe this was sent in error,
+                please contact our HR team immediately.
+            </p>
+        </div>
+
+        <p style="font-size: 15px; margin-top: 30px; margin-bottom: 10px;">Best regards,<br>
+            <strong>{{companyName}} Talent Acquisition Team</strong></p>
+
+        <div style="border-top: 2px solid #e5e7eb; margin-top: 40px; padding-top: 20px;">
+            <p style="font-size: 13px; color: #6b7280; margin: 0; text-align: center;">
+                This is an automated message. Please do not reply to this email.<br>
+                If you have questions, contact us through the careers portal.
+            </p>
+        </div>
+    </div>
+</body>
+
+</html>

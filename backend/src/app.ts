@@ -13,11 +13,16 @@ import applicationsRouter from './routes/applications';
 import resumesRouter from './routes/resumes';
 import screeningsRouter from './routes/screenings';
 import webhooksRouter from './routes/webhooks';
+import assessmentsRouter from './routes/assessments';
+import sessionTimerRouter from './routes/sessionTimer';
 import manualReviewQueueRouter from './routes/manualReviewQueue';
 import deadLetterJobsRouter from './routes/admin/deadLetterJobs';
 import queueStatsRouter from './routes/admin/queueStats';
 import thresholdsRouter from './routes/admin/thresholds';
 import systemStatusRouter from './routes/admin/systemStatus';
+import assessmentProvidersRouter from './routes/admin/assessmentProviders';
+import approvalsRouter from './routes/approvals';
+import offersRouter from './routes/offers';
 import { buildSecurityHeaders } from './middleware/securityHeaders';
 import healthRouter from './routes/health';
 
@@ -55,11 +60,16 @@ export function createApp() {
   app.use('/api/resumes', resumesRouter);
   app.use('/api/screenings', screeningsRouter);
   app.use('/api/webhooks', webhooksRouter);
+  app.use('/api/assessments', assessmentsRouter);
+  app.use('/api/sessions', sessionTimerRouter);
   app.use('/api/manual-review-queue', manualReviewQueueRouter);
+  app.use('/api/approvals', approvalsRouter);
+  app.use('/api/offers', offersRouter);
   app.use('/api/admin/dead-letter-jobs', deadLetterJobsRouter);
   app.use('/api/admin/queue-stats', queueStatsRouter);
   app.use('/api/admin/thresholds', thresholdsRouter);
   app.use('/api/admin/system-status', systemStatusRouter);
+  app.use('/api/admin/assessment-providers', assessmentProvidersRouter);
   app.use('/', healthRouter);
 
   return app;

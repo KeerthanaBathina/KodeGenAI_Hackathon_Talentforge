@@ -56,6 +56,8 @@ enum ApplicationStatus {
   offered
   hired
   closed
+  pending_approval
+  on_hold
 }
 
 enum ApplicationPath {
@@ -85,6 +87,13 @@ enum AssessmentType {
   aptitude
   coding
   technical
+}
+
+enum AssessmentSessionStatus {
+  in_progress
+  completed
+  expired
+  launch_failed
 }
 
 enum InterviewStageType {
@@ -149,6 +158,10 @@ enum ReasonCodeCategory {
   withdrawal
   interview_cancellation
   decision
+  offer_decision
+  reject_decision
+  hold_decision
+  withdraw_decision
 }
 
 enum OnboardingSection {
@@ -157,6 +170,13 @@ enum OnboardingSection {
   education
   work_history
   privacy_consent
+}
+
+enum OfferStatus {
+  pending
+  accepted
+  declined
+  expired
 }
 
 model User {
@@ -173,6 +193,7 @@ model User {
   scorecards            Scorecard[]   @relation("Interviewer")
   decisions             Decision[]    @relation("DecisionMaker")
   approvals             Approval[]    @relation("Approver")
+  assignedTasks         Task[]        @relation("TaskAssignee")
   jobFamiliesCreated    JobFamily[]   @relation("JobFamilyCreator")
   scoringThresholdsAuthored ScoringThreshold[] @relation("ThresholdAuthor")
   approvalPoliciesAuthored  ApprovalPolicy[]   @relation("ApprovalPolicyAuthor")
@@ -309,12 +330,15 @@ model ReasonCode {
   category        ReasonCodeCategory
   code            String             @db.VarChar(50)
   displayText     String             @db.VarChar(255)
+  description     String?            @db.Text
+  displayOrder    Int                @default(0)
   active          Boolean            @default(true)
   reviews         Review[]
   decisions       Decision[]
   interviewStages InterviewStage[]
 
   @@unique([category, code])
+  @@index([category, displayOrder])
   @@map("reason_codes")
 }
 
@@ -432,9 +456,11 @@ model Application {
   screenings                Screening[]
   reviews                   Review[]
   assessments               Assessment[]
+  assessmentSessions        AssessmentSession[]
   interviewStages           InterviewStage[]
   decision                  Decision?
   communications            Communication[]
+  offers                    Offer[]
 
   @@index([requisitionId, status], name: "idx_applications_requisition_status")
   @@index([candidateId, status], name: "idx_applications_candidate_status")
@@ -550,12 +576,14 @@ model Decision {
   reasonCodeId     String?         @db.Uuid
   compensationBand String?         @db.VarChar(50)
   offerDetails     Json?           @db.JsonB
+  pdfUrl           String?         @db.Text
   decidedById      String          @db.Uuid
   decidedAt        DateTime        @default(now())
   application      Application @relation(fields: [applicationId], references: [id], onDelete: Restrict)
   reasonCode       ReasonCode? @relation(fields: [reasonCodeId], references: [id], onDelete: Restrict)
   decidedBy        User        @relation("DecisionMaker", fields: [decidedById], references: [id], onDelete: Restrict)
   approvals        Approval[]
+  offer            Offer?
 
   @@map("decisions")
 }
@@ -573,6 +601,48 @@ model Approval {
   approver    User     @relation("Approver", fields: [approverId], references: [id], onDelete: Restrict)
 
   @@map("approvals")
+}
+
+model Offer {
+  id             String      @id @default(uuid()) @db.Uuid
+  decisionId     String      @unique @db.Uuid
+  applicationId  String      @db.Uuid
+  pdfUrl         String?     @db.Text
+  pdfStoragePath String?     @db.Text
+  status         OfferStatus @default(pending)
+  expiresAt      DateTime
+  respondedAt    DateTime?
+  responseReason String?     @db.Text
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  decision       Decision    @relation(fields: [decisionId], references: [id], onDelete: Restrict)
+  application    Application @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+
+  @@index([status, expiresAt])
+  @@index([applicationId])
+  @@map("offers")
+}
+
+model Task {
+  id          String   @id @default(uuid()) @db.Uuid
+  assignedTo  String   @db.Uuid
+  title       String   @db.Text
+  description String?  @db.Text
+  dueDate     DateTime @map("due_date")
+  status      String   @default("pending") @db.VarChar(20)
+  priority    String   @default("normal") @db.VarChar(10)
+  entityType  String   @map("entity_type") @db.VarChar(50)
+  entityId    String   @map("entity_id") @db.Uuid
+  metadata    Json     @default("{}") @db.JsonB
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  assignee    User     @relation("TaskAssignee", fields: [assignedTo], references: [id], onDelete: Restrict)
+
+  @@index([assignedTo, status], name: "idx_tasks_assigned_to_status")
+  @@index([dueDate], name: "idx_tasks_due_date")
+  @@index([entityType, entityId], name: "idx_tasks_entity")
+  @@map("tasks")
 }
 
 model Communication {
@@ -609,4 +679,39 @@ model AuditEvent {
   @@index([entityType, entityId, createdAt(sort: Desc)], name: "idx_audit_events_entity")
   @@index([actorId, createdAt(sort: Desc)], name: "idx_audit_events_actor")
   @@map("audit_events")
+}
+
+model AssessmentProvider {
+  id               String               @id @default(uuid()) @db.Uuid
+  name             String               @db.VarChar(255)
+  apiEndpoint      String               @db.VarChar(500)
+  authMode         String               @db.VarChar(50)
+  hmacSecret       String?              @db.VarChar(255)
+  timeoutSeconds   Int                  @default(30)
+  active           Boolean              @default(true)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  assessmentSessions AssessmentSession[]
+
+  @@index([active], name: "idx_assessment_providers_active")
+  @@map("assessment_providers")
+}
+
+model AssessmentSession {
+  id            String                   @id @default(uuid()) @db.Uuid
+  applicationId String                   @db.Uuid
+  providerId    String                   @db.Uuid
+  sessionToken  String                   @db.VarChar(500)
+  testUrl       String                   @db.VarChar(1000)
+  status        AssessmentSessionStatus  @default(in_progress)
+  launchedAt    DateTime                 @default(now())
+  completedAt   DateTime?
+  score         Decimal?                 @db.Decimal(6, 2)
+  metadata      Json?                    @db.JsonB
+  application   Application              @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  provider      AssessmentProvider       @relation(fields: [providerId], references: [id], onDelete: Restrict)
+
+  @@index([applicationId, status], name: "idx_assessment_sessions_application_status")
+  @@index([sessionToken], name: "idx_assessment_sessions_session_token")
+  @@map("assessment_sessions")
 }

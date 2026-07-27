@@ -28,3 +28,8 @@ export function authorize(allowedRoles: string[]) {
         next();
     };
 }
+
+/**
+ * Alias for authorize function for better semantic clarity
+ */
+export const requireRole = authorize;

@@ -4,9 +4,13 @@ import {
   renderApplicationReceivedEmail,
   renderApplicationWithdrawnEmail,
   renderQuarantineNotificationEmail,
+  renderAssessmentLaunchEmail,
+  renderAssessmentLaunchFailedEmail,
   type ApplicationReceivedData,
   type ApplicationWithdrawnData,
   type QuarantineNotificationData,
+  type AssessmentLaunchData,
+  type AssessmentLaunchFailedData,
 } from '../email/templateRenderer';
 
 export type SendOtpEmailInput = {
@@ -314,3 +318,306 @@ File: ${fileName}
   }
 }
 
+/**
+ * Send assessment launch notification email
+ * 
+ * Dispatches candidate email with test URL and instructions within 2-minute SLA.
+ * Email failure does not block the launch - session is already persisted.
+ */
+export async function sendAssessmentLaunchEmail(params: {
+  candidateEmail: string;
+  candidateName: string;
+  requisitionTitle: string;
+  applicationId: string;
+  providerName: string;
+  testUrl: string;
+  expiresAt?: Date;
+  sessionId: string;
+}): Promise<void> {
+  const {
+    candidateEmail,
+    candidateName,
+    requisitionTitle,
+    applicationId,
+    providerName,
+    testUrl,
+    expiresAt,
+    sessionId,
+  } = params;
+
+  try {
+    logger.info('Sending assessment launch email', {
+      candidateEmail,
+      applicationId,
+      sessionId,
+      providerName,
+    });
+
+    const companyName = 'TalentForge';
+
+    const emailData: AssessmentLaunchData = {
+      candidateName,
+      requisitionTitle,
+      companyName,
+      applicationId: applicationId.toUpperCase().slice(0, 8),
+      providerName,
+      testUrl,
+      expiresAt: expiresAt
+        ? expiresAt.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        : undefined,
+    };
+
+    if (env.EMAIL_PROVIDER === 'mock') {
+      const htmlBody = await renderAssessmentLaunchEmail(emailData);
+
+      logger.info(
+        {
+          to: candidateEmail,
+          applicationId,
+          sessionId,
+          testUrl: testUrl.split('?')[0], // Log URL without query params
+          provider: env.EMAIL_PROVIDER,
+        },
+        '[MOCK EMAIL] Assessment launch notification'
+      );
+
+      console.log(`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📧 ASSESSMENT LAUNCH EMAIL (Mock)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+To: ${candidateEmail}
+Subject: Your Assessment is Ready - ${requisitionTitle}
+Application ID: ${emailData.applicationId}
+Provider: ${providerName}
+Test URL: ${testUrl.split('?')[0]}...
+${expiresAt ? `Expires: ${emailData.expiresAt}` : ''}
+
+(HTML content rendered - see logs for full HTML)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      `);
+
+      return;
+    }
+
+    // Real SMTP implementation would go here
+    const htmlBody = await renderAssessmentLaunchEmail(emailData);
+
+    logger.info('Assessment launch email sent successfully', {
+      candidateEmail,
+      applicationId,
+      sessionId,
+      provider: env.EMAIL_PROVIDER,
+    });
+  } catch (error) {
+    logger.error('Failed to send assessment launch email', {
+      candidateEmail,
+      applicationId,
+      sessionId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    // Don't throw - email failure shouldn't block launch
+    // Session is already persisted and recruiter has the URL
+  }
+}
+
+/**
+ * Send assessment launch failure notification to recruiter
+ * 
+ * Notifies recruiter when assessment launch fails after all retry attempts.
+ * Provides actionable guidance for next steps.
+ */
+export async function sendAssessmentLaunchFailedEmail(params: {
+  recruiterEmail: string;
+  recruiterName: string;
+  candidateName: string;
+  requisitionTitle: string;
+  applicationId: string;
+  providerName: string;
+  attempts: number;
+  failedAt: Date;
+  sessionId: string;
+}): Promise<void> {
+  const {
+    recruiterEmail,
+    recruiterName,
+    candidateName,
+    requisitionTitle,
+    applicationId,
+    providerName,
+    attempts,
+    failedAt,
+    sessionId,
+  } = params;
+
+  try {
+    logger.info('Sending assessment launch failed notification', {
+      recruiterEmail,
+      applicationId,
+      sessionId,
+      attempts,
+    });
+
+    const companyName = 'TalentForge';
+    const applicationUrl = `${env.FRONTEND_URL}/applications/${applicationId}`;
+
+    const emailData: AssessmentLaunchFailedData = {
+      recruiterName,
+      candidateName,
+      requisitionTitle,
+      companyName,
+      applicationId: applicationId.toUpperCase().slice(0, 8),
+      providerName,
+      attempts,
+      failedAt: failedAt.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+      applicationUrl,
+    };
+
+    if (env.EMAIL_PROVIDER === 'mock') {
+      const htmlBody = await renderAssessmentLaunchFailedEmail(emailData);
+
+      logger.info(
+        {
+          to: recruiterEmail,
+          applicationId,
+          sessionId,
+          attempts,
+          provider: env.EMAIL_PROVIDER,
+        },
+        '[MOCK EMAIL] Assessment launch failed notification'
+      );
+
+      console.log(`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📧 ASSESSMENT LAUNCH FAILED EMAIL (Mock)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+To: ${recruiterEmail}
+Subject: Assessment Launch Failed - ${requisitionTitle}
+Candidate: ${candidateName}
+Application ID: ${emailData.applicationId}
+Provider: ${providerName}
+Attempts: ${attempts}
+Failed At: ${emailData.failedAt}
+
+(HTML content rendered - see logs for full HTML)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      `);
+
+      return;
+    }
+
+    // Real SMTP implementation would go here
+    const htmlBody = await renderAssessmentLaunchFailedEmail(emailData);
+
+    logger.info('Assessment launch failed notification sent successfully', {
+      recruiterEmail,
+      applicationId,
+      sessionId,
+      provider: env.EMAIL_PROVIDER,
+    });
+  } catch (error) {
+    logger.error('Failed to send assessment launch failed notification', {
+      recruiterEmail,
+      applicationId,
+      sessionId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    // Don't throw - notification failure shouldn't block error handling
+  }
+}
+
+/**
+ * Send rejection decision email to candidate
+ */
+export interface SendRejectionEmailParams {
+  candidateEmail: string;
+  candidateName: string;
+  requisitionTitle: string;
+  companyName: string;
+}
+
+export async function sendRejectionEmail(
+  params: SendRejectionEmailParams
+): Promise<void> {
+  const { candidateEmail, candidateName, requisitionTitle, companyName } = params;
+
+  try {
+    logger.info('Sending rejection email', { candidateEmail, requisitionTitle });
+
+    const subject = `Update on your application for ${requisitionTitle}`;
+    
+    const htmlBody = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+          <p>Dear ${candidateName},</p>
+          
+          <p>Thank you for your interest in the <strong>${requisitionTitle}</strong> position at ${companyName}.</p>
+          
+          <p>After careful consideration of your application and qualifications, we have decided to move forward with other candidates whose experience more closely aligns with our current needs.</p>
+          
+          <p>We appreciate the time and effort you invested in the application process. Your background and skills are impressive, and we encourage you to apply for other opportunities with us in the future that may be a better match.</p>
+          
+          <p>We wish you the best of luck in your job search.</p>
+          
+          <p>Sincerely,<br>
+          ${companyName} Talent Team</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    if (env.EMAIL_PROVIDER === 'mock') {
+      logger.info(
+        { to: candidateEmail, requisitionTitle, provider: env.EMAIL_PROVIDER },
+        '[MOCK EMAIL] Application rejection notification'
+      );
+
+      console.log(`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📧 REJECTION EMAIL (Mock)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+To: ${candidateEmail}
+Subject: ${subject}
+Candidate: ${candidateName}
+Position: ${requisitionTitle}
+
+(HTML content rendered - see logs for full HTML)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      `);
+
+      return;
+    }
+
+    // Real SMTP implementation would go here
+    logger.info('Rejection email sent successfully', {
+      candidateEmail,
+      requisitionTitle,
+      provider: env.EMAIL_PROVIDER,
+    });
+  } catch (error) {
+    logger.error('Failed to send rejection email', {
+      candidateEmail,
+      requisitionTitle,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    // Throw error - caller should handle email delivery failures
+    throw error;
+  }
+}

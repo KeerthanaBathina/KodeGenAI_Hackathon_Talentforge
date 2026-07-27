@@ -33,6 +33,10 @@ const envSchema = z.object({
   OTEL_EXPORTER_OTLP_ENDPOINT: z.string().url('OTEL_EXPORTER_OTLP_ENDPOINT must be a valid URL').optional(),
   OTEL_EXPORTER_OTLP_HEADERS: z.string().optional(),
   OTEL_SERVICE_NAME: z.string().default('ai-interview-backend'),
+  // Redis Configuration (for BullMQ)
+  REDIS_URL: z.string().url('REDIS_URL must be a valid URL').default('redis://localhost:6379'),
+  // Offer Token Configuration
+  OFFER_TOKEN_SECRET: z.string().min(32, 'OFFER_TOKEN_SECRET must be at least 32 characters').optional(),
   // Resume Upload & Scanning
   SCAN_WEBHOOK_SECRET: z.string().min(32, 'SCAN_WEBHOOK_SECRET must be at least 32 characters').default('dev-only-scan-webhook-secret-change-in-production'),
   WORKER_TOKEN: z.string().min(32, 'WORKER_TOKEN must be at least 32 characters').default('dev-only-worker-token-change-in-production'),
