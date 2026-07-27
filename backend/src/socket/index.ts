@@ -89,6 +89,48 @@ export function initSocketServer(httpServer: HttpServer): AppSocketServer {
       timestamp: new Date().toISOString()
     });
 
+    // Application room subscription for prerequisite updates
+    socket.on('join:application', (applicationId: string) => {
+      if (typeof applicationId !== 'string' || !applicationId.trim()) {
+        logger.warn(
+          { socketId: socket.id, applicationId },
+          '[socket] Invalid applicationId for join:application'
+        );
+        return;
+      }
+
+      const room = `application:${applicationId}`;
+      socket.join(room);
+      logger.info(
+        { socketId: socket.id, applicationId, room },
+        '[socket] Client joined application room'
+      );
+      
+      socket.emit('joined:application', {
+        applicationId,
+        room,
+        timestamp: new Date().toISOString()
+      });
+    });
+
+    // Leave application room
+    socket.on('leave:application', (applicationId: string) => {
+      if (typeof applicationId !== 'string' || !applicationId.trim()) {
+        logger.warn(
+          { socketId: socket.id, applicationId },
+          '[socket] Invalid applicationId for leave:application'
+        );
+        return;
+      }
+
+      const room = `application:${applicationId}`;
+      socket.leave(room);
+      logger.info(
+        { socketId: socket.id, applicationId, room },
+        '[socket] Client left application room'
+      );
+    });
+
     socket.on('disconnect', (reason) => {
       logger.info({ socketId: socket.id, reason }, '[socket] Client disconnected');
     });

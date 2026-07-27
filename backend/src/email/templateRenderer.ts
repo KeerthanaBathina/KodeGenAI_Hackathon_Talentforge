@@ -53,6 +53,28 @@ export interface InterviewReminderData {
     companyName: string;
 }
 
+export interface AssessmentLaunchData {
+    candidateName: string;
+    requisitionTitle: string;
+    companyName: string;
+    applicationId: string;
+    providerName: string;
+    testUrl: string;
+    expiresAt?: string;
+}
+
+export interface AssessmentLaunchFailedData {
+    recruiterName: string;
+    candidateName: string;
+    requisitionTitle: string;
+    companyName: string;
+    applicationId: string;
+    providerName: string;
+    attempts: number;
+    failedAt: string;
+    applicationUrl: string;
+}
+
 /**
  * Render application received email template
  */
@@ -149,6 +171,25 @@ export async function renderInterviewReminder24hEmail(
 }
 
 /**
+ * Render assessment launch email template
+ */
+export async function renderAssessmentLaunchEmail(
+    data: AssessmentLaunchData
+): Promise<string> {
+    try {
+        const templatePath = path.join(__dirname, 'templates', 'assessment-launch.html');
+        const templateContent = await fs.readFile(templatePath, 'utf-8');
+        const template = Handlebars.compile(templateContent);
+        return template(data);
+    } catch (error) {
+        logger.error('Failed to render assessment launch email template', {
+            error: error instanceof Error ? error.message : String(error),
+        });
+        throw error;
+    }
+}
+
+/**
  * Render 1-hour interview reminder email template
  */
 export async function renderInterviewReminder1hEmail(
@@ -161,6 +202,25 @@ export async function renderInterviewReminder1hEmail(
         return template(data);
     } catch (error) {
         logger.error('Failed to render 1h interview reminder email template', {
+            error: error instanceof Error ? error.message : String(error),
+        });
+        throw error;
+    }
+}
+
+/**
+ * Render assessment launch failed email template
+ */
+export async function renderAssessmentLaunchFailedEmail(
+    data: AssessmentLaunchFailedData
+): Promise<string> {
+    try {
+        const templatePath = path.join(__dirname, 'templates', 'assessment-launch-failed.html');
+        const templateContent = await fs.readFile(templatePath, 'utf-8');
+        const template = Handlebars.compile(templateContent);
+        return template(data);
+    } catch (error) {
+        logger.error('Failed to render assessment launch failed email template', {
             error: error instanceof Error ? error.message : String(error),
         });
         throw error;

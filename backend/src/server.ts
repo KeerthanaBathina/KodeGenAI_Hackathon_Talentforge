@@ -5,6 +5,7 @@ import { env } from './config/env';
 import prisma from './db/prisma';
 import { initSocketServer } from './socket';
 import { startSystemHealthWorker } from './workers/systemHealthWorker';
+import { startSessionExpiryWorker } from './workers/sessionExpiryWorker';
 import logger from './utils/logger';
 import {
   startReviewQueueRealtimeTicker,
@@ -17,8 +18,9 @@ const io = initSocketServer(server);
 const port = Number.parseInt(env.PORT, 10);
 startReviewQueueRealtimeTicker(io);
 
-// Start system health monitoring
+// Start background workers
 startSystemHealthWorker();
+startSessionExpiryWorker();
 
 server.listen(port, () => {
   logger.info({ port, env: env.NODE_ENV }, '[server] Listening');
