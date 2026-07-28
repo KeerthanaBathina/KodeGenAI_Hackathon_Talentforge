@@ -20,13 +20,17 @@ import assessmentsRouter from './routes/assessments';
 import sessionTimerRouter from './routes/sessionTimer';
 import manualReviewQueueRouter from './routes/manualReviewQueue';
 import deadLetterJobsRouter from './routes/admin/deadLetterJobs';
+import emailDLQRouter from './routes/admin/emailDLQ';
 import queueStatsRouter from './routes/admin/queueStats';
 import thresholdsRouter from './routes/admin/thresholds';
 import systemStatusRouter from './routes/admin/systemStatus';
 import interviewRemindersRouter from './routes/admin/interviewReminders';
 import assessmentProvidersRouter from './routes/admin/assessmentProviders';
+import socketRoomsRouter from './routes/admin/socketRooms';
 import approvalsRouter from './routes/approvals';
 import offersRouter from './routes/offers';
+import templatesRouter from './routes/templates';
+import notificationPreferencesRouter from './routes/notificationPreferences';
 import { buildSecurityHeaders } from './middleware/securityHeaders';
 import healthRouter from './routes/health';
 
@@ -72,12 +76,16 @@ export function createApp() {
   app.use('/api/manual-review-queue', manualReviewQueueRouter);
   app.use('/api/approvals', approvalsRouter);
   app.use('/api/offers', offersRouter);
+  app.use('/api/templates', templatesRouter);
+  app.use('/api/notification-preferences', notificationPreferencesRouter);
   app.use('/api/admin/dead-letter-jobs', deadLetterJobsRouter);
+  app.use('/api/admin/email-dlq', emailDLQRouter);
   app.use('/api/admin/queue-stats', queueStatsRouter);
   app.use('/api/admin/thresholds', thresholdsRouter);
   app.use('/api/admin/system-status', systemStatusRouter);
   app.use('/api/admin/interview-reminders', interviewRemindersRouter);
   app.use('/api/admin/assessment-providers', assessmentProvidersRouter);
+  app.use('/api/admin/socket', socketRoomsRouter);
   app.use('/', healthRouter);
 
   return app;

@@ -262,7 +262,8 @@ router.post(
                     },
                 },
             });
-Dispatch candidate notification email (async, non-blocking)
+
+            // Dispatch candidate notification email (async, non-blocking)
             // Email dispatch happens after session persistence to ensure link is ready
             // Failure does not block launch response - session is already created
             sendAssessmentLaunchEmail({

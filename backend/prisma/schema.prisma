@@ -182,6 +182,23 @@ enum OfferStatus {
   expired
 }
 
+enum NotificationChannel {
+  EMAIL
+  IN_APP
+}
+
+enum NotificationTypeEnum {
+  APPLICATION_SUBMITTED
+  REVIEW_ASSIGNED
+  DECISION_MADE
+  INTERVIEW_SCHEDULED
+  SCORECARD_SUBMITTED
+  OFFER_APPROVED
+  OFFER_EXTENDED
+  SLA_WARNING
+  PATH_OVERRIDE_REQUESTED
+}
+
 model User {
   id                        String                 @id @default(uuid()) @db.Uuid
   email                     String                 @unique @db.VarChar(255)
@@ -203,12 +220,10 @@ model User {
   approvalPoliciesAuthored  ApprovalPolicy[]       @relation("ApprovalPolicyAuthor")
   auditEvents               AuditEvent[]           @relation("AuditActor")
   panelistConfirmations     PanelistConfirmation[] @relation("PanelistConfirmations")
-  assignedTasks         Task[]        @relation("TaskAssignee")
-  jobFamiliesCreated    JobFamily[]   @relation("JobFamilyCreator")
-  scoringThresholdsAuthored ScoringThreshold[] @relation("ThresholdAuthor")
-  approvalPoliciesAuthored  ApprovalPolicy[]   @relation("ApprovalPolicyAuthor")
-  auditEvents           AuditEvent[]  @relation("AuditActor")
->>>>>>> c520e4c48dcbff8dd4a58b7ac52ac38fc12589ea
+  assignedTasks             Task[]                 @relation("TaskAssignee")
+  templateVersionsAuthored  TemplateVersion[]      @relation("TemplateVersionAuthor")
+  notifications             Notification[]         @relation("UserNotifications")
+  notificationPreferences   NotificationPreference[] @relation("UserNotificationPreferences")
 
   @@map("users")
 }
@@ -374,20 +389,42 @@ model ReasonCode {
 }
 
 model Template {
-  id             String          @id @default(uuid()) @db.Uuid
-  name           String          @db.VarChar(255)
+  id             String            @id @default(uuid()) @db.Uuid
+  name           String            @db.VarChar(255)
   type           TemplateType
-  locale         String          @db.VarChar(10)
-  version        Int             @default(1)
-  subject        String          @db.VarChar(500)
-  bodyHtml       String          @db.Text
-  bodyText       String          @db.Text
-  active         Boolean         @default(true)
-  createdAt      DateTime        @default(now())
+  locale         String            @db.VarChar(10)
+  version        Int               @default(1)
+  subject        String            @db.VarChar(500)
+  bodyHtml       String            @db.Text
+  bodyText       String            @db.Text
+  active         Boolean           @default(true)
+  createdAt      DateTime          @default(now())
   communications Communication[]
+  versions       TemplateVersion[]
 
   @@unique([type, locale, version])
   @@map("templates")
+}
+
+model TemplateVersion {
+  id            String       @id @default(uuid()) @db.Uuid
+  templateId    String       @db.Uuid
+  versionNumber Int
+  name          String       @db.VarChar(255)
+  type          TemplateType
+  locale        String       @db.VarChar(10)
+  subject       String       @db.VarChar(500)
+  bodyHtml      String       @db.Text
+  bodyText      String       @db.Text
+  createdById   String       @db.Uuid
+  createdAt     DateTime     @default(now()) @db.Timestamptz
+
+  template  Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  createdBy User     @relation("TemplateVersionAuthor", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@unique([templateId, versionNumber])
+  @@index([templateId, createdAt(sort: Desc)])
+  @@map("template_versions")
 }
 
 model ApprovalPolicy {
@@ -466,23 +503,23 @@ model Requisition {
 }
 
 model Application {
-  id                        String            @id @default(uuid()) @db.Uuid
-  candidateId               String            @db.Uuid
-  requisitionId             String            @db.Uuid
-  status                    ApplicationStatus @default(submitted)
-  manualReviewReason        String?           @db.VarChar(100)
+  id                        String              @id @default(uuid()) @db.Uuid
+  candidateId               String              @db.Uuid
+  requisitionId             String              @db.Uuid
+  status                    ApplicationStatus   @default(submitted)
+  manualReviewReason        String?             @db.VarChar(100)
   path                      ApplicationPath?
-  pathOverridden            Boolean           @default(false)
-  pathOverrideJustification String?           @db.Text
-  pathOverrideApproverId    String?           @db.Uuid
-  draftData                 Json?             @db.JsonB
+  pathOverridden            Boolean             @default(false)
+  pathOverrideJustification String?             @db.Text
+  pathOverrideApproverId    String?             @db.Uuid
+  draftData                 Json?               @db.JsonB
   draftSavedAt              DateTime?
-  submittedAt               DateTime          @default(now())
-  createdAt                 DateTime          @default(now())
-  updatedAt                 DateTime          @updatedAt
-  candidate                 Candidate         @relation(fields: [candidateId], references: [id], onDelete: Restrict)
-  requisition               Requisition       @relation(fields: [requisitionId], references: [id], onDelete: Restrict)
-  pathOverrideApprover      User?             @relation("PathOverrideApprover", fields: [pathOverrideApproverId], references: [id], onDelete: SetNull)
+  submittedAt               DateTime            @default(now())
+  createdAt                 DateTime            @default(now())
+  updatedAt                 DateTime            @updatedAt
+  candidate                 Candidate           @relation(fields: [candidateId], references: [id], onDelete: Restrict)
+  requisition               Requisition         @relation(fields: [requisitionId], references: [id], onDelete: Restrict)
+  pathOverrideApprover      User?               @relation("PathOverrideApprover", fields: [pathOverrideApproverId], references: [id], onDelete: SetNull)
   resume                    Resume?
   screenings                Screening[]
   reviews                   Review[]
@@ -653,14 +690,14 @@ model InterviewScorecard {
 }
 
 model ScorecardDimension {
-  id            String               @id @default(cuid())
+  id            String             @id @default(cuid())
   scorecardId   String
-  dimensionName String               @db.VarChar(100)
+  dimensionName String             @db.VarChar(100)
   score         Int?
-  notes         String?              @db.Text
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @updatedAt
-  scorecard     InterviewScorecard   @relation(fields: [scorecardId], references: [id], onDelete: Cascade)
+  notes         String?            @db.Text
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  scorecard     InterviewScorecard @relation(fields: [scorecardId], references: [id], onDelete: Cascade)
 
   @@unique([scorecardId, dimensionName])
   @@index([scorecardId], name: "idx_scorecard_dimensions_scorecard")
@@ -737,20 +774,20 @@ model Offer {
 }
 
 model Task {
-  id          String   @id @default(uuid()) @db.Uuid
-  assignedTo  String   @db.Uuid
-  title       String   @db.Text
-  description String?  @db.Text
-  dueDate     DateTime @map("due_date")
-  status      String   @default("pending") @db.VarChar(20)
-  priority    String   @default("normal") @db.VarChar(10)
-  entityType  String   @map("entity_type") @db.VarChar(50)
-  entityId    String   @map("entity_id") @db.Uuid
-  metadata    Json     @default("{}") @db.JsonB
+  id          String    @id @default(uuid()) @db.Uuid
+  assignedTo  String    @db.Uuid
+  title       String    @db.Text
+  description String?   @db.Text
+  dueDate     DateTime  @map("due_date")
+  status      String    @default("pending") @db.VarChar(20)
+  priority    String    @default("normal") @db.VarChar(10)
+  entityType  String    @map("entity_type") @db.VarChar(50)
+  entityId    String    @map("entity_id") @db.Uuid
+  metadata    Json      @default("{}") @db.JsonB
   completedAt DateTime? @map("completed_at")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  assignee    User     @relation("TaskAssignee", fields: [assignedTo], references: [id], onDelete: Restrict)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  assignee    User      @relation("TaskAssignee", fields: [assignedTo], references: [id], onDelete: Restrict)
 
   @@index([assignedTo, status], name: "idx_tasks_assigned_to_status")
   @@index([dueDate], name: "idx_tasks_due_date")
@@ -777,6 +814,35 @@ model Communication {
   @@map("communications")
 }
 
+model Notification {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  user      User      @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  eventType String    @db.VarChar(100)
+  payload   Json      @db.JsonB
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt], name: "notification_user_read_idx")
+  @@index([userId, createdAt(sort: Desc)], name: "notification_user_created_idx")
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id               String                 @id @default(uuid()) @db.Uuid
+  userId           String                 @db.Uuid
+  user             User                   @relation("UserNotificationPreferences", fields: [userId], references: [id], onDelete: Cascade)
+  notificationType NotificationTypeEnum
+  channel          NotificationChannel
+  enabled          Boolean                @default(true)
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+
+  @@unique([userId, notificationType, channel], name: "user_notification_channel_unique")
+  @@index([userId], name: "notification_pref_user_idx")
+  @@map("notification_preferences")
+}
+
 model AuditEvent {
   id          String   @id @default(uuid()) @db.Uuid
   actorId     String?  @db.Uuid
@@ -795,15 +861,15 @@ model AuditEvent {
 }
 
 model AssessmentProvider {
-  id               String               @id @default(uuid()) @db.Uuid
-  name             String               @db.VarChar(255)
-  apiEndpoint      String               @db.VarChar(500)
-  authMode         String               @db.VarChar(50)
-  hmacSecret       String?              @db.VarChar(255)
-  timeoutSeconds   Int                  @default(30)
-  active           Boolean              @default(true)
-  createdAt        DateTime             @default(now())
-  updatedAt        DateTime             @updatedAt
+  id                 String              @id @default(uuid()) @db.Uuid
+  name               String              @db.VarChar(255)
+  apiEndpoint        String              @db.VarChar(500)
+  authMode           String              @db.VarChar(50)
+  hmacSecret         String?             @db.VarChar(255)
+  timeoutSeconds     Int                 @default(30)
+  active             Boolean             @default(true)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
   assessmentSessions AssessmentSession[]
 
   @@index([active], name: "idx_assessment_providers_active")
@@ -811,18 +877,18 @@ model AssessmentProvider {
 }
 
 model AssessmentSession {
-  id            String                   @id @default(uuid()) @db.Uuid
-  applicationId String                   @db.Uuid
-  providerId    String                   @db.Uuid
-  sessionToken  String                   @db.VarChar(500)
-  testUrl       String                   @db.VarChar(1000)
-  status        AssessmentSessionStatus  @default(in_progress)
-  launchedAt    DateTime                 @default(now())
+  id            String                  @id @default(uuid()) @db.Uuid
+  applicationId String                  @db.Uuid
+  providerId    String                  @db.Uuid
+  sessionToken  String                  @db.VarChar(500)
+  testUrl       String                  @db.VarChar(1000)
+  status        AssessmentSessionStatus @default(in_progress)
+  launchedAt    DateTime                @default(now())
   completedAt   DateTime?
-  score         Decimal?                 @db.Decimal(6, 2)
-  metadata      Json?                    @db.JsonB
-  application   Application              @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  provider      AssessmentProvider       @relation(fields: [providerId], references: [id], onDelete: Restrict)
+  score         Decimal?                @db.Decimal(6, 2)
+  metadata      Json?                   @db.JsonB
+  application   Application             @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  provider      AssessmentProvider      @relation(fields: [providerId], references: [id], onDelete: Restrict)
 
   @@index([applicationId, status], name: "idx_assessment_sessions_application_status")
   @@index([sessionToken], name: "idx_assessment_sessions_session_token")

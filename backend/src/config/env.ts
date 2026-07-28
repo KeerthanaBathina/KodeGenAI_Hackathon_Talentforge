@@ -22,6 +22,11 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   SMTP_SECURE: z.coerce.boolean().optional(),
+  // Resend API Configuration
+  RESEND_API_KEY: z.string().min(10, 'RESEND_API_KEY must be at least 10 characters').optional(),
+  RESEND_FROM_EMAIL: z.string().email('RESEND_FROM_EMAIL must be a valid email').optional(),
+  // Alert Configuration
+  ALERT_WEBHOOK_URL: z.string().url('ALERT_WEBHOOK_URL must be a valid URL').optional(),
   // JWT Configuration (RS256 or HS256)
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters').optional(),
   JWT_PRIVATE_KEY: z.string().optional(),

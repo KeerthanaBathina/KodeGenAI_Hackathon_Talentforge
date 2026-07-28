@@ -15,8 +15,11 @@ import {
   type AssessmentLaunchData,
   type AssessmentLaunchFailedData,
 } from '../email/templateRenderer';
+import { renderTemplate } from '../services/templateRenderer';
+import { resolveTemplate } from '../services/templateService';
 import nodemailer, { type SendMailOptions, type Transporter } from 'nodemailer';
 import { prisma } from '../db/prisma';
+import { TemplateType } from '@prisma/client';
 
 export type SendOtpEmailInput = {
   email: string;
@@ -83,6 +86,52 @@ export async function sendEmail(options: SendMailOptions): Promise<void> {
     from: env.EMAIL_FROM,
     ...options,
   });
+}
+
+/**
+ * Send templated email with locale fallback
+ * Uses database templates with automatic locale resolution:
+ * - Tries exact locale match (e.g., 'fr-CA')
+ * - Falls back to language code (e.g., 'fr')
+ * - Finally falls back to English ('en')
+ * 
+ * @param to - Recipient email address
+ * @param templateType - Template type to use
+ * @param tokenData - Token replacement data
+ * @param userLocale - Requested locale (default: 'en')
+ * @returns Promise that resolves when email is sent
+ */
+export async function sendTemplatedEmail(
+  to: string,
+  templateType: TemplateType,
+  tokenData: Record<string, string>,
+  userLocale: string = 'en'
+): Promise<void> {
+  // Resolve template with locale fallback
+  const template = await resolveTemplate(templateType, userLocale);
+  
+  // Render template with token replacement
+  const rendered = renderTemplate(template, tokenData);
+  
+  // Send email
+  await sendEmail({
+    to,
+    subject: rendered.subject,
+    html: rendered.bodyHtml,
+    text: rendered.bodyText,
+  });
+
+  logger.info(
+    {
+      to,
+      templateType,
+      templateId: template.id,
+      locale: template.locale,
+      requestedLocale: userLocale,
+      provider: env.EMAIL_PROVIDER,
+    },
+    'Templated email sent with locale fallback'
+  );
 }
 
 export interface SendPanelistConfirmationEmailInput {
@@ -616,7 +665,11 @@ export async function sendInterviewReminder(
       { error, interviewId, reminderType },
       '[reminders] Failed to send interview reminder'
     );
-=======
+    throw error;
+  }
+}
+
+/**
  * Send assessment launch notification email
  * 
  * Dispatches candidate email with test URL and instructions within 2-minute SLA.
@@ -916,7 +969,6 @@ Position: ${requisitionTitle}
       error: error instanceof Error ? error.message : String(error),
     });
     // Throw error - caller should handle email delivery failures
->>>>>>> c520e4c48dcbff8dd4a58b7ac52ac38fc12589ea
     throw error;
   }
 }

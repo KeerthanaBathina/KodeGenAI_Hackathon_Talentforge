@@ -1,4 +1,5 @@
 import './workers/offerWorker';
+import './workers/emailDeliveryWorker';
 import logger from './utils/logger';
 
 logger.info('All workers started');

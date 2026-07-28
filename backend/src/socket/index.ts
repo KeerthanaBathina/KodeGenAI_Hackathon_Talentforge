@@ -64,6 +64,30 @@ function joinHrRoomIfEligible(socket: Socket): void {
   }
 }
 
+function joinUserNotificationRoom(socket: Socket): void {
+  const token = getAuthTokenFromSocket(socket);
+  if (!token) {
+    return;
+  }
+
+  try {
+    const payload = JwtService.verify(token);
+    const roomName = `user:${payload.userId}`;
+    
+    socket.join(roomName);
+    
+    logger.info(
+      { socketId: socket.id, userId: payload.userId, room: roomName },
+      '[socket] Joined user notification room'
+    );
+  } catch (error) {
+    logger.warn(
+      { socketId: socket.id, error },
+      '[socket] Invalid token for notification room'
+    );
+  }
+}
+
 export function initSocketServer(httpServer: HttpServer): AppSocketServer {
   if (io) {
     return io;
@@ -83,6 +107,7 @@ export function initSocketServer(httpServer: HttpServer): AppSocketServer {
   io.on('connection', (socket: Socket) => {
     logger.info({ socketId: socket.id }, '[socket] Client connected');
     joinHrRoomIfEligible(socket);
+    joinUserNotificationRoom(socket);
 
     socket.emit('connected', {
       socketId: socket.id,
