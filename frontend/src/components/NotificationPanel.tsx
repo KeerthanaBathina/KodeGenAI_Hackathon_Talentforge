@@ -106,7 +106,7 @@ export function NotificationPanel({ isOpen, onClose }: NotificationPanelProps) {
           {!isLoading && notifications.length > 0 && (
             <div>
               {(['Today', 'Yesterday', 'This Week', 'Older'] as const).map(group => {
-                const groupNotifications = groupedNotifications[group];
+                const groupNotifications = groupedNotifications[group] || [];
                 if (groupNotifications.length === 0) return null;
 
                 return (

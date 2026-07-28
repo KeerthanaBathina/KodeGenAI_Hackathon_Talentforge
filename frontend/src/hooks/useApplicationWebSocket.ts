@@ -6,7 +6,6 @@
  */
 
 import { useEffect, useState, useRef } from 'react';
-import type { Socket } from 'socket.io-client';
 import { wsClient } from '@/lib/websocket/client';
 import type { StageCompletedEvent, AssessmentCompletedEvent } from '@/types/applicationEvents';
 
@@ -33,7 +32,7 @@ export function useApplicationWebSocket(
 ): UseApplicationWebSocketReturn {
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const socketRef = useRef<Socket | null>(null);
+  const socketRef = useRef<any>(null);
 
   // Use refs to avoid recreating effect when handlers change
   const handlersRef = useRef(handlers);
@@ -45,7 +44,7 @@ export function useApplicationWebSocket(
       return;
     }
 
-    let socket: Socket | null = null;
+    let socket: any = null;
 
     try {
       // Connect to WebSocket server

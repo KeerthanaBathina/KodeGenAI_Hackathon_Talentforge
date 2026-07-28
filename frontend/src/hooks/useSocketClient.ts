@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { io } from 'socket.io-client';
 
 /**
  * Socket.IO Client Hook
@@ -10,8 +10,8 @@ import { io, Socket } from 'socket.io-client';
  * @param authToken - JWT authentication token (null if not authenticated)
  * @returns Socket instance or null if not connected
  */
-export function useSocketClient(authToken: string | null): Socket | null {
-  const socketRef = useRef<Socket | null>(null);
+export function useSocketClient(authToken: string | null): any {
+  const socketRef = useRef<any>(null);
 
   useEffect(() => {
     // Don't connect if no auth token
@@ -46,7 +46,7 @@ export function useSocketClient(authToken: string | null): Socket | null {
     // Cleanup on unmount or auth token change
     return () => {
       console.log('[socket] Closing connection');
-      socket.close();
+      (socket as any).close();
       socketRef.current = null;
     };
   }, [authToken]);

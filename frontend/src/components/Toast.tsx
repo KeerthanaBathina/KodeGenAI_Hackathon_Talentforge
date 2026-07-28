@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { Toast as ToastType } from '../types/toast';
 import { useToast } from '../contexts/ToastContext';

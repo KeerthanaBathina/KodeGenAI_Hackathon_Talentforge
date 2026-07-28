@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAutoSave } from '@/hooks/useAutoSave';
-import Toast from '@/components/Toast';
 
 interface FormData {
     step1_personal: {
@@ -315,11 +314,41 @@ export default function ApplicationFormPage() {
         <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', padding: '2rem' }}>
             {/* Toast Notifications */}
             {toast && (
-                <Toast
-                    message={toast.message}
-                    type={toast.type}
-                    onClose={() => setToast(null)}
-                />
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: '1rem',
+                        right: '1rem',
+                        padding: '1rem',
+                        borderRadius: '0.5rem',
+                        backgroundColor: toast.type === 'success' ? '#10b981' : toast.type === 'error' ? '#ef4444' : '#3b82f6',
+                        color: 'white',
+                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                        zIndex: 9999,
+                        maxWidth: '400px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        gap: '1rem'
+                    }}
+                >
+                    <span>{toast.message}</span>
+                    <button
+                        onClick={() => setToast(null)}
+                        style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: 'white',
+                            cursor: 'pointer',
+                            fontSize: '1.25rem',
+                            padding: '0',
+                            lineHeight: '1'
+                        }}
+                        aria-label="Close notification"
+                    >
+                        ×
+                    </button>
+                </div>
             )}
 
             <div style={{ maxWidth: '800px', margin: '0 auto' }}>
@@ -694,7 +723,5 @@ export default function ApplicationFormPage() {
                 </div>
             </div>
         </div>
-            </div >
-        </div >
     );
 }

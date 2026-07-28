@@ -253,7 +253,7 @@ export default function ForgotPasswordPage() {
                             <strong>Too many requests</strong>
                         </p>
                         <p style={{ fontSize: '0.875rem', color: '#991b1b' }}>
-                            Please wait <CountdownTimer targetDate={new Date(rateLimitResetAt)} onExpire={handleRateLimitExpire} /> before trying again.
+                            Please wait <CountdownTimer resetAt={new Date(rateLimitResetAt)} onExpire={handleRateLimitExpire} /> before trying again.
                         </p>
                     </div>
                 )}

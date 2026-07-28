@@ -5,10 +5,10 @@
  * and event handling for real-time updates.
  */
 
-import { io, Socket } from 'socket.io-client';
+import { io } from 'socket.io-client';
 
 class WebSocketClient {
-  private socket: Socket | null = null;
+  private socket: any = null;
   private reconnectAttempts = 0;
   private readonly maxReconnectAttempts = 5;
   private readonly reconnectionDelay = 1000;
@@ -36,7 +36,7 @@ class WebSocketClient {
    * Connect to WebSocket server
    * Creates a new connection or returns existing connected socket
    */
-  connect(): Socket {
+  connect(): any {
     if (this.socket?.connected) {
       return this.socket;
     }

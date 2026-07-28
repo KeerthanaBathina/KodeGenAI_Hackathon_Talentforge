@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import Toast from '@/components/Toast';
 import {
     getPanelistAvailability,
     scheduleInterview,
@@ -139,7 +138,43 @@ export default function InterviewPlannerPage({ params }: { params: { application
 
     return (
         <main style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)', padding: '2rem' }}>
-            {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+            {toast && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: '1rem',
+                        right: '1rem',
+                        padding: '1rem',
+                        borderRadius: '0.5rem',
+                        backgroundColor: toast.type === 'success' ? '#10b981' : toast.type === 'error' ? '#ef4444' : '#3b82f6',
+                        color: 'white',
+                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                        zIndex: 9999,
+                        maxWidth: '400px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        gap: '1rem'
+                    }}
+                >
+                    <span>{toast.message}</span>
+                    <button
+                        onClick={() => setToast(null)}
+                        style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: 'white',
+                            cursor: 'pointer',
+                            fontSize: '1.25rem',
+                            padding: '0',
+                            lineHeight: '1'
+                        }}
+                        aria-label="Close notification"
+                    >
+                        ×
+                    </button>
+                </div>
+            )}
 
             <section style={{ maxWidth: '1100px', margin: '0 auto' }}>
                 <header style={{ marginBottom: '1.5rem' }}>

@@ -186,7 +186,7 @@ export default function LoginPage() {
                                     <div style={{ fontSize: '0.875rem', color: '#991b1b' }}>
                                         <strong>Time remaining:</strong>{' '}
                                         <CountdownTimer
-                                            targetDate={new Date(lockoutInfo.until)}
+                                            resetAt={new Date(lockoutInfo.until)}
                                             onExpire={handleLockoutExpire}
                                         />
                                     </div>

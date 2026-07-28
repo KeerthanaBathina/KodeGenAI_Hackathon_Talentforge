@@ -174,7 +174,7 @@ export default function ProfilePage() {
 
     function updateEducation(index: number, field: keyof EducationEntry, value: any) {
         const updated = [...education];
-        updated[index] = { ...updated[index], [field]: value };
+        updated[index] = { ...updated[index], [field]: value } as EducationEntry;
         setEducation(updated);
     }
 
@@ -198,7 +198,7 @@ export default function ProfilePage() {
 
     function updateWorkHistory(index: number, field: keyof WorkExperience, value: any) {
         const updated = [...workHistory];
-        updated[index] = { ...updated[index], [field]: value };
+        updated[index] = { ...updated[index], [field]: value } as WorkExperience;
         setWorkHistory(updated);
     }
 
