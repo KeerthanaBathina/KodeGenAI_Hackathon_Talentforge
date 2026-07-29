@@ -2,7 +2,7 @@
 id: TASK-003
 user_story: US-004
 title: "Frontend - CSV Upload UI Component"
-status: todo
+status: done
 priority: high
 assigned_to: frontend-team
 estimated_hours: 7

@@ -2,12 +2,14 @@
 id: TASK-003
 user_story: US-002
 title: "Frontend - Policy Editor UI with Validation"
-status: todo
+status: completed
 priority: high
 assigned_to: frontend-team
 estimated_hours: 14
+actual_hours: 6
 layer: frontend
 dependencies: [TASK-001, TASK-002]
+completed_on: 2026-07-30
 ---
 
 # TASK-003 — Frontend - Policy Editor UI with Validation

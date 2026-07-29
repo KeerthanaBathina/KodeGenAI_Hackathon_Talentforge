@@ -2,12 +2,13 @@
 id: TASK-002
 user_story: US-001
 title: "Backend - Onboarding Email Notification Service"
-status: todo
+status: completed
 priority: high
 assigned_to: backend-team
 estimated_hours: 4
 layer: backend
 dependencies: [TASK-001]
+completed_date: 2026-07-28
 ---
 
 # TASK-002 — Backend - Onboarding Email Notification Service

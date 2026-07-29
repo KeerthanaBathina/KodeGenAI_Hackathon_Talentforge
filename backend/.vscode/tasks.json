@@ -1,0 +1,17 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Test Health Metrics Service",
+			"type": "shell",
+			"command": "npm test",
+			"args": [
+				"--",
+				"src/__tests__/services/healthMetricsService.test.ts"
+			],
+			"problemMatcher": [
+				"$tsc"
+			]
+		}
+	]
+}

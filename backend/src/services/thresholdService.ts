@@ -1,15 +1,20 @@
-import prisma from '../db/prisma';
+import { prisma } from '../db/prisma';
 import logger from '../utils/logger';
+import { auditService } from './auditService';
+import {
+  PolicyNotFoundError,
+  InvalidThresholdRangeError,
+} from './errors/PolicyErrors';
 
 export interface ScreeningThresholds {
-    id: string;
-    shortlistThreshold: number;
-    borderlineMin: number;
-    borderlineMax: number;
-    rejectThreshold: number;
-    version: number;
-    effectiveFrom: Date;
-    createdAt: Date;
+  id: string;
+  shortlistThreshold: number;
+  borderlineMin: number;
+  borderlineMax: number;
+  rejectThreshold: number;
+  version: number;
+  effectiveFrom: Date;
+  createdAt: Date;
 }
 
 export type RecommendationType = 'shortlist' | 'manual_review' | 'reject';
@@ -19,101 +24,212 @@ let cachedThresholds: ScreeningThresholds | null = null;
 let cacheTimestamp: number = 0;
 const CACHE_TTL = 60000; // 1 minute
 
+/**
+ * Validate threshold ranges and logical ordering
+ */
+function validateThresholdRanges(data: {
+  shortlistThreshold: number;
+  borderlineMin: number;
+  borderlineMax: number;
+  rejectThreshold: number;
+}): void {
+  const errors: string[] = [];
+
+  // All values must be 0-100
+  if (data.shortlistThreshold < 0 || data.shortlistThreshold > 100) {
+    errors.push('Shortlist threshold must be between 0 and 100');
+  }
+  if (data.borderlineMin < 0 || data.borderlineMin > 100) {
+    errors.push('Borderline min must be between 0 and 100');
+  }
+  if (data.borderlineMax < 0 || data.borderlineMax > 100) {
+    errors.push('Borderline max must be between 0 and 100');
+  }
+  if (data.rejectThreshold < 0 || data.rejectThreshold > 100) {
+    errors.push('Reject threshold must be between 0 and 100');
+  }
+
+  // Logical order: reject < borderlineMin < borderlineMax < shortlist
+  if (data.rejectThreshold >= data.borderlineMin) {
+    errors.push('Reject threshold must be less than borderline min');
+  }
+  if (data.borderlineMin >= data.borderlineMax) {
+    errors.push('Borderline min must be less than borderline max');
+  }
+  if (data.borderlineMax >= data.shortlistThreshold) {
+    errors.push('Borderline max must be less than shortlist threshold');
+  }
+
+  if (errors.length > 0) {
+    throw new InvalidThresholdRangeError(errors);
+  }
+}
+
+/**
+ * Get active thresholds with caching (for current date)
+ */
 export async function getActiveThresholds(): Promise<ScreeningThresholds> {
-    const now = Date.now();
+  return getEffectiveThreshold(new Date());
+}
 
-    // Return cached if still valid
-    if (cachedThresholds && now - cacheTimestamp < CACHE_TTL) {
-        return cachedThresholds;
-    }
+/**
+ * Get effective threshold at specific date
+ * Critical for in-flight application isolation
+ */
+export async function getEffectiveThreshold(
+  asOfDate: Date = new Date(),
+): Promise<ScreeningThresholds> {
+  const now = Date.now();
 
-    // Fetch from database
-    const thresholds = await prisma.screeningThreshold.findFirst({
-        where: {
-            effectiveFrom: {
-                lte: new Date(),
-            },
-        },
-        orderBy: {
-            effectiveFrom: 'desc',
-        },
-    });
-
-    if (!thresholds) {
-        throw new Error('No active screening thresholds found');
-    }
-
-    cachedThresholds = thresholds as ScreeningThresholds;
-    cacheTimestamp = now;
-
-    logger.info('Loaded active thresholds', {
-        version: thresholds.version,
-        shortlist: thresholds.shortlistThreshold,
-        borderline: `${thresholds.borderlineMin}-${thresholds.borderlineMax}`,
-    });
-
+  // Check cache only for current date
+  if (
+    cachedThresholds &&
+    asOfDate.getTime() === Math.floor(Date.now() / (24 * 60 * 60 * 1000)) * (24 * 60 * 60 * 1000) &&
+    now - cacheTimestamp < CACHE_TTL
+  ) {
     return cachedThresholds;
+  }
+
+  // Fetch from database
+  const thresholds = await prisma.screeningThreshold.findFirst({
+    where: {
+      effectiveFrom: {
+        lte: asOfDate,
+      },
+    },
+    orderBy: {
+      effectiveFrom: 'desc',
+    },
+  });
+
+  if (!thresholds) {
+    throw new PolicyNotFoundError('No effective screening threshold found');
+  }
+
+  const result = thresholds as ScreeningThresholds;
+
+  // Cache only if this is for the current date
+  if (
+    asOfDate.getTime() === Math.floor(Date.now() / (24 * 60 * 60 * 1000)) * (24 * 60 * 60 * 1000)
+  ) {
+    cachedThresholds = result;
+    cacheTimestamp = now;
+  }
+
+  logger.info('Loaded effective thresholds', {
+    version: result.version,
+    shortlist: result.shortlistThreshold,
+    borderline: `${result.borderlineMin}-${result.borderlineMax}`,
+    asOfDate: asOfDate.toISOString(),
+  });
+
+  return result;
 }
 
+/**
+ * Get screening recommendation based on score and thresholds
+ */
 export function getRecommendation(
-    score: number,
-    thresholds: ScreeningThresholds
+  score: number,
+  thresholds: ScreeningThresholds,
 ): RecommendationType {
-    if (score >= thresholds.shortlistThreshold) {
-        return 'shortlist';
-    }
+  if (score >= thresholds.shortlistThreshold) {
+    return 'shortlist';
+  }
 
-    if (score <= thresholds.rejectThreshold) {
-        return 'reject';
-    }
+  if (score <= thresholds.rejectThreshold) {
+    return 'reject';
+  }
 
-    // Between reject and shortlist = manual review
-    return 'manual_review';
+  // Between reject and shortlist = manual review
+  return 'manual_review';
 }
 
-export async function createThresholdVersion(data: {
+/**
+ * Create new threshold version with validation and audit logging
+ */
+export async function createScreeningThresholdVersion(
+  data: {
     shortlistThreshold: number;
     borderlineMin: number;
     borderlineMax: number;
     rejectThreshold: number;
-    effectiveFrom?: Date;
-}): Promise<ScreeningThresholds> {
-    // Get current max version
-    const latestThreshold = await prisma.screeningThreshold.findFirst({
-        orderBy: { version: 'desc' },
-    });
+    effectiveFrom: Date;
+  },
+  createdBy: string,
+): Promise<ScreeningThresholds> {
+  // Validate thresholds
+  validateThresholdRanges(data);
 
-    const newVersion = (latestThreshold?.version || 0) + 1;
+  // Get latest version for comparison
+  const latestVersion = await prisma.screeningThreshold.findFirst({
+    orderBy: { version: 'desc' },
+  });
 
-    const threshold = await prisma.screeningThreshold.create({
-        data: {
-            ...data,
-            version: newVersion,
-            effectiveFrom: data.effectiveFrom || new Date(),
-        },
-    });
+  const newVersion = (latestVersion?.version || 0) + 1;
 
-    // Invalidate cache
-    cachedThresholds = null;
+  // Create new version
+  const threshold = await prisma.screeningThreshold.create({
+    data: {
+      ...data,
+      version: newVersion,
+    },
+  });
 
-    logger.info('Created new threshold version', {
-        version: newVersion,
-        effectiveFrom: threshold.effectiveFrom,
-    });
+  // Log audit event with before/after values
+  await auditService.logEvent({
+    action: 'threshold.version_created',
+    actorId: createdBy,
+    resourceType: 'ScreeningThreshold',
+    resourceId: threshold.id,
+    metadata: {
+      version: newVersion,
+      effectiveFrom: threshold.effectiveFrom,
+      oldValues: latestVersion
+        ? {
+            shortlistThreshold: latestVersion.shortlistThreshold,
+            borderlineMin: latestVersion.borderlineMin,
+            borderlineMax: latestVersion.borderlineMax,
+            rejectThreshold: latestVersion.rejectThreshold,
+          }
+        : null,
+      newValues: {
+        shortlistThreshold: data.shortlistThreshold,
+        borderlineMin: data.borderlineMin,
+        borderlineMax: data.borderlineMax,
+        rejectThreshold: data.rejectThreshold,
+      },
+    },
+  });
 
-    return threshold as ScreeningThresholds;
+  // Clear cache
+  clearThresholdCache();
+
+  logger.info('Created new screening threshold version', {
+    version: newVersion,
+    effectiveFrom: threshold.effectiveFrom,
+    createdBy,
+  });
+
+  return threshold as ScreeningThresholds;
 }
 
-export async function getThresholdHistory(): Promise<ScreeningThresholds[]> {
-    const history = await prisma.screeningThreshold.findMany({
-        orderBy: { effectiveFrom: 'desc' },
-        take: 10,
-    });
-
-    return history as ScreeningThresholds[];
+/**
+ * Get threshold history with pagination
+ */
+export async function getThresholdHistory(
+  limit: number = 50,
+): Promise<Array<ScreeningThresholds & { changedBy?: string }>> {
+  return (await prisma.screeningThreshold.findMany({
+    orderBy: [{ effectiveFrom: 'desc' }, { createdAt: 'desc' }],
+    take: limit,
+  })) as Array<ScreeningThresholds & { changedBy?: string }>;
 }
 
+/**
+ * Clear threshold cache
+ */
 export function clearThresholdCache(): void {
-    cachedThresholds = null;
-    cacheTimestamp = 0;
+  cachedThresholds = null;
+  cacheTimestamp = 0;
 }

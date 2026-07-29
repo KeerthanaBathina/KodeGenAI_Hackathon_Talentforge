@@ -2,12 +2,13 @@
 id: TASK-005
 user_story: US-001
 title: "Frontend - Admin User Management UI"
-status: todo
+status: completed
 priority: high
 assigned_to: frontend-team
 estimated_hours: 12
 layer: frontend
 dependencies: [TASK-001, TASK-002, TASK-003]
+completed_date: 2026-07-29
 ---
 
 # TASK-005 — Frontend - Admin User Management UI

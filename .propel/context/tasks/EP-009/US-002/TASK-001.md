@@ -2,12 +2,13 @@
 id: TASK-001
 user_story: US-002
 title: "Backend - Policy Versioning Service Layer"
-status: todo
+status: completed
 priority: high
 assigned_to: backend-team
 estimated_hours: 10
 layer: backend
 dependencies: []
+completed_date: 2026-07-29
 ---
 
 # TASK-001 — Backend - Policy Versioning Service Layer

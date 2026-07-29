@@ -2,12 +2,14 @@
 id: TASK-002
 user_story: US-002
 title: "Backend - Policy Management REST API Endpoints"
-status: todo
+status: completed
 priority: high
 assigned_to: backend-team
-estimated_hours: 8
+estimated_hours: 4
+actual_hours: 4
 layer: backend
 dependencies: [TASK-001]
+completed_on: 2026-07-30
 ---
 
 # TASK-002 — Backend - Policy Management REST API Endpoints

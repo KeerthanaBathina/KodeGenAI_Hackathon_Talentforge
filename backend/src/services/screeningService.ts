@@ -65,8 +65,18 @@ export async function performScreening(applicationId: string): Promise<Screening
             throw new ScreeningError('Resume not parsed yet', 'RESUME_NOT_PARSED');
         }
 
-        // 2. Get active thresholds
-        const thresholds = await getActiveThresholds();
+        // 2. Get effective threshold at application submission time
+        // This ensures in-flight applications use the policy that was effective when they were submitted
+        // Prevents retroactive policy changes from affecting already-submitted applications
+        const effectiveThresholds = await getEffectiveThreshold(
+            application.submittedAt
+        );
+        
+        logger.debug('Using threshold version for in-flight application', {
+            applicationId,
+            submittedAt: application.submittedAt,
+            thresholdVersion: effectiveThresholds.version,
+        });
 
         // 3. Compute screening score
         const { score, factors } = computeScreeningScore({
@@ -83,8 +93,8 @@ export async function performScreening(applicationId: string): Promise<Screening
         const confidenceResult = calculateConfidence({
             score,
             thresholds: {
-                shortlistMin: thresholds.shortlistMin,
-                manualReviewMin: thresholds.manualReviewMin,
+                shortlistMin: effectiveThresholds.shortlistThreshold,
+                manualReviewMin: effectiveThresholds.borderlineMin,
             },
             parsedData: application.resume.parsedData as any,
             factors: {
@@ -96,7 +106,7 @@ export async function performScreening(applicationId: string): Promise<Screening
         const isLowConfidence = requiresManualReview(confidenceResult.confidence);
 
         // 4. Determine recommendation (override if low confidence)
-        let recommendation = getRecommendation(score, thresholds);
+        let recommendation = getRecommendation(score, effectiveThresholds);
         let manualReviewReason: string | null = null;
 
         if (isLowConfidence) {
@@ -117,7 +127,7 @@ export async function performScreening(applicationId: string): Promise<Screening
                 score,
                 recommendation,
                 factors: factors as any,
-                thresholdVersion: thresholds.version,
+                thresholdVersion: effectiveThresholds.version,
                 confidence: formatConfidenceForDb(confidenceResult.confidence),
                 screenedAt: new Date(),
             },
@@ -164,7 +174,8 @@ export async function performScreening(applicationId: string): Promise<Screening
             metadata: {
                 score,
                 recommendation,
-                thresholdVersion: thresholds.version,
+                thresholdVersion: effectiveThresholds.version,
+                thresholdEffectiveDate: effectiveThresholds.effectiveFrom,
                 candidateId: application.candidateId,
             },
         });

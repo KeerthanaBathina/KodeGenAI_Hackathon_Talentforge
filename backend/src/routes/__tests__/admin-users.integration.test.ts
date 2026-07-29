@@ -458,4 +458,130 @@ describe('Admin User Management API', () => {
             expect(response.status).toBe(404);
         });
     });
+
+    describe('Audit Logging', () => {
+        it('should log user_created audit event when user is created', async () => {
+            const response = await request(app)
+                .post('/api/admin/users')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({
+                    email: 'audit.created@test-api.com',
+                    fullName: 'Audit Created',
+                    role: 'recruiter'
+                });
+
+            const userId = response.body.user.id;
+
+            // Verify audit event was logged
+            const auditEvents = await prisma.auditEvent.findMany({
+                where: {
+                    entityId: userId,
+                    eventType: 'user_created'
+                }
+            });
+
+            expect(auditEvents.length).toBeGreaterThan(0);
+            expect(auditEvents[0].actorId).toBe(adminUserId);
+            expect(auditEvents[0].payload).toMatchObject({
+                email: 'audit.created@test-api.com',
+                role: 'recruiter'
+            });
+        });
+
+        it('should log user_role_updated audit event when role is changed', async () => {
+            // Create user
+            const createResponse = await request(app)
+                .post('/api/admin/users')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({
+                    email: 'audit.role@test-api.com',
+                    fullName: 'Audit Role',
+                    role: 'recruiter'
+                });
+
+            const userId = createResponse.body.user.id;
+
+            // Update role
+            await request(app)
+                .patch(`/api/admin/users/${userId}/role`)
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({
+                    role: 'hr_reviewer'
+                });
+
+            // Verify audit event was logged
+            const auditEvents = await prisma.auditEvent.findMany({
+                where: {
+                    entityId: userId,
+                    eventType: 'user_role_updated'
+                }
+            });
+
+            expect(auditEvents.length).toBeGreaterThan(0);
+            expect(auditEvents[0].actorId).toBe(adminUserId);
+            expect(auditEvents[0].payload).toMatchObject({
+                oldRole: 'recruiter',
+                newRole: 'hr_reviewer'
+            });
+        });
+
+        it('should log user_deactivated audit event when user is deactivated', async () => {
+            // Create user
+            const createResponse = await request(app)
+                .post('/api/admin/users')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({
+                    email: 'audit.deactivate@test-api.com',
+                    fullName: 'Audit Deactivate',
+                    role: 'recruiter'
+                });
+
+            const userId = createResponse.body.user.id;
+
+            // Deactivate
+            await request(app)
+                .patch(`/api/admin/users/${userId}/deactivate`)
+                .set('Authorization', `Bearer ${adminToken}`);
+
+            // Verify audit event was logged
+            const auditEvents = await prisma.auditEvent.findMany({
+                where: {
+                    entityId: userId,
+                    eventType: 'user_deactivated'
+                }
+            });
+
+            expect(auditEvents.length).toBeGreaterThan(0);
+            expect(auditEvents[0].actorId).toBe(adminUserId);
+        });
+
+        it('should include actorId and timestamp in audit events', async () => {
+            // Create user
+            const createResponse = await request(app)
+                .post('/api/admin/users')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({
+                    email: 'audit.meta@test-api.com',
+                    fullName: 'Audit Meta',
+                    role: 'recruiter'
+                });
+
+            const userId = createResponse.body.user.id;
+
+            // Get audit events
+            const auditEvents = await prisma.auditEvent.findMany({
+                where: {
+                    entityId: userId
+                }
+            });
+
+            expect(auditEvents.length).toBeGreaterThan(0);
+            const event = auditEvents[0];
+            expect(event.actorId).toBe(adminUserId);
+            expect(event.createdAt).toBeDefined();
+            expect(event.createdAt instanceof Date).toBe(true);
+            expect(event.payload).toBeDefined();
+        });
+    });
 });
+

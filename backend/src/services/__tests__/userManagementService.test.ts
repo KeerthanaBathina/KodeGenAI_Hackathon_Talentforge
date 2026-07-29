@@ -514,4 +514,195 @@ describe('User Management Service', () => {
             expect(result!.active).toBe(true);
         });
     });
+
+    describe('Audit Logging', () => {
+        it('should log user_created event when user is created', async () => {
+            const actorId = 'actor-uuid-12345';
+            const result = await userManagementService.createUser({
+                email: 'audit.created@example.com',
+                fullName: 'Audit Created',
+                role: UserRole.recruiter,
+                actorId
+            });
+
+            // Check audit event was created
+            const auditEvents = await prisma.auditEvent.findMany({
+                where: {
+                    entityId: result.user.id,
+                    eventType: 'user_created'
+                }
+            });
+
+            expect(auditEvents).toHaveLength(1);
+            expect(auditEvents[0].entityType).toBe('user');
+            expect(auditEvents[0].actorId).toBe(actorId);
+            expect(auditEvents[0].payload).toMatchObject({
+                email: 'audit.created@example.com',
+                role: UserRole.recruiter
+            });
+        });
+
+        it('should log user_role_updated event when role is changed', async () => {
+            const user = await userManagementService.createUser({
+                email: 'audit.role@example.com',
+                fullName: 'Audit Role',
+                role: UserRole.recruiter
+            });
+
+            const actorId = 'actor-role-change';
+            await userManagementService.updateUserRole(
+                user.user.id,
+                UserRole.hr_reviewer,
+                actorId
+            );
+
+            const auditEvents = await prisma.auditEvent.findMany({
+                where: {
+                    entityId: user.user.id,
+                    eventType: 'user_role_updated'
+                }
+            });
+
+            expect(auditEvents).toHaveLength(1);
+            expect(auditEvents[0].actorId).toBe(actorId);
+            expect(auditEvents[0].payload).toMatchObject({
+                oldRole: UserRole.recruiter,
+                newRole: UserRole.hr_reviewer
+            });
+        });
+
+        it('should log user_deactivated event when user is deactivated', async () => {
+            const user = await userManagementService.createUser({
+                email: 'audit.deactivated@example.com',
+                fullName: 'Audit Deactivated',
+                role: UserRole.recruiter
+            });
+
+            const actorId = 'actor-deactivate';
+            await userManagementService.deactivateUser(user.user.id, actorId);
+
+            const auditEvents = await prisma.auditEvent.findMany({
+                where: {
+                    entityId: user.user.id,
+                    eventType: 'user_deactivated'
+                }
+            });
+
+            expect(auditEvents).toHaveLength(1);
+            expect(auditEvents[0].actorId).toBe(actorId);
+            expect(auditEvents[0].payload).toMatchObject({
+                email: 'audit.deactivated@example.com'
+            });
+        });
+
+        it('should log user_reactivated event when user is reactivated', async () => {
+            const user = await userManagementService.createUser({
+                email: 'audit.reactivated@example.com',
+                fullName: 'Audit Reactivated',
+                role: UserRole.recruiter
+            });
+
+            const actorId = 'actor-reactivate';
+            await userManagementService.deactivateUser(user.user.id, actorId);
+            await userManagementService.reactivateUser(user.user.id, actorId);
+
+            const auditEvents = await prisma.auditEvent.findMany({
+                where: {
+                    entityId: user.user.id,
+                    eventType: 'user_reactivated'
+                }
+            });
+
+            expect(auditEvents).toHaveLength(1);
+            expect(auditEvents[0].actorId).toBe(actorId);
+        });
+
+        it('should log user_deactivation_blocked when self-deactivation is attempted', async () => {
+            const user = await userManagementService.createUser({
+                email: 'audit.self.deactivate@example.com',
+                fullName: 'Audit Self Deactivate',
+                role: UserRole.admin
+            });
+
+            // Attempt self-deactivation
+            await expect(
+                userManagementService.deactivateUser(user.user.id, user.user.id)
+            ).rejects.toThrow('SELF_MODIFICATION_FORBIDDEN');
+
+            // Check that blocking event was logged
+            const auditEvents = await prisma.auditEvent.findMany({
+                where: {
+                    entityId: user.user.id,
+                    eventType: 'user_deactivation_blocked'
+                }
+            });
+
+            expect(auditEvents).toHaveLength(1);
+            expect(auditEvents[0].payload).toMatchObject({
+                reason: 'Self-deactivation attempt'
+            });
+        });
+
+        it('should return audit trail for a user', async () => {
+            const user = await userManagementService.createUser({
+                email: 'audit.trail@example.com',
+                fullName: 'Audit Trail',
+                role: UserRole.recruiter,
+                actorId: 'actor1'
+            });
+
+            // Perform some actions
+            await userManagementService.updateUserRole(
+                user.user.id,
+                UserRole.hr_reviewer,
+                'actor2'
+            );
+
+            // Get audit trail
+            const trail = await userManagementService.getUserAuditTrail(user.user.id);
+
+            expect(trail.length).toBeGreaterThanOrEqual(2);
+            expect(trail.some(e => e.eventType === 'user_created')).toBe(true);
+            expect(trail.some(e => e.eventType === 'user_role_updated')).toBe(true);
+        });
+
+        it('should filter audit trail by actions', async () => {
+            const user = await userManagementService.createUser({
+                email: 'audit.filter@example.com',
+                fullName: 'Audit Filter',
+                role: UserRole.recruiter
+            });
+
+            await userManagementService.updateUserRole(
+                user.user.id,
+                UserRole.hr_reviewer,
+                'actor1'
+            );
+
+            // Get only role change events
+            const trail = await userManagementService.getUserAuditTrail(
+                user.user.id,
+                { actions: ['user_role_updated'] }
+            );
+
+            expect(trail.every(e => e.eventType === 'user_role_updated')).toBe(true);
+        });
+
+        it('should limit audit trail results', async () => {
+            const user = await userManagementService.createUser({
+                email: 'audit.limit@example.com',
+                fullName: 'Audit Limit',
+                role: UserRole.recruiter
+            });
+
+            // Get limited results
+            const trail = await userManagementService.getUserAuditTrail(
+                user.user.id,
+                { limit: 1 }
+            );
+
+            expect(trail.length).toBeLessThanOrEqual(1);
+        });
+    });
 });
+

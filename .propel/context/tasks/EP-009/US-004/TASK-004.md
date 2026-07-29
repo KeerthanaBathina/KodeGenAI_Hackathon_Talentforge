@@ -2,7 +2,7 @@
 id: TASK-004
 user_story: US-004
 title: "Testing - Comprehensive Bulk Import Tests"
-status: todo
+status: done
 priority: high
 assigned_to: qa-team
 estimated_hours: 6

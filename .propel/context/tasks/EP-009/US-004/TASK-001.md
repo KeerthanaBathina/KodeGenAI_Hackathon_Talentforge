@@ -2,7 +2,7 @@
 id: TASK-001
 user_story: US-004
 title: "Backend - CSV Import Service Layer with Validation"
-status: todo
+status: done
 priority: high
 assigned_to: backend-team
 estimated_hours: 8

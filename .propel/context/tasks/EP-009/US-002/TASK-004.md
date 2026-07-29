@@ -2,12 +2,14 @@
 id: TASK-004
 user_story: US-002
 title: "Frontend - Policy Change History Viewer"
-status: todo
+status: completed
 priority: medium
 assigned_to: frontend-team
 estimated_hours: 6
+actual_hours: 4
 layer: frontend
 dependencies: [TASK-002, TASK-003]
+completed_on: 2026-07-30
 ---
 
 # TASK-004 — Frontend - Policy Change History Viewer

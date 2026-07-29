@@ -53,7 +53,8 @@ router.post('/', async (req: Request, res: Response, next: NextFunction): Promis
             email,
             fullName,
             role: role as UserRole,
-            timezone
+            timezone,
+            actorId: req.user!.id  // Pass the authenticated admin's ID
         };
 
         const result = await createUser(input);

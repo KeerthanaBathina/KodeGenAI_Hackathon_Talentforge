@@ -2,7 +2,7 @@
 id: TASK-002
 user_story: US-004
 title: "Backend - CSV Import REST API Endpoint"
-status: todo
+status: done
 priority: high
 assigned_to: backend-team
 estimated_hours: 4

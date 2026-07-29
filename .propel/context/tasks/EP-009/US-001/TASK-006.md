@@ -2,12 +2,13 @@
 id: TASK-006
 user_story: US-001
 title: "Testing - Integration and E2E Tests for User Management"
-status: todo
+status: completed
 priority: high
 assigned_to: qa-team
 estimated_hours: 10
 layer: testing
 dependencies: [TASK-001, TASK-002, TASK-003, TASK-004, TASK-005]
+completed_date: 2026-07-29
 ---
 
 # TASK-006 — Testing - Integration and E2E Tests for User Management

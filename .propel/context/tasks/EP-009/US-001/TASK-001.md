@@ -2,12 +2,13 @@
 id: TASK-001
 user_story: US-001
 title: "Backend API - User Management CRUD Operations"
-status: todo
+status: completed
 priority: high
 assigned_to: backend-team
 estimated_hours: 8
 layer: backend
 dependencies: []
+completed_date: 2026-07-29
 ---
 
 # TASK-001 — Backend API - User Management CRUD Operations

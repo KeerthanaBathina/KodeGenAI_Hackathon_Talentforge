@@ -2,12 +2,14 @@
 id: TASK-006
 user_story: US-002
 title: "Testing - Comprehensive Policy Versioning Tests"
-status: todo
+status: completed
 priority: high
 assigned_to: qa-team
 estimated_hours: 12
+actual_hours: 4
 layer: testing
 dependencies: [TASK-001, TASK-002, TASK-003, TASK-004, TASK-005]
+completed_on: 2026-07-30
 ---
 
 # TASK-006 — Testing - Comprehensive Policy Versioning Tests

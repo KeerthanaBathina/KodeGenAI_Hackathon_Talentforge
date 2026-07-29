@@ -2,12 +2,13 @@
 id: TASK-003
 user_story: US-001
 title: "Backend - Authentication Middleware for Deactivated Users"
-status: todo
+status: completed
 priority: high
 assigned_to: backend-team
 estimated_hours: 6
 layer: backend
 dependencies: [TASK-001]
+completed_date: 2026-07-29
 ---
 
 # TASK-003 — Backend - Authentication Middleware for Deactivated Users

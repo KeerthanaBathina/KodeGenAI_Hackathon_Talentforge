@@ -2,12 +2,14 @@
 id: TASK-005
 user_story: US-002
 title: "Database Migration - Policy Version Tracking Schema Updates"
-status: todo
+status: completed
 priority: high
 assigned_to: backend-team
 estimated_hours: 4
+actual_hours: 2
 layer: database
 dependencies: [TASK-001]
+completed_on: 2026-07-30
 ---
 
 # TASK-005 — Database Migration - Policy Version Tracking Schema Updates

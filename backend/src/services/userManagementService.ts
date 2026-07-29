@@ -24,6 +24,7 @@ export interface CreateUserInput {
     fullName: string;
     role: UserRole;
     timezone?: string;
+    actorId?: string;  // Optional: admin who created the user
 }
 
 export interface UserFilters {
@@ -43,6 +44,28 @@ export interface CreateUserResult {
         createdAt: Date;
     };
     temporaryPassword: string;
+}
+
+export interface AuditTrailOptions {
+    startDate?: Date;
+    endDate?: Date;
+    actions?: string[];
+    limit?: number;
+}
+
+export interface AuditTrailEntry {
+    id: string;
+    eventType: string;
+    entityType: string;
+    entityId: string;
+    actorId?: string;
+    payload: Record<string, any>;
+    createdAt: Date;
+    actor?: {
+        id: string;
+        email: string;
+        fullName?: string;
+    };
 }
 
 export class UserManagementError extends Error {
@@ -95,12 +118,12 @@ function validateEmail(email: string): boolean {
 /**
  * Create a new user with a temporary password
  * 
- * @param data - User creation data
+ * @param data - User creation data including email, fullName, role, and optional actorId
  * @returns User object and temporary password (only returned once)
  * @throws UserManagementError if email already exists or validation fails
  */
 export async function createUser(data: CreateUserInput): Promise<CreateUserResult> {
-    const { email, fullName, role, timezone = 'UTC' } = data;
+    const { email, fullName, role, timezone = 'UTC', actorId } = data;
 
     // Validate inputs
     const normalizedEmail = normalizeEmail(email);
@@ -173,6 +196,7 @@ export async function createUser(data: CreateUserInput): Promise<CreateUserResul
         eventType: 'user_created',
         entityType: 'user',
         entityId: user.id,
+        actorId,  // Admin who created this user
         payload: {
             email: user.email,
             role: user.role,
@@ -384,6 +408,25 @@ export async function updateUserRole(userId: string, newRole: UserRole, actorId:
 export async function deactivateUser(userId: string, actorId: string) {
     // Prevent self-deactivation
     if (userId === actorId) {
+        // Log attempted self-deactivation
+        const admin = await prisma.user.findUnique({
+            where: { id: actorId },
+            select: { id: true, email: true, role: true }
+        });
+
+        await auditEvent({
+            eventType: 'user_deactivation_blocked',
+            entityType: 'user',
+            entityId: actorId,  // Self reference
+            actorId,
+            payload: {
+                reason: 'Self-deactivation attempt',
+                email: admin?.email
+            }
+        });
+
+        logger.warn({ userId: actorId, email: admin?.email }, 'Self-deactivation attempt blocked');
+
         throw new UserManagementError(
             'SELF_MODIFICATION_FORBIDDEN',
             'Administrators cannot deactivate their own account'
@@ -519,4 +562,46 @@ export async function reactivateUser(userId: string, actorId: string) {
     );
 
     return updatedUser;
+}
+
+/**
+ * Get audit trail for a user
+ * 
+ * @param userId - User UUID
+ * @param options - Query options for filtering and pagination
+ * @returns Array of audit trail entries for the user
+ */
+export async function getUserAuditTrail(
+    userId: string,
+    options?: AuditTrailOptions
+): Promise<AuditTrailEntry[]> {
+    return prisma.auditEvent.findMany({
+        where: {
+            entityType: 'user',
+            entityId: userId,
+            eventType: options?.actions ? { in: options.actions } : undefined,
+            createdAt: {
+                gte: options?.startDate,
+                lte: options?.endDate,
+            },
+        },
+        select: {
+            id: true,
+            eventType: true,
+            entityType: true,
+            entityId: true,
+            actorId: true,
+            payload: true,
+            createdAt: true,
+            actor: {
+                select: {
+                    id: true,
+                    email: true,
+                    fullName: true,
+                }
+            }
+        },
+        orderBy: { createdAt: 'desc' },
+        take: options?.limit || 100,
+    });
 }

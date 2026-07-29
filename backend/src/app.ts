@@ -1,6 +1,7 @@
 import compression from 'compression';
 import cors from 'cors';
-import express from 'express';
+import express, { type NextFunction, type Request, type Response } from 'express';
+import { MulterError } from 'multer';
 import { env } from './config/env';
 import { httpsRedirect } from './middleware/httpsRedirect';
 import { rateLimitMiddleware } from './middleware/rateLimit.middleware';
@@ -28,12 +29,16 @@ import interviewRemindersRouter from './routes/admin/interviewReminders';
 import assessmentProvidersRouter from './routes/admin/assessmentProviders';
 import socketRoomsRouter from './routes/admin/socketRooms';
 import adminUsersRouter from './routes/admin/users';
+import screeningThresholdsRouter from './routes/admin/screeningThresholds';
+import scoringThresholdsRouter from './routes/admin/scoringThresholds';
+import approvalPoliciesRouter from './routes/admin/approvalPolicies';
+import adminHealthRouter from './routes/admin/health';
 import approvalsRouter from './routes/approvals';
 import offersRouter from './routes/offers';
 import templatesRouter from './routes/templates';
 import notificationPreferencesRouter from './routes/notificationPreferences';
 import { buildSecurityHeaders } from './middleware/securityHeaders';
-import healthRouter from './routes/health';
+import publicHealthRouter from './routes/health';
 
 export function createApp() {
   const app = express();
@@ -88,7 +93,51 @@ export function createApp() {
   app.use('/api/admin/assessment-providers', assessmentProvidersRouter);
   app.use('/api/admin/socket', socketRoomsRouter);
   app.use('/api/admin/users', adminUsersRouter);
-  app.use('/', healthRouter);
+  app.use('/api/admin/screening-thresholds', screeningThresholdsRouter);
+  app.use('/api/admin/scoring-thresholds', scoringThresholdsRouter);
+  app.use('/api/admin/approval-policies', approvalPoliciesRouter);
+  app.use('/api/admin/health', adminHealthRouter);
+  app.use('/', publicHealthRouter);
+
+  app.use((err: Error, _req: Request, res: Response, next: NextFunction) => {
+    if (err instanceof MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        res.status(413).json({
+          success: false,
+          error: 'FILE_TOO_LARGE',
+          message: 'File size exceeds 5MB limit'
+        });
+        return;
+      }
+
+      if (err.code === 'LIMIT_FILE_COUNT') {
+        res.status(400).json({
+          success: false,
+          error: 'TOO_MANY_FILES',
+          message: 'Only one file can be uploaded at a time'
+        });
+        return;
+      }
+
+      res.status(400).json({
+        success: false,
+        error: 'UPLOAD_ERROR',
+        message: err.message
+      });
+      return;
+    }
+
+    if (err.message === 'Only CSV files are allowed') {
+      res.status(400).json({
+        success: false,
+        error: 'INVALID_FILE_TYPE',
+        message: 'Only CSV files are allowed'
+      });
+      return;
+    }
+
+    next(err);
+  });
 
   return app;
 }

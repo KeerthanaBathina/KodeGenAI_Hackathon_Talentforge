@@ -12,6 +12,8 @@ import {
   TransientEmailError,
 } from '../services/errors/emailErrors';
 import { triggerDLQAlert, DLQAlertPayload } from '../services/alertService';
+import { updateWorkerHeartbeat } from '../services/healthMetricsService';
+import { WORKER_HEARTBEAT_KEYS } from '../constants/workerHeartbeats';
 import { logger } from '../utils/logger';
 
 /**
@@ -40,6 +42,9 @@ async function processEmailDeliveryJob(
     tokenData,
     idempotencyKey,
   } = job.data;
+
+  // Update worker heartbeat
+  await updateWorkerHeartbeat(WORKER_HEARTBEAT_KEYS.EMAIL_DELIVERY);
 
   logger.info(
     {

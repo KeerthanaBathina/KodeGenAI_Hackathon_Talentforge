@@ -1,6 +1,8 @@
 import { Worker, Job } from 'bullmq';
 import { connection, OfferExpiryJobData } from '../queues/offerQueue';
 import { processOfferExpiry } from '../services/offerExpiryService';
+import { updateWorkerHeartbeat } from '../services/healthMetricsService';
+import { WORKER_HEARTBEAT_KEYS } from '../constants/workerHeartbeats';
 import logger from '../utils/logger';
 
 /**
@@ -9,6 +11,9 @@ import logger from '../utils/logger';
 export const offerWorker = new Worker(
   'offers',
   async (job: Job<OfferExpiryJobData>) => {
+    // Update worker heartbeat
+    await updateWorkerHeartbeat(WORKER_HEARTBEAT_KEYS.OFFER_PROCESSING);
+
     logger.info({
       jobId: job.id,
       jobName: job.name,
