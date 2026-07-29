@@ -154,6 +154,7 @@ enum TemplateType {
   assessment_invite
   withdrawal_ack
   general
+  user_onboarding
 }
 
 enum ReasonCodeCategory {
@@ -208,6 +209,7 @@ model User {
   active                    Boolean                @default(true)
   createdAt                 DateTime               @default(now())
   updatedAt                 DateTime               @updatedAt
+  credential                UserCredential?
   profileEdits              Profile[]              @relation("ProfileEditor")
   pathOverrideApprovals     Application[]          @relation("PathOverrideApprover")
   reviews                   Review[]               @relation("Reviewer")
@@ -226,6 +228,16 @@ model User {
   notificationPreferences   NotificationPreference[] @relation("UserNotificationPreferences")
 
   @@map("users")
+}
+
+model UserCredential {
+  userId       String   @id @db.Uuid
+  passwordHash String   @db.VarChar(255)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_credentials")
 }
 
 model PanelAvailability {

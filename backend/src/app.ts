@@ -27,6 +27,7 @@ import systemStatusRouter from './routes/admin/systemStatus';
 import interviewRemindersRouter from './routes/admin/interviewReminders';
 import assessmentProvidersRouter from './routes/admin/assessmentProviders';
 import socketRoomsRouter from './routes/admin/socketRooms';
+import adminUsersRouter from './routes/admin/users';
 import approvalsRouter from './routes/approvals';
 import offersRouter from './routes/offers';
 import templatesRouter from './routes/templates';
@@ -86,6 +87,7 @@ export function createApp() {
   app.use('/api/admin/interview-reminders', interviewRemindersRouter);
   app.use('/api/admin/assessment-providers', assessmentProvidersRouter);
   app.use('/api/admin/socket', socketRoomsRouter);
+  app.use('/api/admin/users', adminUsersRouter);
   app.use('/', healthRouter);
 
   return app;

@@ -293,6 +293,86 @@ If you didn't request this, you can safely ignore this email.
 }
 
 /**
+ * Send user onboarding email with temporary password
+ * 
+ * @param params - Onboarding email parameters
+ */
+export interface SendOnboardingEmailParams {
+  email: string;
+  fullName: string;
+  role: string;
+  temporaryPassword: string;
+}
+
+export async function sendOnboardingEmail(params: SendOnboardingEmailParams): Promise<void> {
+  const { email, fullName, role, temporaryPassword } = params;
+
+  const subject = 'Welcome to AI Interview Platform - Your Account Details';
+  const loginUrl = `${env.FRONTEND_URL}/login`;
+  const platformName = 'AI Interview Platform';
+
+  // Read HTML template
+  const fs = await import('fs/promises');
+  const path = await import('path');
+  
+  const htmlTemplatePath = path.join(__dirname, '../email/templates/user-onboarding.html');
+  const textTemplatePath = path.join(__dirname, '../email/templates/user-onboarding.txt');
+  
+  let htmlTemplate = await fs.readFile(htmlTemplatePath, 'utf-8');
+  let textTemplate = await fs.readFile(textTemplatePath, 'utf-8');
+
+  // Replace template variables
+  const replacements: Record<string, string> = {
+    '{{fullName}}': fullName,
+    '{{email}}': email,
+    '{{role}}': role,
+    '{{temporaryPassword}}': temporaryPassword,
+    '{{loginUrl}}': loginUrl,
+    '{{platformName}}': platformName
+  };
+
+  for (const [placeholder, value] of Object.entries(replacements)) {
+    htmlTemplate = htmlTemplate.replace(new RegExp(placeholder, 'g'), value);
+    textTemplate = textTemplate.replace(new RegExp(placeholder, 'g'), value);
+  }
+
+  if (env.EMAIL_PROVIDER === 'mock') {
+    logger.info(
+      { to: email, role, provider: env.EMAIL_PROVIDER },
+      '[MOCK EMAIL] User onboarding email with temporary password'
+    );
+    console.log(`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📧 USER ONBOARDING EMAIL (Mock)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+To: ${email}
+Subject: ${subject}
+Role: ${role}
+Login URL: ${loginUrl}
+
+Temporary Password: [REDACTED - See secure channel]
+
+(HTML and text content rendered)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    `);
+    return;
+  }
+
+  // Real SMTP implementation
+  await sendEmail({
+    to: email,
+    subject,
+    html: htmlTemplate,
+    text: textTemplate,
+  });
+
+  logger.info(
+    { to: email, role, provider: env.EMAIL_PROVIDER },
+    'User onboarding email sent successfully'
+  );
+}
+
+/**
  * Send application received confirmation email
  */
 export async function sendApplicationReceivedEmail(params: {

@@ -10,6 +10,7 @@ import {
 } from '../services/authService';
 import { OtpResendRateLimiter } from '../services/otpRateLimiter';
 import { authenticateUser, LoginError } from '../services/loginService';
+import { authenticateInternalUser, UserAuthError } from '../services/userAuthService';
 import { JwtService } from '../services/jwtService';
 import {
   exchangeGoogleCode,
@@ -204,12 +205,33 @@ router.post('/login', async (req, res) => {
   const userAgent = req.headers['user-agent'];
 
   try {
-    const result = await authenticateUser({
-      email,
-      password,
-      ipAddress,
-      userAgent,
-    });
+    // Try internal user authentication first
+    let result: any;
+    let isInternalUser = false;
+
+    try {
+      result = await authenticateInternalUser({
+        email,
+        password,
+        ipAddress,
+        userAgent,
+      });
+      isInternalUser = true;
+    } catch (userError) {
+      // If internal user auth fails with account not found, try candidate auth
+      if (userError instanceof UserAuthError && userError.code === 'ACCOUNT_NOT_FOUND') {
+        result = await authenticateUser({
+          email,
+          password,
+          ipAddress,
+          userAgent,
+        });
+        isInternalUser = false;
+      } else {
+        // Re-throw other internal user errors (deactivated, invalid credentials, etc.)
+        throw userError;
+      }
+    }
 
     if (!result.success || !result.user) {
       res.status(401).json({
@@ -221,6 +243,7 @@ router.post('/login', async (req, res) => {
     // Generate JWT and set cookie
     const { token, options } = JwtService.createAuthCookie({
       sub: result.user.id,
+      email: result.user.email,
       role: result.user.role,
       candidateId: result.user.candidateId,
     });
@@ -248,12 +271,36 @@ router.post('/login', async (req, res) => {
           id: result.user.id,
           email: result.user.email,
           role: result.user.role,
+          fullName: result.user.fullName,
           candidateId: result.user.candidateId,
+          active: result.user.active,
         },
         redirectTo,
       },
     });
   } catch (error) {
+    // Handle internal user errors
+    if (error instanceof UserAuthError) {
+      if (error.code === 'ACCOUNT_DEACTIVATED') {
+        res.status(401).json({
+          error: {
+            code: 'ACCOUNT_DEACTIVATED',
+            message: error.message,
+          },
+        });
+        return;
+      }
+
+      res.status(401).json({
+        error: {
+          code: 'INVALID_CREDENTIALS',
+          message: 'Invalid email or password',
+        },
+      });
+      return;
+    }
+
+    // Handle candidate errors
     if (error instanceof LoginError) {
       if (error.code === 'ACCOUNT_LOCKED') {
         res.status(423).json({

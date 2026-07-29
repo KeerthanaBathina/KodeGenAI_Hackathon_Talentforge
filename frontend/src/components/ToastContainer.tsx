@@ -1,10 +1,12 @@
-import React from 'react';
-import { useToast } from '../contexts/ToastContext';
-import { Toast } from './Toast';
+"use client";
+
+import React from "react";
+import { useToast } from "../contexts/ToastContext";
+import { Toast } from "./Toast";
 
 /**
  * ToastContainer Component
- * 
+ *
  * Renders all active toasts in a fixed position (top-right corner).
  * Toasts are stacked vertically with spacing.
  */
@@ -18,7 +20,7 @@ export function ToastContainer() {
       aria-atomic="false"
     >
       <div className="space-y-3 pointer-events-auto">
-        {toasts.map(toast => (
+        {toasts.map((toast) => (
           <Toast key={toast.id} toast={toast} />
         ))}
       </div>

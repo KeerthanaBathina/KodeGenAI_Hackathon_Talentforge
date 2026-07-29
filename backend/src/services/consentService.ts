@@ -1,7 +1,7 @@
 import prisma from '../db/prisma';
 import { auditService } from './auditService';
 import logger from '../utils/logger';
-import env from '../config/env';
+import { env } from '../config/env';
 
 export class ConsentError extends Error {
     constructor(

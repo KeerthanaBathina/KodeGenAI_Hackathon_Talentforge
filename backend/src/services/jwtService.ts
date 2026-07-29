@@ -3,6 +3,7 @@ import { env } from '../config/env';
 
 export interface JwtPayload {
     sub: string; // User ID
+    email: string; // User email
     role: string;
     candidateId?: string;
 }
@@ -52,6 +53,27 @@ export class JwtService {
     }
 
     /**
+     * Instance method to sign access token
+     * Provides compatibility with existing code using instance methods
+     */
+    signAccessToken(userId: string, role: string, email?: string, candidateId?: string): string {
+        return JwtService.sign({
+            sub: userId,
+            email: email || '',
+            role,
+            candidateId
+        });
+    }
+
+    /**
+     * Instance method to verify token
+     * Provides compatibility with existing code using instance methods
+     */
+    verifyToken(token: string): JwtPayload {
+        return JwtService.verify(token);
+    }
+
+    /**
      * Verify and decode JWT
      */
     static verify(token: string): JwtPayload {
@@ -64,6 +86,7 @@ export class JwtService {
 
             return {
                 sub: decoded.sub,
+                email: decoded.email,
                 role: decoded.role,
                 candidateId: decoded.candidateId,
             };
