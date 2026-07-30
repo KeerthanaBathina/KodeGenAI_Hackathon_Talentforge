@@ -229,9 +229,9 @@ describe('Decision Outcomes - Integration Tests', () => {
       // Verify audit event
       expect(mocks.auditEvent).toHaveBeenCalledWith(
         expect.objectContaining({
-          eventType: 'DECISION_CREATED',
-          entityType: 'decision',
-          entityId: createdDecision.id
+          eventType: 'decision.application_decision',
+          entityType: 'application',
+          entityId: mockApplicationId
         })
       );
     });
@@ -650,9 +650,9 @@ describe('Decision Outcomes - Integration Tests', () => {
       // Verify audit event logged the decision
       const auditCall = mocks.auditEvent.mock.calls[0];
       expect(auditCall[0]).toMatchObject({
-        eventType: 'DECISION_CREATED',
-        entityType: 'decision',
-        entityId: expect.any(String),
+        eventType: 'decision.application_decision',
+        entityType: 'application',
+        entityId: mockApplicationId,
         actorId: 'user-hiring-manager-1'
       });
 

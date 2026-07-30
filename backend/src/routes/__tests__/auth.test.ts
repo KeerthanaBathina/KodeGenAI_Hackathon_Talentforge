@@ -2,6 +2,10 @@ import express from 'express';
 import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
 
+const mocks = vi.hoisted(() => ({
+  auditEvent: vi.fn().mockResolvedValue(undefined)
+}));
+
 vi.mock('../../services/authService', () => ({
   GENERIC_REGISTRATION_MESSAGE: 'If this email is new to us, you will receive a verification code',
   registerCandidate: vi.fn().mockResolvedValue({ message: 'If this email is new to us, you will receive a verification code' }),
@@ -20,6 +24,81 @@ vi.mock('../../services/authService', () => ({
   }
 }));
 
+vi.mock('../../services/otpRateLimiter', () => ({
+  OtpResendRateLimiter: {
+    checkAndIncrement: vi.fn().mockResolvedValue({
+      allowed: true,
+      remaining: 2,
+      retryAfterSeconds: 0,
+      resetAt: new Date(Date.now() + 60_000)
+    })
+  }
+}));
+
+vi.mock('../../services/loginService', () => ({
+  authenticateUser: vi.fn(),
+  LoginError: class LoginError extends Error {
+    code: string;
+    lockedUntil?: Date;
+
+    constructor(message: string, code: string, lockedUntil?: Date) {
+      super(message);
+      this.code = code;
+      this.lockedUntil = lockedUntil;
+    }
+  }
+}));
+
+vi.mock('../../services/userAuthService', () => ({
+  authenticateInternalUser: vi.fn(),
+  UserAuthError: class UserAuthError extends Error {
+    code: string;
+
+    constructor(message: string, code: string) {
+      super(message);
+      this.code = code;
+    }
+  }
+}));
+
+vi.mock('../../services/jwtService', () => ({
+  JwtService: {
+    createAuthCookie: vi.fn().mockReturnValue({
+      token: 'mock-token',
+      options: {},
+    }),
+  },
+}));
+
+vi.mock('../../services/oauthService', () => ({
+  exchangeGoogleCode: vi.fn(),
+  exchangeGitHubCode: vi.fn(),
+  getGoogleAuthUrl: vi.fn().mockReturnValue('https://example.com/oauth/google'),
+  getGitHubAuthUrl: vi.fn().mockReturnValue('https://example.com/oauth/github'),
+  OAuthError: class OAuthError extends Error {
+    code: string;
+
+    constructor(code: string, message: string) {
+      super(message);
+      this.code = code;
+    }
+  }
+}));
+
+vi.mock('../../services/passwordResetService', () => ({
+  generateResetToken: vi.fn(),
+  validateResetToken: vi.fn(),
+  consumeResetToken: vi.fn(),
+  PasswordResetError: class PasswordResetError extends Error {
+    code: string;
+
+    constructor(message: string, code: string) {
+      super(message);
+      this.code = code;
+    }
+  }
+}));
+
 vi.mock('../../utils/logger', () => ({
   default: {
     error: vi.fn(),
@@ -27,6 +106,14 @@ vi.mock('../../utils/logger', () => ({
     info: vi.fn(),
     debug: vi.fn()
   }
+}));
+
+vi.mock('../../services/auditService', () => ({
+  auditEvent: mocks.auditEvent
+}));
+
+vi.mock('../../middleware/passwordResetRateLimit', () => ({
+  passwordResetRateLimitMiddleware: (_req: any, _res: any, next: any) => next()
 }));
 
 import authRouter from '../auth';
@@ -100,5 +187,31 @@ describe('auth routes', () => {
 
     expect(response.status).toBe(202);
     expect(response.body.message).toBe('If this email is new to us, you will receive a verification code');
+  });
+
+  it('POST /api/auth/logout clears auth cookie and emits logout audit event', async () => {
+    const app = createTestApp();
+
+    const response = await request(app)
+      .post('/api/auth/logout')
+      .set('Cookie', 'auth_token=test-token')
+      .expect(200);
+
+    expect(response.body.success).toBe(true);
+    expect(response.body.message).toBe('Logged out successfully');
+    expect(response.headers['set-cookie']).toBeDefined();
+    expect(response.headers['set-cookie'].some((cookie: string) =>
+      cookie.startsWith('auth_token=') && (cookie.includes('Max-Age=0') || cookie.includes('Expires='))
+    )).toBe(true);
+
+    expect(mocks.auditEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'auth.logout',
+        entityType: 'session',
+        payload: expect.objectContaining({
+          hadAuthCookie: true,
+        })
+      })
+    );
   });
 });

@@ -14,6 +14,7 @@ enum UserRole {
   hr_reviewer
   hr_manager
   tech_interviewer
+  compliance
   admin
 }
 
@@ -200,6 +201,13 @@ enum NotificationTypeEnum {
   PATH_OVERRIDE_REQUESTED
 }
 
+enum GdprErasureRequestStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
 model User {
   id                        String                 @id @default(uuid()) @db.Uuid
   email                     String                 @unique @db.VarChar(255)
@@ -266,6 +274,8 @@ model Candidate {
   consentTimestamp  DateTime        @default(now())
   status            CandidateStatus @default(pending_verification)
   candidatePublicId String?         @unique @db.VarChar(64)
+  anonymisedAt      DateTime?       @map("anonymised_at")
+  anonymisationVersion String?      @db.VarChar(32) @map("anonymisation_version")
 
   // Account Security & Lockout
   failedLoginAttempts   Int       @default(0)
@@ -284,6 +294,7 @@ model Candidate {
   otpChallenges       CandidateOtpChallenge[]
   passwordResetTokens PasswordResetToken[]
   privacyConsents     PrivacyConsent[]
+  gdprErasureRequests GdprErasureRequest[]
 
   @@index([email, lockedUntil], name: "idx_candidate_lockout_check")
   @@map("candidates")
@@ -344,6 +355,24 @@ model PrivacyConsent {
   @@index([candidateId, policyVersion], name: "idx_privacy_consent_candidate_version")
   @@index([acceptedAt], name: "idx_privacy_consent_accepted")
   @@map("privacy_consents")
+}
+
+model GdprErasureRequest {
+  id            String                   @id @default(uuid()) @db.Uuid
+  candidateId   String                   @db.Uuid @map("candidate_id")
+  requestedAt   DateTime                 @default(now()) @db.Timestamptz @map("requested_at")
+  dueAt         DateTime                 @db.Timestamptz @map("due_at")
+  status        GdprErasureRequestStatus @default(pending)
+  processedAt   DateTime?                @db.Timestamptz @map("processed_at")
+  failureReason String?                  @db.Text @map("failure_reason")
+  requestReason String?                  @db.Text @map("request_reason")
+  createdAt     DateTime                 @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt     DateTime                 @updatedAt @db.Timestamptz @map("updated_at")
+  candidate     Candidate                @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([candidateId, status, requestedAt(sort: Desc)], name: "idx_gdpr_erasure_candidate_status_requested")
+  @@index([status, dueAt], name: "idx_gdpr_erasure_status_due")
+  @@map("gdpr_erasure_requests")
 }
 
 model Profile {
@@ -889,9 +918,28 @@ model AuditEvent {
   createdAt   DateTime @default(now()) @db.Timestamptz
   actor       User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
 
-  @@index([entityType, entityId, createdAt(sort: Desc)], name: "idx_audit_events_entity")
-  @@index([actorId, createdAt(sort: Desc)], name: "idx_audit_events_actor")
+  @@index([createdAt(sort: Desc), id(sort: Desc)], name: "idx_audit_events_created_id")
+  @@index([eventType, createdAt(sort: Desc), id(sort: Desc)], name: "idx_audit_events_event_created_id")
+  @@index([entityType, entityId, createdAt(sort: Desc), id(sort: Desc)], name: "idx_audit_events_entity_created_id")
+  @@index([actorId, createdAt(sort: Desc), id(sort: Desc)], name: "idx_audit_events_actor_created_id")
   @@map("audit_events")
+}
+
+model AuditArchiveIndex {
+  id                String   @id @default(uuid()) @db.Uuid
+  sourceWindowStart DateTime @db.Timestamptz @map("source_window_start")
+  sourceWindowEnd   DateTime @db.Timestamptz @map("source_window_end")
+  rowCount          Int      @map("row_count")
+  storagePath       String   @db.VarChar(1024) @map("storage_path")
+  checksum          String   @db.VarChar(128)
+  hashAlgorithm     String   @default("sha256") @db.VarChar(32) @map("hash_algorithm")
+  archivedAt        DateTime @default(now()) @db.Timestamptz @map("archived_at")
+  createdAt         DateTime @default(now()) @db.Timestamptz @map("created_at")
+
+  @@index([sourceWindowStart, sourceWindowEnd], name: "idx_audit_archive_window")
+  @@index([archivedAt(sort: Desc)], name: "idx_audit_archive_archived_at")
+  @@unique([storagePath], name: "uq_audit_archive_storage_path")
+  @@map("audit_archive_index")
 }
 
 model AssessmentProvider {

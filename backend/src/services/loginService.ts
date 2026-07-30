@@ -1,5 +1,6 @@
 import prisma from '../db/prisma';
 import bcrypt from 'bcrypt';
+import { CandidateStatus } from '@prisma/client';
 import { sendAccountLockoutEmail } from './emailService';
 import { auditEvent } from './auditService';
 import logger from '../utils/logger';
@@ -84,6 +85,24 @@ export async function authenticateUser(input: LoginInput): Promise<LoginResult> 
         logger.warn({ email: normalizedEmail }, 'Login attempt for non-existent account');
 
         // Return generic error to prevent user enumeration
+        throw new LoginError('Invalid email or password', 'INVALID_CREDENTIALS');
+    }
+
+    if (candidate.status === CandidateStatus.anonymized) {
+        await auditEvent({
+            eventType: 'login_blocked',
+            entityType: 'candidate',
+            entityId: candidate.id,
+            payload: {
+                email: normalizedEmail,
+                reason: 'account_anonymized',
+            },
+            ipAddress: ipAddress || null,
+            userAgent: userAgent || null,
+        });
+
+        logger.warn({ candidateId: candidate.id }, 'Login blocked for anonymized candidate account');
+
         throw new LoginError('Invalid email or password', 'INVALID_CREDENTIALS');
     }
 

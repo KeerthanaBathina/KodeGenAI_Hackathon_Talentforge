@@ -19,6 +19,12 @@ export interface ScreeningThresholds {
 
 export type RecommendationType = 'shortlist' | 'manual_review' | 'reject';
 
+export interface AuditRequestContext {
+  actorRole?: string | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+}
+
 // In-memory cache for active thresholds
 let cachedThresholds: ScreeningThresholds | null = null;
 let cacheTimestamp: number = 0;
@@ -157,6 +163,7 @@ export async function createScreeningThresholdVersion(
     effectiveFrom: Date;
   },
   createdBy: string,
+  auditContext: AuditRequestContext = {},
 ): Promise<ScreeningThresholds> {
   // Validate thresholds
   validateThresholdRanges(data);
@@ -180,6 +187,7 @@ export async function createScreeningThresholdVersion(
   await auditService.logEvent({
     action: 'threshold.version_created',
     actorId: createdBy,
+    actorRole: auditContext.actorRole,
     resourceType: 'ScreeningThreshold',
     resourceId: threshold.id,
     metadata: {
@@ -200,6 +208,8 @@ export async function createScreeningThresholdVersion(
         rejectThreshold: data.rejectThreshold,
       },
     },
+    ipAddress: auditContext.ipAddress,
+    userAgent: auditContext.userAgent,
   });
 
   // Clear cache
@@ -212,6 +222,30 @@ export async function createScreeningThresholdVersion(
   });
 
   return threshold as ScreeningThresholds;
+}
+
+export async function createThresholdVersion(
+  data: {
+    shortlistThreshold: number;
+    borderlineMin: number;
+    borderlineMax: number;
+    rejectThreshold: number;
+    effectiveFrom?: Date;
+  },
+  createdBy: string = 'system-thresholds',
+  auditContext: AuditRequestContext = {},
+): Promise<ScreeningThresholds> {
+  return createScreeningThresholdVersion(
+    {
+      shortlistThreshold: data.shortlistThreshold,
+      borderlineMin: data.borderlineMin,
+      borderlineMax: data.borderlineMax,
+      rejectThreshold: data.rejectThreshold,
+      effectiveFrom: data.effectiveFrom ?? new Date(),
+    },
+    createdBy,
+    auditContext,
+  );
 }
 
 /**

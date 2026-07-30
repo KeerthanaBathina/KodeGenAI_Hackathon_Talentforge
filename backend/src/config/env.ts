@@ -55,6 +55,12 @@ const envSchema = z.object({
   REDIS_PORT: z.string().default('6379'),
   REDIS_PASSWORD: z.string().optional(),
   REVIEW_QUEUE_SLA_HOURS: z.coerce.number().int().min(1).max(168).default(48),
+  GDPR_ANONYMIZATION_SLA_DAYS: z.coerce.number().int().min(1).max(365).default(30),
+  AUDIT_RETENTION_YEARS: z.coerce.number().int().min(1).max(50).default(7),
+  AUDIT_ARCHIVE_BUCKET: z.string().min(1).default('local-audit-archive'),
+  AUDIT_ARCHIVE_PATH_PREFIX: z.string().min(1).default('audit-events'),
+  AUDIT_ARCHIVE_BATCH_SIZE: z.coerce.number().int().min(100).max(200000).default(5000),
+  AUDIT_ARCHIVE_CHUNK_SIZE: z.coerce.number().int().min(100).max(50000).default(1000),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -68,6 +74,11 @@ if (!parsed.success) {
 // Validate JWT configuration
 if (!parsed.data.JWT_SECRET && (!parsed.data.JWT_PRIVATE_KEY || !parsed.data.JWT_PUBLIC_KEY)) {
   console.error('[env] JWT configuration error: Either JWT_SECRET or both JWT_PRIVATE_KEY and JWT_PUBLIC_KEY must be set');
+  process.exit(1);
+}
+
+if (parsed.data.AUDIT_ARCHIVE_CHUNK_SIZE > parsed.data.AUDIT_ARCHIVE_BATCH_SIZE) {
+  console.error('[env] AUDIT_ARCHIVE_CHUNK_SIZE must be less than or equal to AUDIT_ARCHIVE_BATCH_SIZE');
   process.exit(1);
 }
 

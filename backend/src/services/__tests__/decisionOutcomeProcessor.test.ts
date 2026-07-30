@@ -99,12 +99,15 @@ describe('decisionOutcomeProcessor', () => {
 
       expect(mockAuditEvent).toHaveBeenCalledWith({
         actorId: baseParams.decidedBy,
-        eventType: 'DECISION_OFFER_PROCESSED',
+        eventType: 'decision.shortlist',
         entityType: 'application',
         entityId: baseParams.applicationId,
         payload: expect.objectContaining({
           decisionId: baseParams.decisionId,
-          outcome: 'offer'
+          outcome: 'offer',
+          reasonCodeId: baseParams.reasonCodeId,
+          reason_code_id: baseParams.reasonCodeId,
+          justificationLength: baseParams.justification.length,
         })
       });
 

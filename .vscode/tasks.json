@@ -2833,6 +2833,958 @@
 				"cd backend && npm test -- src/routes/__tests__/scorecards.submit.test.ts"
 			],
 			"isBackground": false
+		},
+		{
+			"label": "US002 TASK001 Targeted Unit Tests",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test",
+				"--",
+				"src/services/__tests__/auditLogQuerySchema.test.ts",
+				"src/middleware/__tests__/authorize.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK001 Targeted Unit Tests NpmCmd",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test",
+				"--",
+				"src/services/__tests__/auditLogQuerySchema.test.ts",
+				"src/middleware/__tests__/authorize.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK001 Backend Type Check",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"type-check"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			]
+		},
+		{
+			"label": "US002 TASK001 Frontend Type Check",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"frontend",
+				"run",
+				"type-check"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			]
+		},
+		{
+			"label": "US002 TASK001 Prisma Generate",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"backend",
+				"exec",
+				"prisma",
+				"generate"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK001 Prisma Generate Schema Path",
+			"type": "shell",
+			"command": "npx.cmd",
+			"args": [
+				"prisma",
+				"generate",
+				"--schema",
+				"backend/prisma/schema.prisma"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK001 Migrate Diff",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"migrate:diff"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK001 Migrate Diff With DIRECT_URL",
+			"type": "shell",
+			"command": "if (-not $env:DIRECT_URL) { $env:DIRECT_URL = $env:DATABASE_URL }; npm.cmd --prefix backend run migrate:diff",
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK001 Migrate Diff Temp DirectUrl",
+			"type": "shell",
+			"command": "$env:DIRECT_URL = 'postgresql://placeholder:placeholder@localhost:5432/placeholder'; npm.cmd --prefix backend run migrate:diff",
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK001 Prisma Schema Validate",
+			"type": "shell",
+			"command": "$env:DATABASE_URL='postgresql://placeholder:placeholder@localhost:5432/placeholder'; $env:DIRECT_URL='postgresql://placeholder:placeholder@localhost:5432/placeholder'; backend\\node_modules\\.bin\\prisma.cmd validate --schema backend/prisma/schema.prisma",
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK001 Git Status",
+			"type": "shell",
+			"command": "git",
+			"args": [
+				"status",
+				"--short"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK001 Prisma Generate Local Binary",
+			"type": "shell",
+			"command": "$env:DATABASE_URL='postgresql://placeholder:placeholder@localhost:5432/placeholder'; $env:DIRECT_URL='postgresql://placeholder:placeholder@localhost:5432/placeholder'; backend\\node_modules\\.bin\\prisma.cmd generate --schema backend/prisma/schema.prisma",
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK001 Targeted Unit Tests Recheck",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test",
+				"--",
+				"src/services/__tests__/auditLogQuerySchema.test.ts",
+				"src/middleware/__tests__/authorize.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK001 Targeted Unit Tests Final",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test",
+				"--",
+				"src/services/__tests__/auditLogQuerySchema.test.ts",
+				"src/middleware/__tests__/authorize.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK002 Targeted Backend Tests",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test",
+				"--",
+				"src/routes/__tests__/admin-audit-log.integration.test.ts",
+				"src/services/__tests__/auditLogQueryService.test.ts",
+				"src/services/__tests__/auditLogQuerySchema.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK002 Targeted Backend Tests Recheck",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test",
+				"--",
+				"src/routes/__tests__/admin-audit-log.integration.test.ts",
+				"src/services/__tests__/auditLogQueryService.test.ts",
+				"src/services/__tests__/auditLogQuerySchema.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK002 Route Test Only",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test",
+				"--",
+				"src/routes/__tests__/admin-audit-log.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK002 Route Integration Test",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test:integration",
+				"--",
+				"src/routes/__tests__/admin-audit-log.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK002 Route Integration Recheck",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test:integration",
+				"--",
+				"src/routes/__tests__/admin-audit-log.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK002 Route Integration Direct Command",
+			"type": "shell",
+			"command": "npm.cmd --prefix backend run test:integration -- src/routes/__tests__/admin-audit-log.integration.test.ts",
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK002 Route Integration Direct Recheck",
+			"type": "shell",
+			"command": "npm.cmd --prefix backend run test:integration -- src/routes/__tests__/admin-audit-log.integration.test.ts",
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK002 Route Integration Final",
+			"type": "shell",
+			"command": "npm.cmd --prefix backend run test:integration -- src/routes/__tests__/admin-audit-log.integration.test.ts",
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK002 Unit Tests Final",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test",
+				"--",
+				"src/services/__tests__/auditLogQuerySchema.test.ts",
+				"src/services/__tests__/auditLogQueryService.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK002 Changed Files Snapshot",
+			"type": "shell",
+			"command": "git",
+			"args": [
+				"status",
+				"--short",
+				"backend/src/routes/admin/auditLog.ts",
+				"backend/src/services/auditLogQueryService.ts",
+				"backend/src/app.ts",
+				"backend/src/services/index.ts",
+				"backend/src/routes/__tests__/admin-audit-log.integration.test.ts",
+				"backend/src/services/__tests__/auditLogQueryService.test.ts",
+				".propel/context/tasks/EP-011/US-002/TASK-002.md"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Temp Backend Echo",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"echo",
+				"hello"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK003 Export Service Unit",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm.cmd run test -- src/services/__tests__/auditLogExportService.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK003 Export Route Integration",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm.cmd run test:integration -- src/routes/__tests__/admin-audit-log-export.integration.test.ts src/routes/__tests__/admin-audit-log.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK003 Export Service Unit Recheck",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm.cmd run test -- src/services/__tests__/auditLogExportService.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK003 Export Route Integration Recheck",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm.cmd run test:integration -- src/routes/__tests__/admin-audit-log-export.integration.test.ts src/routes/__tests__/admin-audit-log.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK003 Audit Export Load Test",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm.cmd run load-test:audit-export"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK003 Audit Export Load Test Recheck",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm.cmd run load-test:audit-export"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK003 Git Status",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"git status --short"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK004 Frontend Audit Viewer Tests",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm.cmd run test -- src/services/__tests__/auditLogService.test.ts src/__tests__/components/admin/AuditLogViewer.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK004 Frontend Typecheck Audit Viewer",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm.cmd run type-check"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK004 Frontend Audit Viewer Tests Recheck",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm.cmd run test -- src/services/__tests__/auditLogService.test.ts src/__tests__/components/admin/AuditLogViewer.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK004 Frontend Audit Viewer Tests Final Recheck",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm.cmd run test -- src/services/__tests__/auditLogService.test.ts src/__tests__/components/admin/AuditLogViewer.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK004 Frontend Audit Viewer Tests Pass",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm.cmd run test -- src/services/__tests__/auditLogService.test.ts src/__tests__/components/admin/AuditLogViewer.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK004 Frontend Audit Viewer Tests Final",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm.cmd run test -- src/services/__tests__/auditLogService.test.ts src/__tests__/components/admin/AuditLogViewer.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK004 Git Status Check",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd /d d:\\TalentForge\\KodeGenAI_Hackathon_Talentforge && git status --short"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK005 Backend Route Integration Audit Viewer",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm.cmd run test:integration -- src/routes/__tests__/admin-audit-log.integration.test.ts src/routes/__tests__/admin-audit-log-export.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK005 Backend Export Service Unit",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm.cmd run test -- src/services/__tests__/auditLogExportService.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK005 Frontend Audit Viewer Tests",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm.cmd run test -- src/services/__tests__/auditLogService.test.ts src/__tests__/components/admin/AuditLogViewer.test.tsx"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK005 Playwright Audit Viewer",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm.cmd run test:e2e -- tests/e2e/audit-log-viewer.spec.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK005 Install Playwright Chromium",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npx.cmd playwright install chromium"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK005 Playwright Audit Viewer Retry",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm.cmd run test:e2e -- tests/e2e/audit-log-viewer.spec.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK005 Install Playwright Browser Via NPM Exec",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm.cmd exec playwright install chromium"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK005 Check Playwright Browser Path",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"if exist \"%LOCALAPPDATA%\\ms-playwright\\chromium_headless_shell-1187\\chrome-win\\headless_shell.exe\" (echo FOUND) else (echo MISSING)"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK005 Install Playwright Chromium Direct Bin",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && .\\node_modules\\.bin\\playwright.cmd install chromium"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK005 Check Playwright Browser Path Recheck",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"if exist \"%LOCALAPPDATA%\\ms-playwright\\chromium_headless_shell-1187\\chrome-win\\headless_shell.exe\" (echo FOUND) else (echo MISSING)"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK005 Capture Playwright Install Log",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend & .\\node_modules\\.bin\\playwright.cmd install chromium > playwright-install.log 2>&1 & type playwright-install.log"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK005 Check Node Processes",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"tasklist /FI \"IMAGENAME eq node.exe\""
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK005 Debug Playwright Install Invocation",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend & echo START_PLAYWRIGHT_INSTALL & .\\node_modules\\.bin\\playwright.cmd install chromium & echo PLAYWRIGHT_INSTALL_EXIT_%errorlevel%"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK005 Check Browser Path Post Debug",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"if exist \"%LOCALAPPDATA%\\ms-playwright\\chromium_headless_shell-1187\\chrome-win\\headless_shell.exe\" (echo FOUND) else (echo MISSING)"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK005 Audit Export Load Test",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm.cmd run load-test:audit-export"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK005 Playwright Audit Viewer Edge Fallback",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm.cmd run test:e2e -- tests/e2e/audit-log-viewer.spec.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK005 Diff Summary Touched Files",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd /d d:\\TalentForge\\KodeGenAI_Hackathon_Talentforge && git diff -- frontend/src/__tests__/components/admin/AuditLogViewer.test.tsx frontend/tests/e2e/audit-log-viewer.spec.ts .propel/context/tasks/EP-011/US-002/TASK-005.md docs/validation/ep-011-us-002-audit-viewer-validation.md memories/repo/tooling.md"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK005 Status Touched Files",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd /d d:\\TalentForge\\KodeGenAI_Hackathon_Talentforge && git status --short -- frontend/src/__tests__/components/admin/AuditLogViewer.test.tsx frontend/tests/e2e/audit-log-viewer.spec.ts .propel/context/tasks/EP-011/US-002/TASK-005.md docs/validation/ep-011-us-002-audit-viewer-validation.md memories/repo/tooling.md"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US002 TASK005 Playwright Audit Viewer Final Recheck",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd frontend && npm.cmd run test:e2e -- tests/e2e/audit-log-viewer.spec.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK001 Service Unit Test",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm.cmd run test -- src/services/__tests__/gdprErasureRequestService.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK001 Route Integration Test",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm.cmd run test:integration -- src/routes/__tests__/consent-erasure-request.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK001 Route Integration Test Retry",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && npm.cmd run test:integration -- src/routes/__tests__/consent-erasure-request.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK001 Prisma Schema Validate",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd backend && set DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres && set DIRECT_URL=postgresql://postgres:postgres@localhost:5432/postgres && npx.cmd prisma validate --schema prisma/schema.prisma"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK001 Changed Files Snapshot",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd /d d:\\TalentForge\\KodeGenAI_Hackathon_Talentforge && git status --short -- backend/prisma/schema.prisma backend/prisma/migrations/20260730000006_add_gdpr_erasure_foundation/migration.sql backend/src/config/env.ts backend/.env.example backend/src/services/gdprErasureRequestService.ts backend/src/services/index.ts backend/src/routes/consent.ts backend/src/routes/__tests__/consent-erasure-request.integration.test.ts backend/src/services/__tests__/gdprErasureRequestService.test.ts .propel/context/tasks/EP-011/US-003/TASK-001.md memories/repo/tooling.md"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK002 Targeted Tests Backend",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test",
+				"--",
+				"src/services/__tests__/candidateAnonymizationService.test.ts",
+				"src/workers/__tests__/gdprAnonymizationWorker.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK002 Backend TypeCheck After Anonymization",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"type-check"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			]
+		},
+		{
+			"label": "US003 TASK002 Targeted Tests Backend Recheck",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test",
+				"--",
+				"src/services/__tests__/candidateAnonymizationService.test.ts",
+				"src/workers/__tests__/gdprAnonymizationWorker.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK002 Targeted Tests With Auth Guards",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test",
+				"--",
+				"src/services/__tests__/candidateAnonymizationService.test.ts",
+				"src/workers/__tests__/gdprAnonymizationWorker.test.ts",
+				"src/services/__tests__/loginService.anonymization.test.ts",
+				"src/services/__tests__/passwordResetService.anonymization.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK002 Git Status Snapshot",
+			"type": "shell",
+			"command": "git",
+			"args": [
+				"status",
+				"--short"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK002 Targeted Tests Final Recheck",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test",
+				"--",
+				"src/services/__tests__/candidateAnonymizationService.test.ts",
+				"src/workers/__tests__/gdprAnonymizationWorker.test.ts",
+				"src/services/__tests__/loginService.anonymization.test.ts",
+				"src/services/__tests__/passwordResetService.anonymization.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK003 Unit Tests Archive Service Worker",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test",
+				"--",
+				"src/services/__tests__/auditArchiveService.test.ts",
+				"src/workers/__tests__/auditRetentionArchiveWorker.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK003 Unit Tests Archive Recheck",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test",
+				"--",
+				"src/services/__tests__/auditArchiveService.test.ts",
+				"src/workers/__tests__/auditRetentionArchiveWorker.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK003 Integration Test Archive Linkage",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test:integration",
+				"--",
+				"src/services/__tests__/auditArchiveService.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK003 Integration Test Archive Linkage Recheck",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test:integration",
+				"--",
+				"src/services/__tests__/auditArchiveService.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Inspect Working Tree Status",
+			"type": "shell",
+			"command": "git",
+			"args": [
+				"status",
+				"--short"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK003 Unit Tests Recheck After Integration Patch",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test",
+				"--",
+				"src/services/__tests__/auditArchiveService.test.ts",
+				"src/workers/__tests__/auditRetentionArchiveWorker.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK004 Privacy Projection Unit Tests",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test",
+				"--",
+				"src/services/__tests__/auditPayloadPrivacyService.test.ts",
+				"src/services/__tests__/auditLogQueryService.test.ts",
+				"src/services/__tests__/auditLogExportService.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK004 GDPR Privacy Route Integration",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test:integration",
+				"--",
+				"src/routes/__tests__/audit-gdpr-privacy.integration.test.ts",
+				"src/services/__tests__/auditArchiveService.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK004 GDPR Privacy Route Integration Recheck",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test:integration",
+				"--",
+				"src/routes/__tests__/audit-gdpr-privacy.integration.test.ts",
+				"src/services/__tests__/auditArchiveService.integration.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK004 GDPR Validation Script Check",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"validate:gdpr-anonymization"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK004 GDPR Archive Privacy Regression Bundle",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"backend",
+				"run",
+				"test",
+				"--",
+				"src/services/__tests__/candidateAnonymizationService.test.ts",
+				"src/workers/__tests__/gdprAnonymizationWorker.test.ts",
+				"src/services/__tests__/auditArchiveService.test.ts",
+				"src/workers/__tests__/auditRetentionArchiveWorker.test.ts",
+				"src/services/__tests__/auditPayloadPrivacyService.test.ts",
+				"src/services/__tests__/auditLogQueryService.test.ts",
+				"src/services/__tests__/auditLogExportService.test.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "US003 TASK004 Touched Files Snapshot",
+			"type": "shell",
+			"command": "git",
+			"args": [
+				"status",
+				"--short",
+				"--",
+				".propel/context/tasks/EP-011/US-003/TASK-004.md",
+				".propel/context/tasks/EP-011/us_003.md",
+				"backend/src/services/auditPayloadPrivacyService.ts",
+				"backend/src/services/auditLogQueryService.ts",
+				"backend/src/services/auditLogExportService.ts",
+				"backend/src/services/index.ts",
+				"backend/src/services/__tests__/auditPayloadPrivacyService.test.ts",
+				"backend/src/services/__tests__/auditLogQueryService.test.ts",
+				"backend/src/services/__tests__/auditLogExportService.test.ts",
+				"backend/src/routes/__tests__/audit-gdpr-privacy.integration.test.ts",
+				"backend/scripts/validate-gdpr-anonymization.ts",
+				"backend/package.json",
+				"docs/ops/gdpr-retention-runbook.md",
+				"docs/validation/ep-011-us-003-gdpr-retention-validation.md",
+				"memories/repo/tooling.md"
+			],
+			"isBackground": false
 		}
 	]
 }

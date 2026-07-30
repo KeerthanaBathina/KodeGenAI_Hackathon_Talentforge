@@ -20,6 +20,7 @@ import {
   validateApprovalPolicy,
 } from '../../services/approvalPolicyService';
 import type { ApprovalTier } from '../../services/approvalPolicyService';
+import { buildAuditContextFromRequest } from '../../services/auditContextService';
 import {
   PolicyValidationError,
   PolicyNotFoundError,
@@ -142,6 +143,7 @@ router.get('/history', async (req: Request, res: Response, next: NextFunction): 
 
 router.post('/', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+    const auditContext = buildAuditContextFromRequest(req);
     const {
       compensationBandMin,
       compensationBandMax,
@@ -221,6 +223,11 @@ router.post('/', async (req: Request, res: Response, next: NextFunction): Promis
         effectiveFrom: new Date(effectiveFrom),
       },
       req.user!.id,
+      {
+        actorRole: auditContext.actorRole,
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
+      },
     );
 
     logger.info(

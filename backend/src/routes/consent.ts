@@ -1,9 +1,18 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { authenticate } from '../middleware/authenticate';
 import * as consentService from '../services/consentService';
+import {
+    GdprErasureRequestError,
+    submitGdprErasureRequest,
+} from '../services/gdprErasureRequestService';
 import logger from '../utils/logger';
 
 const router = Router();
+
+const erasureRequestPayloadSchema = z.object({
+    requestReason: z.string().trim().min(1).max(500).optional(),
+}).strict();
 
 /**
  * POST /api/consent/accept
@@ -25,6 +34,68 @@ router.post('/accept', authenticate, async (req, res) => {
             error: {
                 code: 'INTERNAL_ERROR',
                 message: 'Unable to record consent',
+            },
+        });
+    }
+});
+
+/**
+ * POST /api/consent/erasure-request
+ * Submit GDPR erasure request (idempotent for pending requests)
+ */
+router.post('/erasure-request', authenticate, async (req, res) => {
+    try {
+        if (req.user?.role !== 'candidate') {
+            return res.status(403).json({
+                error: {
+                    code: 'FORBIDDEN',
+                    message: 'Only candidates can submit erasure requests',
+                },
+            });
+        }
+
+        const payload = erasureRequestPayloadSchema.parse(req.body ?? {});
+        const candidateId = req.user.candidateId || req.user.id;
+
+        const submission = await submitGdprErasureRequest({
+            candidateId,
+            actorId: req.user.id,
+            actorRole: req.user.role,
+            ipAddress: req.ip || null,
+            userAgent: req.headers['user-agent'] || null,
+            requestReason: payload.requestReason,
+        });
+
+        const statusCode = submission.idempotent ? 200 : 201;
+        return res.status(statusCode).json({
+            ...submission.request,
+            idempotent: submission.idempotent,
+        });
+    } catch (error: any) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({
+                error: {
+                    code: 'INVALID_REQUEST_PAYLOAD',
+                    message: 'Invalid erasure request payload',
+                    details: error.issues,
+                },
+            });
+        }
+
+        if (error instanceof GdprErasureRequestError && error.code === 'CANDIDATE_NOT_FOUND') {
+            return res.status(404).json({
+                error: {
+                    code: error.code,
+                    message: error.message,
+                },
+            });
+        }
+
+        logger.error({ error }, 'Error submitting GDPR erasure request');
+        return res.status(500).json({
+            error: {
+                code: 'INTERNAL_ERROR',
+                message: 'Unable to submit erasure request',
             },
         });
     }

@@ -3,7 +3,11 @@ import { Request, Response, NextFunction } from 'express';
 /**
  * Authorization middleware that enforces role-based access control.
  */
-export function authorize(allowedRoles: string[]) {
+export const AUDIT_LOG_READER_ROLES = ['admin', 'compliance'] as const;
+
+export function authorize(allowedRoles: readonly string[]) {
+    const allowedRoleSet = new Set(allowedRoles);
+
     return (req: Request, res: Response, next: NextFunction): void => {
         if (!req.user) {
             res.status(401).json({
@@ -15,7 +19,7 @@ export function authorize(allowedRoles: string[]) {
             return;
         }
 
-        if (!allowedRoles.includes(req.user.role)) {
+        if (!allowedRoleSet.has(req.user.role)) {
             res.status(403).json({
                 error: {
                     code: 'FORBIDDEN',

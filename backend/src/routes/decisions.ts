@@ -15,6 +15,8 @@ import logger from '../utils/logger';
 import { auditEvent } from '../services/auditService';
 import { validateReasonCode } from '../services/reasonCodeService';
 import { processDecisionOutcome, getOutcomeMessage } from '../services/decisionOutcomeProcessor';
+import { buildAuditContextFromRequest } from '../services/auditContextService';
+import { AUDIT_EVENT_TYPES } from '../constants/auditEventTypes';
 
 const router = express.Router();
 
@@ -37,6 +39,19 @@ const CreateDecisionSchema = z.object({
   offerDetails: z.record(z.unknown()).optional()
 });
 
+function toDecisionOutcomeEventType(outcome: 'offer' | 'reject' | 'hold' | 'withdraw'): string {
+  switch (outcome) {
+    case 'offer':
+      return AUDIT_EVENT_TYPES.DECISION_SHORTLIST;
+    case 'reject':
+      return AUDIT_EVENT_TYPES.DECISION_REJECT;
+    case 'hold':
+      return AUDIT_EVENT_TYPES.DECISION_HOLD;
+    case 'withdraw':
+      return AUDIT_EVENT_TYPES.DECISION_WITHDRAW;
+  }
+}
+
 /**
  * POST /api/decisions
  * 
@@ -53,6 +68,8 @@ router.post(
   validateDecisionPrerequisites,
   async (req, res) => {
     try {
+      const auditContext = buildAuditContextFromRequest(req);
+
       // Validate request body
       const validatedData = CreateDecisionSchema.parse(req.body);
 
@@ -137,19 +154,26 @@ router.post(
 
       // Log audit event
       await auditEvent({
-        actorId: req.user!.id,
-        eventType: 'DECISION_CREATED',
-        entityType: 'decision',
-        entityId: decision.id,
+        actorId: auditContext.actorId,
+        actorRole: auditContext.actorRole,
+        eventType: AUDIT_EVENT_TYPES.DECISION_APPLICATION_DECISION,
+        entityType: 'application',
+        entityId: validatedData.applicationId,
         payload: {
+          decisionId: decision.id,
           applicationId: validatedData.applicationId,
           outcome: validatedData.outcome,
+          outcomeEventType: toDecisionOutcomeEventType(validatedData.outcome),
           reasonCodeId: validatedData.reasonCodeId,
+          reason_code_id: validatedData.reasonCodeId,
+          requisitionId: application.requisitionId,
+          candidateId: application.candidateId,
           hasCompensation: !!validatedData.compensationBand,
-          justification: validatedData.justification
+          hasOfferDetails: !!validatedData.offerDetails,
+          justificationLength: validatedData.justification.length
         },
-        ipAddress: req.ip || null,
-        userAgent: req.get('user-agent') || null
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent
       });
 
       // Process decision outcome asynchronously
@@ -159,7 +183,10 @@ router.post(
         outcome: validatedData.outcome,
         reasonCodeId: validatedData.reasonCodeId,
         justification: validatedData.justification,
-        decidedBy: req.user!.id
+        decidedBy: req.user!.id,
+        actorRole: auditContext.actorRole,
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent
       }).catch((error) => {
         logger.error('Failed to process decision outcome', {
           decisionId: decision.id,

@@ -52,7 +52,12 @@ export async function generateResetToken(
         // Find candidate by email
         const candidate = await prisma.candidate.findUnique({
             where: { email: normalizedEmail },
-            select: { id: true, email: true, profile: { select: { fullName: true } } },
+            select: {
+                id: true,
+                email: true,
+                status: true,
+                profile: { select: { fullName: true } },
+            },
         });
 
         // Non-enumeration: return same message for found/not found
@@ -73,6 +78,32 @@ export async function generateResetToken(
                 userAgent,
             });
 
+            return { success: true, message: genericMessage };
+        }
+
+        if (candidate.status === 'anonymized') {
+            await prisma.passwordResetToken.updateMany({
+                where: {
+                    candidateId: candidate.id,
+                    usedAt: null,
+                },
+                data: {
+                    usedAt: new Date(),
+                },
+            });
+
+            await auditService.logEvent({
+                eventType: 'password_reset_blocked_anonymized',
+                actorId: candidate.id,
+                actorRole: 'candidate',
+                resourceType: 'candidate',
+                resourceId: candidate.id,
+                metadata: {},
+                ipAddress,
+                userAgent,
+            });
+
+            logger.info({ candidateId: candidate.id }, 'Password reset blocked for anonymized account');
             return { success: true, message: genericMessage };
         }
 
@@ -108,7 +139,8 @@ export async function generateResetToken(
 
         // Send reset email
         const resetLink = `${env.FRONTEND_URL}/reset-password?token=${token}`;
-        const name = candidate.profile?.fullName || candidate.email.split('@')[0];
+        const emailLocalPart = candidate.email.split('@')[0] ?? 'Candidate';
+        const name = candidate.profile?.fullName || emailLocalPart;
 
         await sendPasswordResetEmail({
             to: candidate.email,
@@ -152,7 +184,7 @@ export async function validateResetToken(
             where: { token },
             include: {
                 candidate: {
-                    select: { id: true, email: true },
+                    select: { id: true, email: true, status: true },
                 },
             },
         });
@@ -167,6 +199,10 @@ export async function validateResetToken(
 
         if (resetToken.expiresAt < new Date()) {
             return { valid: false, error: 'TOKEN_EXPIRED' };
+        }
+
+        if (resetToken.candidate.status === 'anonymized') {
+            return { valid: false, error: 'TOKEN_NOT_FOUND' };
         }
 
         return { valid: true, candidateId: resetToken.candidateId };

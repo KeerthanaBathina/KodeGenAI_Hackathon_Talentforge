@@ -26,6 +26,9 @@ import {
   PasswordResetError,
 } from '../services/passwordResetService';
 import { passwordResetRateLimitMiddleware } from '../middleware/passwordResetRateLimit';
+import { auditEvent } from '../services/auditService';
+import { buildAuditContextFromRequest } from '../services/auditContextService';
+import { AUDIT_EVENT_TYPES } from '../constants/auditEventTypes';
 import logger from '../utils/logger';
 
 const registerSchema = z.object({
@@ -328,7 +331,25 @@ router.post('/login', async (req, res) => {
 });
 
 // Logout endpoint
-router.post('/logout', (req, res) => {
+router.post('/logout', async (req, res) => {
+  const auditContext = buildAuditContextFromRequest(req);
+  const hadAuthCookie = typeof req.headers.cookie === 'string' && req.headers.cookie.includes('auth_token=');
+
+  await auditEvent({
+    actorId: auditContext.actorId,
+    actorRole: auditContext.actorRole,
+    eventType: AUDIT_EVENT_TYPES.AUTH_LOGOUT,
+    entityType: 'session',
+    entityId: auditContext.actorId ?? 'anonymous-session',
+    payload: {
+      actorEmail: auditContext.actorEmail,
+      hadAuthCookie,
+      route: '/api/auth/logout'
+    },
+    ipAddress: auditContext.ipAddress,
+    userAgent: auditContext.userAgent
+  });
+
   res.clearCookie('auth_token', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',

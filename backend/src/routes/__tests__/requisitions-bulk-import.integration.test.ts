@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import express from 'express';
 import request from 'supertest';
+import { MulterError } from 'multer';
 
 vi.mock('../../config/env', () => ({
   env: {
@@ -19,6 +21,7 @@ vi.mock('../../config/env', () => ({
 const mocks = vi.hoisted(() => ({
   importRequisitionsFromCSV: vi.fn(),
   generateErrorReportCSV: vi.fn(),
+  auditEvent: vi.fn(),
   redisSetex: vi.fn(),
   redisGet: vi.fn(),
   loggerInfo: vi.fn(),
@@ -30,6 +33,10 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../../services/csvImportService', () => ({
   importRequisitionsFromCSV: mocks.importRequisitionsFromCSV,
   generateErrorReportCSV: mocks.generateErrorReportCSV
+}));
+
+vi.mock('../../services/auditService', () => ({
+  auditEvent: mocks.auditEvent
 }));
 
 vi.mock('../../db/redis', () => ({
@@ -106,7 +113,48 @@ vi.mock('../../middleware/authenticate', () => ({
   }
 }));
 
-import { app } from '../../app';
+import requisitionsRouter from '../requisitions';
+
+function createTestApp() {
+  const app = express();
+  app.use(express.json());
+  app.use('/api/requisitions', requisitionsRouter);
+
+  app.use((err: Error, _req: any, res: any, next: any) => {
+    if (err instanceof MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        res.status(413).json({
+          success: false,
+          error: 'FILE_TOO_LARGE',
+          message: 'File size exceeds 5MB limit'
+        });
+        return;
+      }
+
+      res.status(400).json({
+        success: false,
+        error: 'UPLOAD_ERROR',
+        message: err.message
+      });
+      return;
+    }
+
+    if (err.message === 'Only CSV files are allowed') {
+      res.status(400).json({
+        success: false,
+        error: 'INVALID_FILE_TYPE',
+        message: 'Only CSV files are allowed'
+      });
+      return;
+    }
+
+    next(err);
+  });
+
+  return app;
+}
+
+const app = createTestApp();
 
 describe('Requisitions bulk import API', () => {
   beforeEach(() => {
@@ -126,6 +174,7 @@ describe('Requisitions bulk import API', () => {
     mocks.generateErrorReportCSV.mockReturnValue('row_number,error_type,field,value,message\n');
     mocks.redisSetex.mockResolvedValue('OK');
     mocks.redisGet.mockResolvedValue(null);
+    mocks.auditEvent.mockResolvedValue(undefined);
   });
 
   describe('POST /api/requisitions/bulk-import', () => {
@@ -148,6 +197,22 @@ describe('Requisitions bulk import API', () => {
       expect(response.body.results.duplicateCount).toBe(0);
       expect(response.body.errorReportUrl).toBeUndefined();
       expect(mocks.importRequisitionsFromCSV).toHaveBeenCalledOnce();
+      expect(mocks.auditEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventType: 'upload.requisition_import_started',
+          entityType: 'requisition_import',
+        })
+      );
+      expect(mocks.auditEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventType: 'upload.requisition_import_completed',
+          entityType: 'requisition_import',
+          payload: expect.objectContaining({
+            totalRows: 2,
+            importedCount: 2,
+          })
+        })
+      );
     });
 
     it('returns error report URL when invalid rows exist', async () => {
@@ -200,6 +265,15 @@ describe('Requisitions bulk import API', () => {
 
       expect(response.status).toBe(400);
       expect(response.body.error).toBe('INVALID_CSV_FORMAT');
+      expect(mocks.auditEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventType: 'upload.requisition_import_failed',
+          entityType: 'requisition_import',
+          payload: expect.objectContaining({
+            errorMessage: expect.stringContaining('Missing required column')
+          })
+        })
+      );
     });
 
     it('rejects non-csv file types', async () => {
@@ -219,6 +293,15 @@ describe('Requisitions bulk import API', () => {
 
       expect(response.status).toBe(400);
       expect(response.body.error).toBe('No file uploaded');
+      expect(mocks.auditEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventType: 'upload.requisition_import_failed',
+          entityType: 'requisition_import',
+          payload: expect.objectContaining({
+            reason: 'missing_file'
+          })
+        })
+      );
     });
 
     it('rejects file larger than 5MB', async () => {

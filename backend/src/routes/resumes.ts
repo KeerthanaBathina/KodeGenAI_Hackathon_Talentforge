@@ -1,10 +1,14 @@
 import express from 'express';
 import { z } from 'zod';
+import { randomUUID } from 'crypto';
 import { authenticate } from '../middleware/authenticate';
 import {
     generatePresignedUrl,
     ResumeUploadError,
 } from '../services/resumeService';
+import { auditEvent } from '../services/auditService';
+import { buildAuditContextFromRequest } from '../services/auditContextService';
+import { AUDIT_EVENT_TYPES } from '../constants/auditEventTypes';
 import prisma from '../db/prisma';
 import logger from '../utils/logger';
 
@@ -25,6 +29,10 @@ const GenerateUploadUrlSchema = z.object({
  * Generate presigned URL for resume upload
  */
 router.post('/presigned-url', authenticate, async (req, res) => {
+    const auditContext = buildAuditContextFromRequest(req);
+    const uploadRequestId = randomUUID();
+    let requestedApplicationId: string | null = null;
+
     try {
         const validation = GenerateUploadUrlSchema.safeParse(req.body);
 
@@ -39,6 +47,7 @@ router.post('/presigned-url', authenticate, async (req, res) => {
         }
 
         const { applicationId, fileName, fileSize, mimeType } = validation.data;
+        requestedApplicationId = applicationId;
         const candidateId = req.user!.id;
 
         // Verify candidate owns the application
@@ -47,6 +56,20 @@ router.post('/presigned-url', authenticate, async (req, res) => {
         });
 
         if (!application || application.candidateId !== candidateId) {
+            await auditEvent({
+                actorId: auditContext.actorId,
+                actorRole: auditContext.actorRole,
+                eventType: AUDIT_EVENT_TYPES.UPLOAD_RESUME_FAILED,
+                entityType: 'application',
+                entityId: applicationId,
+                payload: {
+                    uploadRequestId,
+                    reason: 'unauthorized_application_access',
+                },
+                ipAddress: auditContext.ipAddress,
+                userAgent: auditContext.userAgent,
+            });
+
             return res.status(403).json({
                 error: {
                     code: 'UNAUTHORIZED',
@@ -54,6 +77,22 @@ router.post('/presigned-url', authenticate, async (req, res) => {
                 },
             });
         }
+
+        await auditEvent({
+            actorId: auditContext.actorId,
+            actorRole: auditContext.actorRole,
+            eventType: AUDIT_EVENT_TYPES.UPLOAD_RESUME_STARTED,
+            entityType: 'application',
+            entityId: applicationId,
+            payload: {
+                uploadRequestId,
+                fileName,
+                fileSize,
+                mimeType,
+            },
+            ipAddress: auditContext.ipAddress,
+            userAgent: auditContext.userAgent,
+        });
 
         const result = await generatePresignedUrl({
             candidateId,
@@ -63,8 +102,42 @@ router.post('/presigned-url', authenticate, async (req, res) => {
             mimeType,
         });
 
+        await auditEvent({
+            actorId: auditContext.actorId,
+            actorRole: auditContext.actorRole,
+            eventType: AUDIT_EVENT_TYPES.UPLOAD_RESUME_COMPLETED,
+            entityType: 'application',
+            entityId: applicationId,
+            payload: {
+                uploadRequestId,
+                resumeId: result.resumeId,
+                storageKey: result.storageKey,
+                expiresIn: result.expiresIn,
+            },
+            ipAddress: auditContext.ipAddress,
+            userAgent: auditContext.userAgent,
+        });
+
         return res.status(200).json(result);
     } catch (error) {
+        if (requestedApplicationId) {
+            await auditEvent({
+                actorId: auditContext.actorId,
+                actorRole: auditContext.actorRole,
+                eventType: AUDIT_EVENT_TYPES.UPLOAD_RESUME_FAILED,
+                entityType: 'application',
+                entityId: requestedApplicationId,
+                payload: {
+                    uploadRequestId,
+                    errorCode:
+                        error instanceof ResumeUploadError ? error.code : 'INTERNAL_SERVER_ERROR',
+                    errorMessage: error instanceof Error ? error.message : 'Unknown error',
+                },
+                ipAddress: auditContext.ipAddress,
+                userAgent: auditContext.userAgent,
+            });
+        }
+
         if (error instanceof ResumeUploadError) {
             const statusCode =
                 error.code === 'INVALID_FILE_TYPE' || error.code === 'FILE_TOO_LARGE' ? 400 : 500;

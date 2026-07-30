@@ -4,6 +4,7 @@ import { generateDecisionPdf } from './decisionPdfService';
 import { sendRejectionEmail } from './emailService';
 import { createReminderTask } from './taskService';
 import { auditEvent } from './auditService';
+import { AUDIT_EVENT_TYPES } from '../constants/auditEventTypes';
 import type { DecisionOutcome } from '@prisma/client';
 
 export interface ProcessDecisionOutcomeParams {
@@ -13,6 +14,22 @@ export interface ProcessDecisionOutcomeParams {
   reasonCodeId: string;
   justification: string;
   decidedBy: string;
+  actorRole?: string | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+}
+
+function resolveDecisionOutcomeAuditType(outcome: DecisionOutcome): string {
+  switch (outcome) {
+    case 'offer':
+      return AUDIT_EVENT_TYPES.DECISION_SHORTLIST;
+    case 'reject':
+      return AUDIT_EVENT_TYPES.DECISION_REJECT;
+    case 'hold':
+      return AUDIT_EVENT_TYPES.DECISION_HOLD;
+    case 'withdraw':
+      return AUDIT_EVENT_TYPES.DECISION_WITHDRAW;
+  }
 }
 
 /**
@@ -59,14 +76,20 @@ export async function processDecisionOutcome(
     // Log audit event
     await auditEvent({
       actorId: params.decidedBy,
-      eventType: `DECISION_${outcome.toUpperCase()}_PROCESSED`,
+      actorRole: params.actorRole,
+      eventType: resolveDecisionOutcomeAuditType(outcome),
       entityType: 'application',
       entityId: applicationId,
       payload: {
         decisionId,
         outcome,
-        reasonCodeId: params.reasonCodeId
-      }
+        reasonCodeId: params.reasonCodeId,
+        reason_code_id: params.reasonCodeId,
+        justificationLength: params.justification.length,
+        processedAt: new Date().toISOString()
+      },
+      ipAddress: params.ipAddress,
+      userAgent: params.userAgent
     });
 
     logger.info('Decision outcome processed successfully', {

@@ -89,6 +89,7 @@ export class UserManagementError extends Error {
 
 const BCRYPT_SALT_ROUNDS = 12;
 const TEMP_PASSWORD_LENGTH = 32;
+const SUPPORTED_USER_ROLES = new Set<string>(Object.values(UserRole));
 
 // ============================================================================
 // Helper Functions
@@ -109,6 +110,10 @@ async function hashPassword(password: string): Promise<string> {
 function validateEmail(email: string): boolean {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
+}
+
+function isSupportedUserRole(role: string): role is UserRole {
+    return SUPPORTED_USER_ROLES.has(role);
 }
 
 // ============================================================================
@@ -142,10 +147,10 @@ export async function createUser(data: CreateUserInput): Promise<CreateUserResul
         );
     }
 
-    if (!Object.values(UserRole).includes(role)) {
+    if (!isSupportedUserRole(role)) {
         throw new UserManagementError(
             'INVALID_ROLE',
-            `Invalid role. Must be one of: ${Object.values(UserRole).join(', ')}`
+            `Invalid role. Must be one of: ${Array.from(SUPPORTED_USER_ROLES).join(', ')}`
         );
     }
 
@@ -340,10 +345,10 @@ export async function updateUserRole(userId: string, newRole: UserRole, actorId:
     }
 
     // Validate role
-    if (!Object.values(UserRole).includes(newRole)) {
+    if (!isSupportedUserRole(newRole)) {
         throw new UserManagementError(
             'INVALID_ROLE',
-            `Invalid role. Must be one of: ${Object.values(UserRole).join(', ')}`
+            `Invalid role. Must be one of: ${Array.from(SUPPORTED_USER_ROLES).join(', ')}`
         );
     }
 

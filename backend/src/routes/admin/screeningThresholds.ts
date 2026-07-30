@@ -18,7 +18,7 @@ import {
   InvalidThresholdRangeError,
   PolicyNotFoundError,
 } from '../../services/thresholdService';
-import { auditService } from '../../services/auditService';
+import { buildAuditContextFromRequest } from '../../services/auditContextService';
 import logger from '../../utils/logger';
 
 const router = express.Router();
@@ -143,6 +143,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction): Prom
 
 router.post('/', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+    const auditContext = buildAuditContextFromRequest(req);
     const {
       shortlistThreshold,
       borderlineMin,
@@ -197,6 +198,11 @@ router.post('/', async (req: Request, res: Response, next: NextFunction): Promis
         effectiveFrom: new Date(effectiveFrom),
       },
       req.user!.id,
+      {
+        actorRole: auditContext.actorRole,
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
+      },
     );
 
     logger.info(

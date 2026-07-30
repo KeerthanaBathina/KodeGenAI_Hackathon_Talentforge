@@ -19,6 +19,14 @@ declare global {
 }
 
 const jwtService = new JwtService();
+const INTERNAL_USER_ROLES = new Set([
+    'admin',
+    'recruiter',
+    'hr_reviewer',
+    'hr_manager',
+    'tech_interviewer',
+    'compliance'
+]);
 
 /**
  * Authentication middleware that verifies JWT token from cookie.
@@ -58,7 +66,7 @@ export async function authenticate(
         }
 
         // Determine if this is an internal user or candidate based on role
-        const isInternalUser = ['admin', 'recruiter', 'hr_reviewer', 'hr_manager', 'tech_interviewer'].includes(payload.role);
+        const isInternalUser = INTERNAL_USER_ROLES.has(payload.role);
 
         if (isInternalUser) {
             // Check internal user active status from database

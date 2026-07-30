@@ -293,12 +293,15 @@ describe('Decision API - Prerequisite Validation Integration', () => {
       // Verify audit event was logged
       expect(mocks.auditEvent).toHaveBeenCalledWith(
         expect.objectContaining({
-          eventType: 'DECISION_CREATED',
-          entityType: 'decision',
-          entityId: 'decision-1',
+          eventType: 'decision.application_decision',
+          entityType: 'application',
+          entityId: mockApplicationId,
           payload: expect.objectContaining({
+            decisionId: 'decision-1',
             applicationId: mockApplicationId,
-            outcome: 'offer'
+            outcome: 'offer',
+            reason_code_id: null,
+            outcomeEventType: 'decision.shortlist'
           })
         })
       );

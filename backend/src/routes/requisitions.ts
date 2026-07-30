@@ -9,6 +9,9 @@ import {
     generateErrorReportCSV,
     importRequisitionsFromCSV
 } from '../services/csvImportService';
+import { auditEvent } from '../services/auditService';
+import { buildAuditContextFromRequest } from '../services/auditContextService';
+import { AUDIT_EVENT_TYPES } from '../constants/auditEventTypes';
 import { redis } from '../db/redis';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
@@ -102,8 +105,24 @@ router.post(
     requireRole(['recruiter', 'admin']),
     uploadCSV.single('file'),
     async (req: Request, res: Response): Promise<void> => {
+        const importSessionId = randomUUID();
+        const auditContext = buildAuditContextFromRequest(req);
+
         try {
             if (!req.file) {
+                await auditEvent({
+                    actorId: auditContext.actorId,
+                    actorRole: auditContext.actorRole,
+                    eventType: AUDIT_EVENT_TYPES.UPLOAD_REQUISITION_IMPORT_FAILED,
+                    entityType: 'requisition_import',
+                    entityId: importSessionId,
+                    payload: {
+                        reason: 'missing_file'
+                    },
+                    ipAddress: auditContext.ipAddress,
+                    userAgent: auditContext.userAgent
+                });
+
                 res.status(400).json({
                     success: false,
                     error: 'No file uploaded',
@@ -121,6 +140,21 @@ router.post(
                 },
                 '[bulk-import] processing requisitions CSV'
             );
+
+            await auditEvent({
+                actorId: auditContext.actorId,
+                actorRole: auditContext.actorRole,
+                eventType: AUDIT_EVENT_TYPES.UPLOAD_REQUISITION_IMPORT_STARTED,
+                entityType: 'requisition_import',
+                entityId: importSessionId,
+                payload: {
+                    fileName: req.file.originalname,
+                    fileSize: req.file.size,
+                    mimeType: req.file.mimetype
+                },
+                ipAddress: auditContext.ipAddress,
+                userAgent: auditContext.userAgent
+            });
 
             const result = await importRequisitionsFromCSV(req.file.buffer, req.user!.id);
             const processingTime = Date.now() - startedAt;
@@ -146,6 +180,23 @@ router.post(
                 errorReportUrl = `/api/requisitions/bulk-import/error-report/${reportId}`;
             }
 
+            await auditEvent({
+                actorId: auditContext.actorId,
+                actorRole: auditContext.actorRole,
+                eventType: AUDIT_EVENT_TYPES.UPLOAD_REQUISITION_IMPORT_COMPLETED,
+                entityType: 'requisition_import',
+                entityId: importSessionId,
+                payload: {
+                    totalRows: result.totalRows,
+                    importedCount: result.importedRequisitions.length,
+                    invalidCount: result.invalidRows,
+                    duplicateCount: result.duplicateRows,
+                    processingTime
+                },
+                ipAddress: auditContext.ipAddress,
+                userAgent: auditContext.userAgent
+            });
+
             res.status(200).json({
                 success: result.success,
                 message: result.success
@@ -162,6 +213,19 @@ router.post(
                 processingTime
             });
         } catch (error) {
+            await auditEvent({
+                actorId: auditContext.actorId,
+                actorRole: auditContext.actorRole,
+                eventType: AUDIT_EVENT_TYPES.UPLOAD_REQUISITION_IMPORT_FAILED,
+                entityType: 'requisition_import',
+                entityId: importSessionId,
+                payload: {
+                    errorMessage: error instanceof Error ? error.message : 'Unknown error'
+                },
+                ipAddress: auditContext.ipAddress,
+                userAgent: auditContext.userAgent
+            });
+
             logger.error({ error, userId: req.user?.id }, '[bulk-import] requisitions CSV import failed');
 
             if (error instanceof Error) {

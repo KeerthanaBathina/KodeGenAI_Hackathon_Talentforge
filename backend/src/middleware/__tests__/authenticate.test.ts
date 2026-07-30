@@ -248,7 +248,8 @@ describe('Authentication Middleware', () => {
                 UserRole.recruiter,
                 UserRole.hr_reviewer,
                 UserRole.hr_manager,
-                UserRole.tech_interviewer
+                UserRole.tech_interviewer,
+                'compliance' as UserRole
             ];
 
             for (const role of roles) {

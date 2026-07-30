@@ -9,6 +9,7 @@ export enum UserRole {
   hr_reviewer = "hr_reviewer",
   hr_manager = "hr_manager",
   tech_interviewer = "tech_interviewer",
+  compliance = "compliance",
   admin = "admin",
 }
 
@@ -18,6 +19,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   [UserRole.hr_reviewer]: "HR Reviewer",
   [UserRole.hr_manager]: "HR Manager",
   [UserRole.tech_interviewer]: "Tech Interviewer",
+  [UserRole.compliance]: "Compliance",
   [UserRole.admin]: "Administrator",
 };
 

@@ -24,6 +24,12 @@ export interface ApprovalPolicyResult {
   effectiveFrom?: Date;
 }
 
+export interface AuditRequestContext {
+  actorRole?: string | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+}
+
 /**
  * Query approval policy for a given compensation amount
  * Returns the most recent effective policy for the compensation band
@@ -105,6 +111,7 @@ export async function createApprovalPolicyVersion(
     effectiveFrom: Date;
   },
   createdBy: string,
+  auditContext: AuditRequestContext = {},
 ): Promise<ApprovalPolicyResult> {
   // Validate compensation band
   if (data.compensationBandMin.gte(data.compensationBandMax)) {
@@ -172,6 +179,7 @@ export async function createApprovalPolicyVersion(
   await auditService.logEvent({
     action: 'approval_policy.version_created',
     actorId: createdBy,
+    actorRole: auditContext.actorRole,
     resourceType: 'ApprovalPolicy',
     resourceId: policy.id,
     metadata: {
@@ -180,6 +188,8 @@ export async function createApprovalPolicyVersion(
       oldApprovers: existingPolicy?.requiredApprovers || null,
       newApprovers: data.requiredApprovers,
     },
+    ipAddress: auditContext.ipAddress,
+    userAgent: auditContext.userAgent,
   });
 
   logger.info('Created new approval policy version', {

@@ -18,6 +18,7 @@ import interviewPathsRouter from './routes/interviewPaths';
 import scorecardsRouter from './routes/scorecards';
 import webhooksRouter from './routes/webhooks';
 import assessmentsRouter from './routes/assessments';
+import analyticsRouter from './routes/analytics';
 import sessionTimerRouter from './routes/sessionTimer';
 import manualReviewQueueRouter from './routes/manualReviewQueue';
 import deadLetterJobsRouter from './routes/admin/deadLetterJobs';
@@ -32,6 +33,7 @@ import adminUsersRouter from './routes/admin/users';
 import screeningThresholdsRouter from './routes/admin/screeningThresholds';
 import scoringThresholdsRouter from './routes/admin/scoringThresholds';
 import approvalPoliciesRouter from './routes/admin/approvalPolicies';
+import adminAuditLogRouter from './routes/admin/auditLog';
 import adminHealthRouter from './routes/admin/health';
 import approvalsRouter from './routes/approvals';
 import offersRouter from './routes/offers';
@@ -78,6 +80,7 @@ export function createApp() {
   app.use('/api/screenings', screeningsRouter);
   app.use('/api/webhooks', webhooksRouter);
   app.use('/api/assessments', assessmentsRouter);
+  app.use('/api/analytics', analyticsRouter);
   app.use('/api/sessions', sessionTimerRouter);
   app.use('/api/manual-review-queue', manualReviewQueueRouter);
   app.use('/api/approvals', approvalsRouter);
@@ -96,6 +99,7 @@ export function createApp() {
   app.use('/api/admin/screening-thresholds', screeningThresholdsRouter);
   app.use('/api/admin/scoring-thresholds', scoringThresholdsRouter);
   app.use('/api/admin/approval-policies', approvalPoliciesRouter);
+  app.use('/api/admin/audit-log', adminAuditLogRouter);
   app.use('/api/admin/health', adminHealthRouter);
   app.use('/', publicHealthRouter);
 

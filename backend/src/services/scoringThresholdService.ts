@@ -25,6 +25,12 @@ export interface ScoringThresholdData {
   };
 }
 
+export interface AuditRequestContext {
+  actorRole?: string | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+}
+
 /**
  * Validate scoring threshold values
  */
@@ -75,6 +81,7 @@ export async function createScoringThresholdVersion(
     effectiveFrom: Date;
   },
   createdBy: string,
+  auditContext: AuditRequestContext = {},
 ): Promise<ScoringThresholdData> {
   // Validate ranges
   validateScoringThresholds({
@@ -135,6 +142,7 @@ export async function createScoringThresholdVersion(
   await auditService.logEvent({
     action: 'scoring_threshold.version_created',
     actorId: createdBy,
+    actorRole: auditContext.actorRole,
     resourceType: 'ScoringThreshold',
     resourceId: threshold.id,
     metadata: {
@@ -154,6 +162,8 @@ export async function createScoringThresholdVersion(
         experienceThresholdYears: data.experienceThresholdYears,
       },
     },
+    ipAddress: auditContext.ipAddress,
+    userAgent: auditContext.userAgent,
   });
 
   logger.info('Created new scoring threshold version', {

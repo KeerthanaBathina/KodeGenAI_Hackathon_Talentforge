@@ -6,9 +6,13 @@ import {
     getThresholdHistory,
 } from '../../services/thresholdService';
 import { authenticate } from '../../middleware/authenticate';
+import { authorize } from '../../middleware/authorize';
+import { buildAuditContextFromRequest } from '../../services/auditContextService';
 import logger from '../../utils/logger';
 
 const router = Router();
+
+router.use(authenticate, authorize(['admin']));
 
 const CreateThresholdSchema = z
     .object({
@@ -26,7 +30,7 @@ const CreateThresholdSchema = z
     });
 
 // GET /api/admin/thresholds/active
-router.get('/active', authenticate, async (req, res) => {
+router.get('/active', async (req, res) => {
     try {
         const thresholds = await getActiveThresholds();
         res.json(thresholds);
@@ -42,7 +46,7 @@ router.get('/active', authenticate, async (req, res) => {
 });
 
 // GET /api/admin/thresholds/history
-router.get('/history', authenticate, async (req, res) => {
+router.get('/history', async (req, res) => {
     try {
         const history = await getThresholdHistory();
         res.json({ history, count: history.length });
@@ -58,8 +62,9 @@ router.get('/history', authenticate, async (req, res) => {
 });
 
 // POST /api/admin/thresholds
-router.post('/', authenticate, async (req, res) => {
+router.post('/', async (req, res) => {
     try {
+        const auditContext = buildAuditContextFromRequest(req);
         const validation = CreateThresholdSchema.safeParse(req.body);
         if (!validation.success) {
             return res.status(400).json({
@@ -76,6 +81,10 @@ router.post('/', authenticate, async (req, res) => {
             effectiveFrom: validation.data.effectiveFrom
                 ? new Date(validation.data.effectiveFrom)
                 : undefined,
+        }, req.user!.id, {
+            actorRole: auditContext.actorRole,
+            ipAddress: auditContext.ipAddress,
+            userAgent: auditContext.userAgent,
         });
 
         logger.info('Threshold version created', { version: threshold.version });

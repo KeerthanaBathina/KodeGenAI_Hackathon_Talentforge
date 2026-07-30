@@ -1,6 +1,14 @@
 import { CommunicationStatus } from '@prisma/client';
 import prisma from '../db/prisma';
 import { logger } from '../utils/logger';
+import { auditEvent } from './auditService';
+import { AUDIT_EVENT_TYPES } from '../constants/auditEventTypes';
+
+const STATUS_AUDIT_EVENT_MAP: Partial<Record<CommunicationStatus, string>> = {
+  queued: AUDIT_EVENT_TYPES.COMMUNICATION_QUEUED,
+  sent: AUDIT_EVENT_TYPES.COMMUNICATION_SENT,
+  failed: AUDIT_EVENT_TYPES.COMMUNICATION_FAILED,
+};
 
 /**
  * Data for updating communication status.
@@ -51,6 +59,24 @@ export async function updateCommunicationStatus(
     },
     'Communication status updated'
   );
+
+  const statusEventType = STATUS_AUDIT_EVENT_MAP[data.status];
+  if (!statusEventType) {
+    return;
+  }
+
+  await auditEvent({
+    eventType: statusEventType,
+    entityType: 'communication',
+    entityId: communicationId,
+    payload: {
+      status: data.status,
+      messageId: data.messageId,
+      retryCount: data.retryCount,
+      sentAt: data.sentAt?.toISOString(),
+      deliveredAt: data.deliveredAt?.toISOString(),
+    },
+  });
 }
 
 /**
@@ -79,6 +105,15 @@ export async function updateCommunicationRetryCount(
     { communicationId, retryCount },
     'Communication retry count updated'
   );
+
+  await auditEvent({
+    eventType: AUDIT_EVENT_TYPES.COMMUNICATION_RETRY,
+    entityType: 'communication',
+    entityId: communicationId,
+    payload: {
+      retryCount,
+    },
+  });
 }
 
 /**

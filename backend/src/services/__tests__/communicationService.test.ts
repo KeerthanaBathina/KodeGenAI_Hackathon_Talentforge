@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CommunicationStatus } from '@prisma/client';
 
+const mocks = vi.hoisted(() => ({
+  auditEvent: vi.fn(),
+}));
+
 // Mock logger
 vi.mock('../../utils/logger', () => ({
   logger: {
@@ -19,6 +23,10 @@ vi.mock('../../db/prisma', () => ({
       findUnique: vi.fn(),
     },
   },
+}));
+
+vi.mock('../auditService', () => ({
+  auditEvent: mocks.auditEvent,
 }));
 
 // Import after mocks are set up
@@ -79,6 +87,15 @@ describe('communicationService', () => {
           status: 'queued',
         },
       });
+
+      expect(mocks.auditEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventType: 'communication.queued',
+          entityType: 'communication',
+          entityId: 'comm-456',
+          payload: expect.objectContaining({ status: 'queued' }),
+        })
+      );
     });
 
     it('should update to failed status', async () => {
@@ -100,6 +117,18 @@ describe('communicationService', () => {
           retryCount: 5,
         },
       });
+
+      expect(mocks.auditEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventType: 'communication.failed',
+          entityType: 'communication',
+          entityId: 'comm-789',
+          payload: expect.objectContaining({
+            status: 'failed',
+            retryCount: 5,
+          }),
+        })
+      );
     });
 
     it('should update to delivered status with timestamp', async () => {
@@ -177,6 +206,15 @@ describe('communicationService', () => {
         where: { id: 'comm-123' },
         data: { retryCount: 2 },
       });
+
+      expect(mocks.auditEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventType: 'communication.retry',
+          entityType: 'communication',
+          entityId: 'comm-123',
+          payload: { retryCount: 2 },
+        })
+      );
     });
 
     it('should update retry count to 0', async () => {

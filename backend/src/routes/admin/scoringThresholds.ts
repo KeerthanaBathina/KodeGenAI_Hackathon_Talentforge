@@ -18,6 +18,7 @@ import {
   getAllEffectiveScoringThresholds,
   validateEffectiveDateSafety,
 } from '../../services/scoringThresholdService';
+import { buildAuditContextFromRequest } from '../../services/auditContextService';
 import {
   PolicyValidationError,
   PolicyNotFoundError,
@@ -205,6 +206,7 @@ router.get(
 
 router.post('/', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+    const auditContext = buildAuditContextFromRequest(req);
     const {
       jobFamilyId,
       aiShortlistThreshold,
@@ -259,6 +261,11 @@ router.post('/', async (req: Request, res: Response, next: NextFunction): Promis
         effectiveFrom: new Date(effectiveFrom),
       },
       req.user!.id,
+      {
+        actorRole: auditContext.actorRole,
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
+      },
     );
 
     logger.info(

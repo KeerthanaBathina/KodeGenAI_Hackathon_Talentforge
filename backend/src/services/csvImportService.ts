@@ -2,6 +2,7 @@ import type { Prisma } from '@prisma/client';
 import Papa from 'papaparse';
 import prisma from '../db/prisma';
 import { auditEvent } from './auditService';
+import { AUDIT_EVENT_TYPES } from '../constants/auditEventTypes';
 import logger from '../utils/logger';
 
 export interface RequisitionCSVRow {
@@ -476,7 +477,7 @@ export async function importRequisitionsFromCSV(
 
   await auditEvent({
     actorId: uploadedBy,
-    eventType: 'requisition.bulk_import',
+    eventType: AUDIT_EVENT_TYPES.UPLOAD_REQUISITION_BULK_IMPORT,
     entityType: 'user',
     entityId: uploadedBy,
     payload: {
