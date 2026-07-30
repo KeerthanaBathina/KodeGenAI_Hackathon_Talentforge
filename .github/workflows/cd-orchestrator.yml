@@ -41,7 +41,7 @@ jobs:
       production_url: ${{ steps.deploy.outputs.production_url }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -90,7 +90,7 @@ jobs:
         working-directory: backend
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Railway CLI
         run: npm install -g @railway/cli

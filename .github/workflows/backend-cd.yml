@@ -27,7 +27,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Railway CLI
         run: npm install -g @railway/cli
@@ -128,7 +128,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Railway CLI
         run: npm install -g @railway/cli
