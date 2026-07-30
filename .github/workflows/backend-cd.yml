@@ -65,7 +65,7 @@ jobs:
 
       - name: Alert on staging failure
         if: failure() && steps.health-staging.outputs.health_check == 'failed'
-        uses: slackapi/slack-github-action@v1.27.0
+        uses: slackapi/slack-github-action@v4.0.0
         with:
           payload: |
             {
@@ -166,7 +166,7 @@ jobs:
 
       - name: Alert on production failure
         if: failure() && steps.health-production.outputs.health_check == 'failed'
-        uses: slackapi/slack-github-action@v1.27.0
+        uses: slackapi/slack-github-action@v4.0.0
         with:
           payload: |
             {
