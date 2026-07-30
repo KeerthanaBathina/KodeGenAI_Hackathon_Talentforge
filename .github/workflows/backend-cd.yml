@@ -1,0 +1,177 @@
+name: Backend CD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - backend/**
+      - .github/workflows/backend-cd.yml
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - backend/**
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event_name == 'pull_request'
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy to Railway staging
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway up \
+            --service "${{ secrets.RAILWAY_SERVICE_ID_STAGING }}" \
+            --environment "${{ secrets.RAILWAY_ENVIRONMENT_STAGING }}" \
+            --detach
+
+      - name: Wait for rollout
+        run: sleep 60
+
+      - name: Health check staging
+        id: health-staging
+        shell: bash
+        run: |
+          HEALTH_URL="${{ secrets.BACKEND_HEALTH_URL_STAGING }}"
+          for attempt in 1 2 3; do
+            echo "Attempt ${attempt}: GET ${HEALTH_URL}"
+            status=$(curl -s -o /tmp/health_response.json -w "%{http_code}" --max-time 10 "${HEALTH_URL}")
+            echo "HTTP ${status}"
+            cat /tmp/health_response.json || true
+            if [ "${status}" = "200" ]; then
+              echo "health_check=passed" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "health_check=failed" >> "$GITHUB_OUTPUT"
+          exit 1
+
+      - name: Alert on staging failure
+        if: failure() && steps.health-staging.outputs.health_check == 'failed'
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "text": "Backend staging deployment failed. Repo: ${{ github.repository }} Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Comment PR with staging status
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const status = '${{ steps.health-staging.outputs.health_check }}' === 'passed' ? 'HEALTHY' : 'FAILED';
+            const body = [
+              '## Backend Staging Deployment',
+              '',
+              '| | |',
+              '|---|---|',
+              `| **Status** | ${status} |`,
+              `| **Health URL** | ${{ secrets.BACKEND_HEALTH_URL_STAGING }} |`,
+              `| **Commit** | ${{ github.sha }} |`
+            ].join('\n');
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+
+            const existing = comments.find((comment) =>
+              comment.user.login === 'github-actions[bot]' &&
+              comment.body.includes('Backend Staging Deployment')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body
+              });
+            }
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: false
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy to Railway production
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway up \
+            --service "${{ secrets.RAILWAY_SERVICE_ID_PRODUCTION }}" \
+            --environment "${{ secrets.RAILWAY_ENVIRONMENT_PRODUCTION }}" \
+            --detach
+
+      - name: Wait for rollout
+        run: sleep 60
+
+      - name: Health check production
+        id: health-production
+        shell: bash
+        run: |
+          HEALTH_URL="${{ secrets.BACKEND_HEALTH_URL_PRODUCTION }}"
+          for attempt in 1 2 3; do
+            echo "Attempt ${attempt}: GET ${HEALTH_URL}"
+            status=$(curl -s -o /tmp/health_response.json -w "%{http_code}" --max-time 10 "${HEALTH_URL}")
+            echo "HTTP ${status}"
+            cat /tmp/health_response.json || true
+            if [ "${status}" = "200" ]; then
+              echo "health_check=passed" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "health_check=failed" >> "$GITHUB_OUTPUT"
+          exit 1
+
+      - name: Alert on production failure
+        if: failure() && steps.health-production.outputs.health_check == 'failed'
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "text": "Backend production deployment failed. Repo: ${{ github.repository }} Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

@@ -3,7 +3,7 @@ id: task_002
 us_id: us_005
 epic: EP-TECH
 title: "Configure Pino Structured Logging with RequestId Injection and PII Masking"
-status: not-started
+status: done
 layer: backend
 effort: 4h
 priority: critical

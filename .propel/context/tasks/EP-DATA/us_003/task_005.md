@@ -3,7 +3,7 @@ id: task_005
 us_id: us_003
 epic: EP-DATA
 title: "RLS Policies for audit_events + Validate All Immutability Scenarios — DoD Sign-off"
-status: not-started
+status: done
 layer: backend
 effort: 2h
 priority: critical

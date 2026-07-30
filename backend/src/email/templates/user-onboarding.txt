@@ -1,0 +1,40 @@
+Hello {{fullName}},
+
+Welcome to {{platformName}}!
+
+Your account has been created with the following details:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ACCOUNT DETAILS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Email: {{email}}
+Role: {{role}}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEMPORARY PASSWORD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{{temporaryPassword}}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Please log in at:
+{{loginUrl}}
+
+⚠️ IMPORTANT SECURITY INFORMATION
+
+- Change your password immediately after your first login
+- This temporary password will expire in 24 hours
+- Do not share this password with anyone
+- If you didn't expect this email, please contact support
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+If you have any questions or need assistance, please contact our support team.
+
+Best regards,
+{{platformName}} Team
+
+---
+This is an automated email. Please do not reply to this message.

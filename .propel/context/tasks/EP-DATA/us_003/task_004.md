@@ -3,7 +3,7 @@ id: task_004
 us_id: us_003
 epic: EP-DATA
 title: "Bulk Audit Event Insert Load Test — 50 Concurrent INSERTs Within 100 ms"
-status: not-started
+status: done
 layer: backend
 effort: 2h
 priority: critical

@@ -3,7 +3,7 @@ id: task_003
 us_id: us_003
 epic: EP-TECH
 title: "Implement Tiered Rate Limiting Middleware with HTTP 429 and Retry-After Header"
-status: not-started
+status: done
 layer: backend
 effort: 4h
 priority: critical

@@ -2,7 +2,7 @@
   "servers": {
     "propel-sdlc": {
       "type": "http",
-      "url": "<propel-mcp-url>/mcp"
+      "url": "https://propel-iq-mcp-ddajfrf9h2fya2gq.eastus-01.azurewebsites.net/mcp"
     },
     "sequential-thinking": {
       "command": "npx",

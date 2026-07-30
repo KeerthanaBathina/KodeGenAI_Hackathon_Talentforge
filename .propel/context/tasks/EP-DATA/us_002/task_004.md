@@ -3,7 +3,7 @@ id: task_004
 us_id: us_002
 epic: EP-DATA
 title: "Implement Email Template Token Renderer with Unit Tests and Template Seed Data"
-status: not-started
+status: done
 layer: backend
 effort: 3h
 priority: high

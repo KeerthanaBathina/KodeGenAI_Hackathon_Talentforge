@@ -3,7 +3,7 @@ id: task_001
 us_id: us_004
 epic: EP-TECH
 title: "Configure Vitest Unit Test Infrastructure for Frontend and Backend"
-status: not-started
+status: done
 layer: backend
 effort: 3h
 priority: critical

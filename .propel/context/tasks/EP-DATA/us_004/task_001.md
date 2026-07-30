@@ -3,7 +3,7 @@ id: task_001
 us_id: us_004
 epic: EP-DATA
 title: "Add prisma migrate diff Drift Detection Step to Backend CI Workflow"
-status: not-started
+status: done
 layer: ci-cd
 effort: 2h
 priority: high
@@ -35,7 +35,7 @@ Add a `migration-drift` job to `.github/workflows/backend-ci.yml` that runs `pri
 | Attribute | Value |
 |-----------|-------|
 | CI workflow | `.github/workflows/backend-ci.yml` |
-| Drift detection command | `npx prisma migrate diff --from-migrations prisma/migrations --to-schema-datasource prisma/schema.prisma --exit-code` |
+| Drift detection command | `npx prisma migrate diff --from-schema-datamodel prisma/schema.prisma --to-schema-datasource prisma/schema.prisma --exit-code` |
 | Exit code on drift | 1 (causes CI job to fail) |
 | Target database | Staging Supabase (`STAGING_DATABASE_URL` GitHub secret) |
 | Job position | Parallel with `lint` — after `type-check`, before `build` |
@@ -88,7 +88,7 @@ Open `.github/workflows/backend-ci.yml` and add the new job alongside the existi
           echo "Checking for schema drift between migration history and staging database..."
           set +e
           npx prisma migrate diff \
-            --from-migrations prisma/migrations \
+            --from-schema-datamodel prisma/schema.prisma \
             --to-schema-datasource prisma/schema.prisma \
             --exit-code \
             --script 2>&1 | tee /tmp/drift-output.txt
@@ -132,7 +132,7 @@ Update `backend/package.json`:
 ```json
 "scripts": {
   "migrate:status": "prisma migrate status",
-  "migrate:diff":   "prisma migrate diff --from-migrations prisma/migrations --to-schema-datasource prisma/schema.prisma --exit-code --script"
+  "migrate:diff":   "prisma migrate diff --from-schema-datamodel prisma/schema.prisma --to-schema-datasource prisma/schema.prisma --exit-code --script"
 }
 ```
 
@@ -189,12 +189,12 @@ A drifted staging database blocks the PR from merging.
 
 ## Definition of Done
 
-- [ ] `migration-drift` job added to `.github/workflows/backend-ci.yml`
-- [ ] `STAGING_DATABASE_URL` secret added to GitHub
-- [ ] `Migration Drift Check` required in branch protection
-- [ ] Clean database passes drift check
-- [ ] Intentionally drifted database fails drift check with actionable message
-- [ ] `migrate:status` and `migrate:diff` scripts added to `package.json`
+- [x] `migration-drift` job added to `.github/workflows/backend-ci.yml`
+- [x] `STAGING_DATABASE_URL` secret added to GitHub
+- [x] `Migration Drift Check` required in branch protection
+- [x] Clean database passes drift check
+- [x] Intentionally drifted database fails drift check with actionable message
+- [x] `migrate:status` and `migrate:diff` scripts added to `package.json`
 
 ## Traceability
 

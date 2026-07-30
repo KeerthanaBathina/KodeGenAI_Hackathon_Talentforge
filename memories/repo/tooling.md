@@ -1,0 +1,9 @@
+- Use npm.cmd instead of npm/npx PowerShell shims in this workspace (execution-policy restrictions on npm.ps1/npx.ps1).
+- For reliable captured test output, run backend commands via create_and_run_task from workspace root with: cmd /c cd backend && <command>.
+- In this workspace, run_in_terminal may return empty output; prefer create_and_run_task when command output evidence is required.
+- Integration tests that import env-validated services should mock `src/config/env` early to avoid `process.exit(1)` when local integration env vars are missing.
+- Route integration tests may still need `src/config/env` and `src/utils/logger` mocks because router dependencies can import logger modules that transitively load env validation.
+- Integration tests are excluded from backend default test config; use npm run test:integration for *.integration.test.ts files.
+- In Vitest page tests that mock next/navigation useSearchParams, repeated renders may trigger repeated effects; prefer stable assertions and for error-path tests use mockRejectedValue (not only mockRejectedValueOnce).
+- Local Playwright runs on this Windows setup may miss bundled Chromium; use `test.use({ channel: 'msedge' })` as a spec-level fallback for deterministic execution.
+- Consent route tests can trigger env bootstrap via consentService imports; when isolating route behavior, mock consentService early to avoid process.exit from env validation.

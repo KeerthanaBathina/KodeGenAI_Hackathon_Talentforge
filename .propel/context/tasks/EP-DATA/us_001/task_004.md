@@ -3,7 +3,7 @@ id: task_004
 us_id: us_001
 epic: EP-DATA
 title: "Enable Row-Level Security on Core Tables with Candidate, HR, and Admin Policies"
-status: not-started
+status: done
 layer: backend
 effort: 4h
 priority: critical

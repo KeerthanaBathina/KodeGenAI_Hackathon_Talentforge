@@ -3,7 +3,7 @@ id: task_001
 us_id: us_001
 epic: EP-DATA
 title: "Define Foundation Prisma Models — ENUM Types, Users, Candidates, Profiles, Requisitions, and Reference Tables"
-status: not-started
+status: done
 layer: backend
 effort: 5h
 priority: critical

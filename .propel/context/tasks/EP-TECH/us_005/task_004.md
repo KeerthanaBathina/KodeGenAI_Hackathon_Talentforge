@@ -3,7 +3,7 @@ id: task_004
 us_id: us_005
 epic: EP-TECH
 title: "Implement HTTP to HTTPS Redirect Middleware via Proxy Header Detection"
-status: not-started
+status: done
 layer: backend
 effort: 2h
 priority: critical

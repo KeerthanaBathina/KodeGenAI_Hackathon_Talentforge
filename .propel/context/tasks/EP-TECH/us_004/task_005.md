@@ -3,7 +3,7 @@ id: task_005
 us_id: us_004
 epic: EP-TECH
 title: "Validate CI Timing, Secrets Masking, Failing Test Gate, npm Audit, and DoD Sign-off"
-status: not-started
+status: in-progress
 layer: ci-cd
 effort: 3h
 priority: critical

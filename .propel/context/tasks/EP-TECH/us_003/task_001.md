@@ -3,7 +3,7 @@ id: task_001
 us_id: us_003
 epic: EP-TECH
 title: "Install and Configure Prisma ORM with Supabase PostgreSQL Connection Pooling"
-status: not-started
+status: done
 layer: backend
 effort: 4h
 priority: critical

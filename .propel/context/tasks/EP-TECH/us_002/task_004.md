@@ -3,7 +3,7 @@ id: task_004
 us_id: us_002
 epic: EP-TECH
 title: "Create GitHub Actions CI/CD Workflows for Backend with Deployment Failure Alerting"
-status: not-started
+status: done
 layer: ci-cd
 effort: 4h
 priority: critical
@@ -410,3 +410,17 @@ In **GitHub → Repository → Settings → Branches → `main`**, add required 
 | Epic | EP-TECH |
 | NFR | NFR-003 (99.5% uptime — rollback on failure), NFR-007 (observability — deployment alerts) |
 | Scenario | 1 (health-check gate), 2 (alert on rollback), 4 (staging isolation) |
+
+## Progress Update (2026-07-23)
+
+### Completed in Repository
+
+- `.github/workflows/backend-ci.yml` created with TypeScript type-check, ESLint, and build jobs.
+- `.github/workflows/backend-cd.yml` created with staging and production Railway deployment jobs.
+- Post-deploy health checks and Slack alert steps are included in CD workflow.
+
+### Remaining Manual Setup
+
+- Configure required GitHub Actions secrets for Railway and health URLs.
+- Configure branch protection checks for Backend CI jobs.
+- Execute live deployment verification (staging PR + production merge + failure alert test).

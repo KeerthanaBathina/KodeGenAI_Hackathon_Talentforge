@@ -1,0 +1,61 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Test Health Metrics Service",
+			"type": "shell",
+			"command": "npm test",
+			"args": [
+				"--",
+				"src/__tests__/services/healthMetricsService.test.ts"
+			],
+			"problemMatcher": [
+				"$tsc"
+			]
+		},
+		{
+			"label": "US002 TASK003 Export Service Unit",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"run",
+				"test",
+				"--",
+				"src/services/__tests__/auditLogExportService.test.ts"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			]
+		},
+		{
+			"label": "US002 TASK003 Export Route Integration",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"run",
+				"test:integration",
+				"--",
+				"src/routes/__tests__/admin-audit-log-export.integration.test.ts",
+				"src/routes/__tests__/admin-audit-log.integration.test.ts"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			]
+		},
+		{
+			"label": "US003 TASK002 Targeted Tests",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"run",
+				"test",
+				"--",
+				"src/services/__tests__/candidateAnonymizationService.test.ts",
+				"src/workers/__tests__/gdprAnonymizationWorker.test.ts"
+			],
+			"isBackground": false
+		}
+	]
+}

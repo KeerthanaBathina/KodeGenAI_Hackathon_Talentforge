@@ -3,7 +3,7 @@ id: task_004
 us_id: us_004
 epic: EP-DATA
 title: "Integrate prisma migrate deploy into Railway CD Pipeline with Zero-Downtime Guidelines"
-status: not-started
+status: done
 layer: ci-cd
 effort: 3h
 priority: high
@@ -118,7 +118,7 @@ Prisma automatically uses `DIRECT_URL` for `migrate deploy` when it is set, and 
 "scripts": {
   "migrate:deploy":  "prisma migrate deploy",
   "migrate:status":  "prisma migrate status",
-  "migrate:diff":    "prisma migrate diff --from-migrations prisma/migrations --to-schema-datasource prisma/schema.prisma --exit-code --script"
+  "migrate:diff":    "prisma migrate diff --from-schema-datamodel prisma/schema.prisma --to-schema-datasource prisma/schema.prisma --exit-code --script"
 }
 ```
 

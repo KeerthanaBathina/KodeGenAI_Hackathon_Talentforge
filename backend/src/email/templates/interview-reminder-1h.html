@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Starting Soon</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4;">
+    <div style="max-width: 600px; margin: 20px auto; padding: 20px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h2 style="color: #2c3e50; margin-top: 0;">⏰ Interview Starting in 1 Hour</h2>
+        
+        <p>Hi {{recipientName}},</p>
+        
+        <p>This is a final reminder that your interview is starting in <strong>1 hour</strong>.</p>
+        
+        <div style="background-color: #e8f5e9; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4caf50;">
+            <h3 style="margin-top: 0; color: #2c3e50;">Interview Details</h3>
+            <p style="margin: 10px 0;"><strong>Position:</strong> {{positionTitle}}</p>
+            <p style="margin: 10px 0;"><strong>Starts at:</strong> {{interviewDateTime}}</p>
+            <p style="margin: 10px 0;"><strong>Interview Type:</strong> {{interviewType}}</p>
+            {{#if meetingLink}}
+            <p style="margin: 15px 0;">
+                <a href="{{meetingLink}}" 
+                   style="display: inline-block; background-color: #4caf50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                    Join Meeting Now
+                </a>
+            </p>
+            {{/if}}
+            {{#if location}}
+            <p style="margin: 10px 0;"><strong>Location:</strong> {{location}}</p>
+            {{/if}}
+        </div>
+        
+        {{#if panelists}}
+        <div style="margin: 20px 0;">
+            <h4 style="color: #2c3e50; margin-bottom: 10px;">Interview Panel</h4>
+            <ul style="list-style: none; padding: 0;">
+                {{#each panelists}}
+                <li style="margin: 5px 0; padding: 8px; background-color: #ecf0f1; border-radius: 4px;">
+                    <strong>{{name}}</strong> - {{role}}
+                </li>
+                {{/each}}
+            </ul>
+        </div>
+        {{/if}}
+        
+        <div style="background-color: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+            <p style="margin: 0 0 10px 0;"><strong>✅ Final Checklist:</strong></p>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>Test your internet connection and device</li>
+                <li>Find a quiet, well-lit space</li>
+                <li>Have your resume and notes ready</li>
+                <li>Join 5 minutes early</li>
+            </ul>
+        </div>
+        
+        <p>Good luck! We're looking forward to speaking with you.</p>
+        
+        <p style="margin-top: 30px;">Best regards,<br>
+        <strong>{{companyName}} Recruiting Team</strong></p>
+        
+        <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
+        <p style="font-size: 12px; color: #666; text-align: center;">
+            This is an automated reminder. Please do not reply to this email.
+        </p>
+    </div>
+</body>
+</html>

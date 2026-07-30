@@ -3,7 +3,7 @@ id: task_004
 us_id: us_003
 epic: EP-TECH
 title: "P95 Database Query Latency Load Test Under 50 Concurrent Connections"
-status: not-started
+status: done
 layer: backend
 effort: 3h
 priority: critical

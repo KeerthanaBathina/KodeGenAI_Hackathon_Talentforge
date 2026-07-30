@@ -3,7 +3,7 @@ id: task_003
 us_id: us_001
 epic: EP-DATA
 title: "Add Composite Indexes for High-Frequency Query Patterns and Validate P95 < 50ms"
-status: not-started
+status: done
 layer: backend
 effort: 4h
 priority: critical

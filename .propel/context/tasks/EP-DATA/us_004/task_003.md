@@ -3,7 +3,7 @@ id: task_003
 us_id: us_004
 epic: EP-DATA
 title: "Write Database Migration Rollback Runbook with Nullable Column Example"
-status: not-started
+status: done
 layer: backend
 effort: 3h
 priority: high

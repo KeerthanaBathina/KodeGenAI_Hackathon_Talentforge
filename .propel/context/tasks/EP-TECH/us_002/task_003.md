@@ -3,7 +3,7 @@ id: task_003
 us_id: us_002
 epic: EP-TECH
 title: "Configure Railway.app Project with Staging and Production Environment Isolation"
-status: not-started
+status: in-progress
 layer: infrastructure
 effort: 3h
 priority: critical
@@ -248,6 +248,21 @@ Environment variables are managed exclusively in the Railway dashboard — never
 - [ ] Production auto-deploy linked to `main` branch
 - [ ] Health-check path `/health`, timeout 5 s, confirmed in Railway dashboard
 - [ ] `backend/docs/railway-setup.md` committed documenting service URLs and environment strategy
+
+## Progress Update (2026-07-23)
+
+### Completed in Repository
+
+- `backend/railway.json` created with health-check and restart policy settings.
+- `backend/.node-version` created with value `20`.
+- `backend/docs/railway-setup.md` created with environment-isolation documentation.
+
+### Remaining Manual Railway Steps
+
+- Create and verify Railway environments: `staging` and `production`.
+- Configure all production variables and all staging variables with different values.
+- Link production auto-deploy to `main` and set root directory to `backend/`.
+- Confirm health-check path `/health` and timeout in Railway deployment settings.
 
 ## Traceability
 

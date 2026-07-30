@@ -1,0 +1,7 @@
+bullmq==1.1.0
+redis==5.0.1
+spacy==3.7.2
+pdfplumber==0.10.3
+python-docx==1.1.0
+requests==2.31.0
+python-dotenv==1.0.0

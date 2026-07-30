@@ -3,7 +3,7 @@ id: task_002
 us_id: us_002
 epic: EP-TECH
 title: "Integrate Socket.IO WebSocket Server with Connected Acknowledgement"
-status: not-started
+status: done
 layer: backend
 effort: 3h
 priority: critical

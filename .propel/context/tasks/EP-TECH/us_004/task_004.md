@@ -3,7 +3,7 @@ id: task_004
 us_id: us_004
 epic: EP-TECH
 title: "Configure Dependabot for Automated Weekly Dependency and Actions Version Updates"
-status: not-started
+status: done
 layer: ci-cd
 effort: 1h
 priority: critical

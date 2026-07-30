@@ -3,7 +3,7 @@ id: task_003
 us_id: us_001
 epic: EP-TECH
 title: "Create GitHub Actions CI Workflow for TypeScript Build Gating"
-status: not-started
+status: done
 layer: ci-cd
 effort: 3h
 priority: critical

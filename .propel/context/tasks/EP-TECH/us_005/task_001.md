@@ -3,7 +3,7 @@ id: task_001
 us_id: us_005
 epic: EP-TECH
 title: "Harden Helmet.js Security Headers to OWASP Baseline"
-status: not-started
+status: done
 layer: backend
 effort: 3h
 priority: critical

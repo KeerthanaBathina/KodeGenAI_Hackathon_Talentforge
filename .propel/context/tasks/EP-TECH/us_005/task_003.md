@@ -3,7 +3,7 @@ id: task_003
 us_id: us_005
 epic: EP-TECH
 title: "Initialise OpenTelemetry SDK with Grafana Cloud OTLP Exporter"
-status: not-started
+status: done
 layer: backend
 effort: 5h
 priority: critical

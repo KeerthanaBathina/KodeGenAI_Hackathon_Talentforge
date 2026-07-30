@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Upload Issue</title>
+</head>
+
+<body
+    style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background-color: #fee2e2; border-left: 4px solid #ef4444; padding: 15px; margin-bottom: 20px;">
+        <h2 style="margin: 0 0 10px 0; color: #991b1b;">Resume Upload Issue</h2>
+    </div>
+
+    <p>Dear {{candidateName}},</p>
+
+    <p>We were unable to accept your resume file <strong>{{fileName}}</strong> for the position
+        <strong>{{requisitionTitle}}</strong>.</p>
+
+    <p><strong>Reason:</strong> The file did not pass our security screening.</p>
+
+    <p><strong>What to do:</strong> Please upload a different file. Ensure your resume is saved in a standard PDF or
+        DOCX format from a trusted application (Microsoft Word, Google Docs, or Adobe Acrobat).</p>
+
+    <div style="background-color: #f3f4f6; padding: 15px; border-radius: 6px; margin: 20px 0;">
+        <p style="margin: 0;"><strong>Tips:</strong></p>
+        <ul style="margin: 10px 0;">
+            <li>Save your resume directly from Word or Google Docs as PDF</li>
+            <li>Avoid uploading files from email attachments or downloads from unknown sources</li>
+            <li>Maximum file size: 10 MB</li>
+        </ul>
+    </div>
+
+    <p>If you continue to experience issues, please contact our support team.</p>
+
+    <p>Best regards,<br>{{companyName}} Recruitment Team</p>
+
+    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+
+    <p style="font-size: 12px; color: #6b7280; text-align: center;">
+        This is an automated message. Please do not reply to this email.
+    </p>
+</body>
+
+</html>

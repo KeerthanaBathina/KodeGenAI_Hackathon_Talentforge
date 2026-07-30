@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to AI Interview Platform</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .email-container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 40px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #4F46E5;
+        }
+        .header h1 {
+            color: #4F46E5;
+            margin: 0;
+            font-size: 28px;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .greeting {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+        .info-box {
+            background-color: #F3F4F6;
+            border-left: 4px solid #4F46E5;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .info-box strong {
+            color: #4F46E5;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .info-box p {
+            margin: 8px 0;
+            font-size: 15px;
+        }
+        .password-box {
+            background-color: #FEF3C7;
+            border: 2px solid #F59E0B;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .password-box strong {
+            color: #92400E;
+            font-size: 14px;
+            display: block;
+            margin-bottom: 10px;
+        }
+        .password-box code {
+            background-color: #FFFBEB;
+            padding: 12px 20px;
+            font-size: 18px;
+            font-family: 'Courier New', monospace;
+            border-radius: 4px;
+            display: inline-block;
+            color: #92400E;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        .cta-button {
+            display: inline-block;
+            padding: 14px 32px;
+            background-color: #4F46E5;
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 16px;
+            text-align: center;
+            margin: 20px 0;
+            transition: background-color 0.3s;
+        }
+        .cta-button:hover {
+            background-color: #4338CA;
+        }
+        .security-notice {
+            background-color: #FEF2F2;
+            border-left: 4px solid #EF4444;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .security-notice strong {
+            color: #991B1B;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .security-notice p {
+            margin: 0;
+            color: #7F1D1D;
+            font-size: 14px;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #E5E7EB;
+            text-align: center;
+            font-size: 14px;
+            color: #6B7280;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        @media only screen and (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .email-container {
+                padding: 20px;
+            }
+            .header h1 {
+                font-size: 24px;
+            }
+            .cta-button {
+                display: block;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>🎯 Welcome to {{platformName}}</h1>
+        </div>
+        
+        <div class="content">
+            <p class="greeting">Hello {{fullName}},</p>
+            
+            <p>Welcome to the AI Interview Platform! Your account has been successfully created and you're now ready to get started.</p>
+            
+            <div class="info-box">
+                <strong>📋 Your Account Details</strong>
+                <p><strong>Email:</strong> {{email}}</p>
+                <p><strong>Role:</strong> {{role}}</p>
+            </p>
+            </div>
+            
+            <div class="password-box">
+                <strong>🔐 Your Temporary Password</strong>
+                <code>{{temporaryPassword}}</code>
+            </div>
+            
+            <div style="text-align: center;">
+                <a href="{{loginUrl}}" class="cta-button">Log In Now</a>
+            </div>
+            
+            <div class="security-notice">
+                <strong>⚠️ Important Security Information</strong>
+                <p><strong>Please change your password immediately after your first login.</strong></p>
+                <p>For security reasons, this temporary password will expire in 24 hours. Do not share this password with anyone.</p>
+            </div>
+            
+            <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
+        </div>
+        
+        <div class="footer">
+            <p><strong>{{platformName}}</strong></p>
+            <p>This is an automated email. Please do not reply to this message.</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -3,7 +3,7 @@ id: task_004
 us_id: us_001
 epic: EP-TECH
 title: "Create GitHub Actions CD Workflow for Vercel Production Deployment and PR Preview URLs"
-status: not-started
+status: done
 layer: ci-cd
 effort: 4h
 priority: critical

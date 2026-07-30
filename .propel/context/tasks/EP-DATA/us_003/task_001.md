@@ -3,7 +3,7 @@ id: task_001
 us_id: us_003
 epic: EP-DATA
 title: "Extend audit_events Schema with user_agent Column and Verify Full Column Contract"
-status: not-started
+status: done
 layer: backend
 effort: 2h
 priority: critical
