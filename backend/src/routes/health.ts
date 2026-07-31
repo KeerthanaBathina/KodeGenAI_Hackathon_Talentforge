@@ -6,6 +6,13 @@ import logger from '../utils/logger';
 
 const router = Router();
 
+router.get('/', (_req: Request, res: Response) => {
+  res.status(200).json({
+    status: 'ok',
+    service: 'ai-interview-backend'
+  });
+});
+
 router.get('/health', async (_req: Request, res: Response) => {
   const checks: Record<string, string> = { status: 'ok' };
   let statusCode = 200;

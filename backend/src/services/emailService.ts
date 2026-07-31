@@ -218,21 +218,54 @@ export async function sendOtpEmail(input: SendOtpEmailInput): Promise<void> {
     logger.info(
       {
         email: input.email,
+        otp: input.otp,
         expiresAt: input.expiresAt.toISOString(),
         provider: env.EMAIL_PROVIDER
       },
       'auth: OTP dispatch simulated by mock email provider'
     );
+
+    console.log(`\n[MOCK OTP] ${input.email} => ${input.otp} (expires ${input.expiresAt.toISOString()})\n`);
     return;
+  }
+
+  const subject = 'Your TalentForge verification code';
+  const text = `Your one-time passcode is ${input.otp}. This code expires at ${input.expiresAt.toISOString()}. If you did not request this code, you can ignore this email.`;
+  const html = `<p>Your one-time passcode is <strong>${input.otp}</strong>.</p><p>This code expires at ${input.expiresAt.toISOString()}.</p><p>If you did not request this code, you can ignore this email.</p>`;
+
+  try {
+    await sendEmail({
+      to: input.email,
+      subject,
+      text,
+      html,
+    });
+  } catch (error) {
+    // In local development, allow registration flow to continue even when SMTP is not configured.
+    if (env.NODE_ENV === 'development') {
+      logger.error(
+        {
+          email: input.email,
+          provider: env.EMAIL_PROVIDER,
+          error,
+        },
+        'auth: OTP email send failed in development, falling back to console OTP'
+      );
+
+      console.log(`\n[DEV OTP FALLBACK] ${input.email} => ${input.otp} (expires ${input.expiresAt.toISOString()})\n`);
+      return;
+    }
+
+    throw error;
   }
 
   logger.info(
     {
       email: input.email,
       expiresAt: input.expiresAt.toISOString(),
-      provider: env.EMAIL_PROVIDER
+      provider: env.EMAIL_PROVIDER,
     },
-    'auth: OTP dispatch requested via external provider'
+    'auth: OTP email sent via configured provider'
   );
 }
 

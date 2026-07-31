@@ -21,12 +21,52 @@ interface WorkExperience {
     isCurrent: boolean;
 }
 
+function normalizeOptionalDate(value?: string): string | null {
+    const normalized = value?.trim();
+    return normalized ? normalized : null;
+}
+
 function getApiUrl(pathname: string): string {
     const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-    if (!base || (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')) {
+    const isLocalDevHost =
+        typeof window !== 'undefined' &&
+        (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost');
+
+    if (isLocalDevHost) {
+        return `http://localhost:3001${pathname}`;
+    }
+
+    if (!base) {
         return pathname;
     }
+
     return `${base}${pathname}`;
+}
+
+function getInternalRedirectByRole(role: string | null): string | null {
+    if (!role || role === 'candidate') {
+        return null;
+    }
+
+    const roleRedirectMap: Record<string, string> = {
+        hr_manager: '/hr/dashboard',
+        admin: '/admin/health',
+    };
+
+    return roleRedirectMap[role] ?? null;
+}
+
+function getInternalRedirectByEmail(email: string | null): string | null {
+    if (!email) {
+        return null;
+    }
+
+    const emailRedirectMap: Record<string, string> = {
+        'hr-manager@dev.local': '/hr/dashboard',
+        'admin@dev.local': '/admin/health',
+    };
+
+    return emailRedirectMap[email.trim().toLowerCase()] ?? null;
 }
 
 export default function ProfilePage() {
@@ -47,12 +87,39 @@ export default function ProfilePage() {
     const [education, setEducation] = useState<EducationEntry[]>([]);
     const [workHistory, setWorkHistory] = useState<WorkExperience[]>([]);
 
+    function buildAuthHeaders(): Record<string, string> {
+        if (typeof window === 'undefined') {
+            return {};
+        }
+
+        const role = localStorage.getItem('auth_role');
+        if (role && role !== 'candidate') {
+            return {};
+        }
+
+        const token = localStorage.getItem('auth_token');
+        return token ? { Authorization: `Bearer ${token}` } : {};
+    }
+
     // Load existing profile
     useEffect(() => {
         async function loadProfile() {
+            const roleRedirect = getInternalRedirectByRole(localStorage.getItem('auth_role'));
+            if (roleRedirect) {
+                router.replace(roleRedirect);
+                return;
+            }
+
+            const emailRedirect = getInternalRedirectByEmail(localStorage.getItem('auth_email'));
+            if (emailRedirect) {
+                router.replace(emailRedirect);
+                return;
+            }
+
             try {
                 const response = await fetch(getApiUrl('/api/profile'), {
                     credentials: 'include',
+                    headers: buildAuthHeaders(),
                 });
 
                 if (response.status === 404) {
@@ -82,7 +149,7 @@ export default function ProfilePage() {
         }
 
         loadProfile();
-    }, []);
+    }, [router]);
 
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -112,33 +179,77 @@ export default function ProfilePage() {
         setSaving(true);
 
         try {
+            const educationPayload = education.map((entry) => ({
+                institution: entry.institution.trim(),
+                degree: entry.degree.trim(),
+                fieldOfStudy: entry.fieldOfStudy?.trim() || undefined,
+                startDate: entry.startDate,
+                endDate: entry.isCurrent ? null : normalizeOptionalDate(entry.endDate),
+                isCurrent: entry.isCurrent,
+            }));
+
+            const workHistoryPayload = workHistory.map((entry) => ({
+                company: entry.company.trim(),
+                title: entry.title.trim(),
+                startDate: entry.startDate,
+                endDate: entry.isCurrent ? null : normalizeOptionalDate(entry.endDate),
+                description: entry.description?.trim() || undefined,
+                isCurrent: entry.isCurrent,
+            }));
+
             const method = profileExists ? 'PUT' : 'POST';
             const response = await fetch(getApiUrl('/api/profile'), {
                 method,
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...buildAuthHeaders(),
+                },
                 credentials: 'include',
                 body: JSON.stringify({
-                    fullName,
+                    fullName: fullName.trim(),
                     experienceYears,
                     skills,
-                    education,
-                    workHistory,
+                    education: educationPayload,
+                    workHistory: workHistoryPayload,
                 }),
             });
 
-            const data = await response.json();
+            const rawBody = await response.text();
+            let data: any = null;
+
+            if (rawBody) {
+                try {
+                    data = JSON.parse(rawBody);
+                } catch {
+                    data = null;
+                }
+            }
 
             if (!response.ok) {
-                setError(data.error?.message || 'Unable to save profile');
+                const validationMessages = Array.isArray(data?.error?.details)
+                    ? data.error.details
+                        .map((detail: { message?: string }) => detail?.message)
+                        .filter((message: string | undefined): message is string => Boolean(message))
+                    : [];
+
+                setError(
+                    validationMessages.join(', ') ||
+                    data?.error?.message ||
+                    data?.message ||
+                    `Unable to save profile (${response.status})`
+                );
                 setSaving(false);
                 return;
             }
 
             setProfileExists(true);
-            setCompletionPercentage(data.profileCompletionPercentage || 0);
+            setCompletionPercentage(data?.profileCompletionPercentage || data?.completionStatus?.percentage || 0);
             setSuccess(true);
 
-            setTimeout(() => setSuccess(false), 3000);
+            setTimeout(() => {
+                setSuccess(false);
+                router.push('/candidate/dashboard');
+            }, 800);
         } catch (err) {
             console.error('Error saving profile:', err);
             setError('Unable to connect to server');

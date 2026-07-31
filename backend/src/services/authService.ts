@@ -29,6 +29,8 @@ export type ResendOtpInput = {
 export type VerifyOtpResult = {
   redirectTo: string;
   candidateId: string;
+  candidateDbId: string;
+  email: string;
 };
 
 export class AuthError extends Error {
@@ -206,7 +208,9 @@ export async function verifyOtp(input: VerifyOtpInput): Promise<VerifyOtpResult>
 
   return {
     redirectTo: '/onboarding/profile',
-    candidateId: candidatePublicId
+    candidateId: candidatePublicId,
+    candidateDbId: candidate.id,
+    email
   };
 }
 

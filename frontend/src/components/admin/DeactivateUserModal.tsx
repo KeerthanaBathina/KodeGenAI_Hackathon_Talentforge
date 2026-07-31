@@ -20,7 +20,7 @@ export function DeactivateUserModal({
   onUserDeactivated,
   currentUserId,
 }: DeactivateUserModalProps) {
-  const { showToast } = useToast();
+  const { addToast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>("");
 
@@ -40,8 +40,9 @@ export function DeactivateUserModal({
     try {
       await adminUserService.deactivateUser(user.id);
 
-      showToast({
+      addToast({
         type: "success",
+        title: "User deactivated",
         message: `User ${user.fullName} has been deactivated successfully`,
       });
 

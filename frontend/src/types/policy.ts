@@ -71,6 +71,7 @@ export interface ApprovalTier {
   tier: number;
   approverId: string;
   role: string;
+  displayName?: string;
 }
 
 export interface ApprovalPolicy {
@@ -79,6 +80,8 @@ export interface ApprovalPolicy {
   compensationBandMax: string; // Decimal as string
   requiredApprovers: ApprovalTier[];
   effectiveFrom?: string; // ISO date
+  createdAt?: string; // ISO date
+  createdBy?: string;
   active?: boolean;
 }
 

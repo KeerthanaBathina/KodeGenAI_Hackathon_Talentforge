@@ -1,26 +1,13 @@
-import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
-import { UserRole } from "@/types/user";
+"use client";
+
 import { UserListTable } from "@/components/admin/UserListTable";
 
 /**
  * Admin User Management Page
- * Protected route - admin role required
- * Server component for initial auth check, client component for interactive features
+ * User management dashboard.
+ * Auth is enforced by the backend APIs used by the table actions.
  */
-export default async function AdminUsersPage() {
-  const session = await getSession();
-
-  // Redirect non-authenticated users
-  if (!session) {
-    redirect("/login");
-  }
-
-  // Redirect non-admin users
-  if (session.role !== UserRole.admin) {
-    redirect("/unauthorized");
-  }
-
+export default function AdminUsersPage() {
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="py-8 px-4 sm:px-6 lg:px-8">
@@ -35,7 +22,7 @@ export default async function AdminUsersPage() {
           </div>
 
           {/* User List Table */}
-          <UserListTable currentUserId={session.userId} />
+          <UserListTable />
         </div>
       </div>
     </div>

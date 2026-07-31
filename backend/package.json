@@ -62,6 +62,7 @@
     "bcrypt": "^5.1.1",
     "bullmq": "^5.81.2",
     "compression": "1.8.1",
+    "cookie-parser": "^1.4.7",
     "cors": "2.8.5",
     "dotenv": "17.2.1",
     "express": "4.21.2",
@@ -85,6 +86,7 @@
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
     "@types/compression": "1.8.1",
+    "@types/cookie-parser": "^1.4.10",
     "@types/cors": "2.8.19",
     "@types/express": "4.17.21",
     "@types/ioredis": "^4.28.10",

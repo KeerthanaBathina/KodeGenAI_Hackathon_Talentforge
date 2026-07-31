@@ -40,7 +40,7 @@ export const ApprovalPolicyEditor: React.FC = () => {
     compensationBandMin: 50000,
     compensationBandMax: 100000,
     requiredApprovers: [{ tier: 1, approverId: '', role: 'hr_manager' }],
-    effectiveFrom: new Date().toISOString().split('T')[0],
+    effectiveFrom: new Date().toISOString().slice(0, 10),
   });
 
   // Load data on mount
@@ -195,7 +195,7 @@ export const ApprovalPolicyEditor: React.FC = () => {
       compensationBandMin: 50000,
       compensationBandMax: 100000,
       requiredApprovers: [{ tier: 1, approverId: '', role: 'hr_manager' }],
-      effectiveFrom: new Date().toISOString().split('T')[0],
+      effectiveFrom: new Date().toISOString().slice(0, 10),
     });
     setErrors({});
   };
@@ -360,7 +360,7 @@ export const ApprovalPolicyEditor: React.FC = () => {
             name="effectiveFrom"
             value={formData.effectiveFrom}
             onChange={handleChange}
-            min={new Date().toISOString().split('T')[0]}
+            min={new Date().toISOString().slice(0, 10)}
             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
               errors.effectiveFrom
                 ? 'border-red-300 focus:ring-red-500'

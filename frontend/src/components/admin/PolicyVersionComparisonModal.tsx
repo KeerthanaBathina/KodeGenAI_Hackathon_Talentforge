@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ScreeningThreshold, ScoringThreshold, ApprovalPolicy } from '../types/policy';
+import { ScreeningThreshold, ScoringThreshold, ApprovalPolicy } from '../../types/policy';
 
 interface BaseModalProps {
   isOpen: boolean;
@@ -361,6 +361,8 @@ export function ApprovalPolicyComparisonModal({
   policyA,
   policyB,
 }: ApprovalPolicyComparisonModalProps) {
+  const formatOptionalDate = (value?: string) => (value ? new Date(value).toLocaleString() : 'N/A');
+
   const formatCurrency = (val: string | number) => {
     const num = typeof val === 'string' ? parseFloat(val) : val;
     return `$${num.toLocaleString('en-US', {
@@ -393,7 +395,7 @@ export function ApprovalPolicyComparisonModal({
               <div className="p-3 bg-gray-50 rounded">
                 <p className="text-xs text-gray-600">Effective From</p>
                 <p className="font-semibold text-sm mt-1">
-                  {new Date(policyA.effectiveFrom).toLocaleString()}
+                  {formatOptionalDate(policyA.effectiveFrom)}
                 </p>
               </div>
               <div className="p-3 bg-gray-50 rounded">
@@ -434,7 +436,7 @@ export function ApprovalPolicyComparisonModal({
               <div className="p-3 bg-gray-50 rounded">
                 <p className="text-xs text-gray-600">Effective From</p>
                 <p className="font-semibold text-sm mt-1">
-                  {new Date(policyB.effectiveFrom).toLocaleString()}
+                  {formatOptionalDate(policyB.effectiveFrom)}
                 </p>
               </div>
               <div className="p-3 bg-gray-50 rounded">

@@ -48,13 +48,14 @@ async function getActiveScreeningThreshold(): Promise<ScreeningThreshold> {
 
 async function getScreeningThresholdHistory(
   limit: number = 50,
-): Promise<{ thresholds: ScreeningThreshold[]; total: number }> {
+): Promise<ScreeningThreshold[]> {
   const response = await fetch(`/api/admin/screening-thresholds/history?limit=${limit}`, {
     headers: {
       'Content-Type': 'application/json',
     },
   });
-  return handleResponse(response);
+  const data = await handleResponse<{ thresholds?: ScreeningThreshold[] }>(response);
+  return data.thresholds || [];
 }
 
 async function createScreeningThreshold(
@@ -117,18 +118,48 @@ async function getEffectiveScoringThreshold(
 }
 
 async function getScoringThresholdHistory(
-  jobFamilyId: string,
+  jobFamilyIdOrLimit?: string | number,
   limit: number = 50,
-): Promise<{ versions: ScoringThreshold[]; total: number }> {
-  const response = await fetch(
-    `/api/admin/scoring-thresholds/${jobFamilyId}/history?limit=${limit}`,
-    {
-      headers: {
-        'Content-Type': 'application/json',
+): Promise<ScoringThreshold[]> {
+  if (typeof jobFamilyIdOrLimit === 'string') {
+    const response = await fetch(
+      `/api/admin/scoring-thresholds/${jobFamilyIdOrLimit}/history?limit=${limit}`,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
       },
-    },
+    );
+
+    const data = await handleResponse<{ versions?: ScoringThreshold[] }>(response);
+    return (data.versions || []).map((version) => ({
+      ...version,
+      jobFamilyId: version.jobFamilyId || jobFamilyIdOrLimit,
+    }));
+  }
+
+  const effectiveLimit = typeof jobFamilyIdOrLimit === 'number' ? jobFamilyIdOrLimit : limit;
+  const jobFamilies = await getJobFamilies();
+  const histories = await Promise.all(
+    jobFamilies.map(async (jobFamily) => {
+      const response = await fetch(
+        `/api/admin/scoring-thresholds/${jobFamily.id}/history?limit=${effectiveLimit}`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      const data = await handleResponse<{ versions?: ScoringThreshold[] }>(response);
+      return (data.versions || []).map((version) => ({
+        ...version,
+        jobFamilyId: version.jobFamilyId || jobFamily.id,
+      }));
+    }),
   );
-  return handleResponse(response);
+
+  return histories.flat();
 }
 
 async function createScoringThreshold(
@@ -159,13 +190,14 @@ async function getApprovalPolicies(): Promise<{ policies: ApprovalPolicy[]; tota
 
 async function getApprovalPoliciesHistory(
   limit: number = 50,
-): Promise<{ policies: ApprovalPolicy[]; total: number }> {
+): Promise<ApprovalPolicy[]> {
   const response = await fetch(`/api/admin/approval-policies/history?limit=${limit}`, {
     headers: {
       'Content-Type': 'application/json',
     },
   });
-  return handleResponse(response);
+  const data = await handleResponse<{ policies?: ApprovalPolicy[] }>(response);
+  return data.policies || [];
 }
 
 async function createApprovalPolicy(

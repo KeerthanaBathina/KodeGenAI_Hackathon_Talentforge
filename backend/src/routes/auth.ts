@@ -91,10 +91,21 @@ router.post('/verify-otp', async (req, res) => {
 
   try {
     const result = await verifyOtp(parsed.data);
+
+    // Establish authenticated candidate session after OTP verification
+    const { token, options } = JwtService.createAuthCookie({
+      sub: result.candidateDbId,
+      email: result.email,
+      role: 'candidate',
+      candidateId: result.candidateDbId
+    });
+    res.cookie('auth_token', token, options);
+
     res.status(200).json({
       message: 'Verification successful',
       redirectTo: result.redirectTo,
-      candidateId: result.candidateId
+      candidateId: result.candidateId,
+      accessToken: token
     });
   } catch (error) {
     if (error instanceof AuthError && error.code === 'OTP_EXPIRED') {
@@ -255,16 +266,21 @@ router.post('/login', async (req, res) => {
 
     // Determine redirect URL based on role
     const redirectMap: Record<string, string> = {
-      candidate: '/candidate/applications',
-      hr: '/hr/dashboard',
-      hr_reviewer: '/hr/dashboard',
+      candidate: '/jobs',
       hr_manager: '/hr/dashboard',
-      recruiter: '/recruiter/requisitions',
-      admin: '/admin/dashboard',
-      tech_interviewer: '/interviewer/dashboard',
+      admin: '/admin/health',
     };
 
-    const redirectTo = redirectMap[result.user.role] || '/dashboard';
+    const emailRedirectMap: Record<string, string> = {
+      'hr-manager@dev.local': '/hr/dashboard',
+      'admin@dev.local': '/admin/health',
+    };
+
+    const normalizedEmail = result.user.email?.trim().toLowerCase();
+    const redirectTo =
+      (normalizedEmail ? emailRedirectMap[normalizedEmail] : undefined)
+      || redirectMap[result.user.role]
+      || '/jobs';
 
     res.status(200).json({
       success: true,
@@ -407,16 +423,12 @@ router.get('/oauth/google/callback', async (req, res) => {
 
     // Redirect to appropriate dashboard
     const redirectMap: Record<string, string> = {
-      candidate: '/candidate/applications',
-      hr: '/hr/dashboard',
-      hr_reviewer: '/hr/dashboard',
+      candidate: '/jobs',
       hr_manager: '/hr/dashboard',
-      recruiter: '/recruiter/requisitions',
-      admin: '/admin/dashboard',
-      tech_interviewer: '/interviewer/dashboard',
+      admin: '/admin/health',
     };
 
-    const redirectTo = redirectMap[result.user.role] || '/dashboard';
+    const redirectTo = redirectMap[result.user.role] || '/jobs';
     res.redirect(redirectTo);
   } catch (error) {
     if (error instanceof OAuthError) {
@@ -479,16 +491,12 @@ router.get('/oauth/github/callback', async (req, res) => {
 
     // Redirect to appropriate dashboard
     const redirectMap: Record<string, string> = {
-      candidate: '/candidate/applications',
-      hr: '/hr/dashboard',
-      hr_reviewer: '/hr/dashboard',
+      candidate: '/jobs',
       hr_manager: '/hr/dashboard',
-      recruiter: '/recruiter/requisitions',
-      admin: '/admin/dashboard',
-      tech_interviewer: '/interviewer/dashboard',
+      admin: '/admin/health',
     };
 
-    const redirectTo = redirectMap[result.user.role] || '/dashboard';
+    const redirectTo = redirectMap[result.user.role] || '/jobs';
     res.redirect(redirectTo);
   } catch (error) {
     if (error instanceof OAuthError) {

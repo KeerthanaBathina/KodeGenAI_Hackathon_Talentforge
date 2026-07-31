@@ -97,7 +97,7 @@ router.post('/', authenticate, async (req, res) => {
             });
         }
 
-        const profile = await profileService.createProfile(candidateId, validation.data, candidateId);
+        const profile = await profileService.createProfile(candidateId, validation.data, candidateId, req.user!.role);
 
         return res.status(201).json(profile);
     } catch (error: any) {
@@ -141,7 +141,7 @@ router.put('/', authenticate, async (req, res) => {
             });
         }
 
-        const profile = await profileService.updateProfile(candidateId, validation.data, candidateId, ipAddress);
+        const profile = await profileService.updateProfile(candidateId, validation.data, candidateId, req.user!.role, ipAddress);
 
         return res.status(200).json(profile);
     } catch (error: any) {

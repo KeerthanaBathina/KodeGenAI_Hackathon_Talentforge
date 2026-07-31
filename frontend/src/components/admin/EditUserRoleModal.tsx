@@ -19,7 +19,7 @@ export function EditUserRoleModal({
   onClose,
   onRoleUpdated,
 }: EditUserRoleModalProps) {
-  const { showToast } = useToast();
+  const { addToast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [newRole, setNewRole] = useState<UserRole | "">(
     user?.role || ""
@@ -48,8 +48,9 @@ export function EditUserRoleModal({
     try {
       await adminUserService.updateUserRole(user.id, { newRole });
 
-      showToast({
+      addToast({
         type: "success",
+        title: "Role updated",
         message: `Role updated to ${ROLE_LABELS[newRole]}. Changes will take effect on next login.`,
       });
 

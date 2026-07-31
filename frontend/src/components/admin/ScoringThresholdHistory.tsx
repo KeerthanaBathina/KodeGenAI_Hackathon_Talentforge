@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { ScoringThreshold } from '../types/policy';
-import { policyService } from '../services/policyService';
+import { ScoringThreshold } from '../../types/policy';
+import { policyService } from '../../services/policyService';
 import { DecimalChangeBadge } from './ChangeBadge';
 import { ScoringThresholdDetailsModal } from './PolicyVersionDetailsModal';
 import { ScoringThresholdComparisonModal } from './PolicyVersionComparisonModal';
@@ -46,8 +46,9 @@ export function ScoringThresholdHistory({ limit = 20 }: ScoringThresholdHistoryP
       ]);
       setJobFamilies(jobFamiliesData);
       setAllHistory(historyData);
-      if (jobFamiliesData.length > 0) {
-        setSelectedJobFamily(jobFamiliesData[0].id);
+      const firstJobFamily = jobFamiliesData[0];
+      if (firstJobFamily) {
+        setSelectedJobFamily(firstJobFamily.id);
       }
     } catch (error) {
       console.error('Failed to load scoring threshold history:', error);
@@ -60,10 +61,12 @@ export function ScoringThresholdHistory({ limit = 20 }: ScoringThresholdHistoryP
     const grouped: { [key: string]: ScoringThreshold[] } = {};
 
     allHistory.forEach((threshold) => {
-      if (!grouped[threshold.jobFamilyId]) {
-        grouped[threshold.jobFamilyId] = [];
+      const existing = grouped[threshold.jobFamilyId];
+      if (existing) {
+        existing.push(threshold);
+      } else {
+        grouped[threshold.jobFamilyId] = [threshold];
       }
-      grouped[threshold.jobFamilyId].push(threshold);
     });
 
     return Object.entries(grouped)
@@ -210,9 +213,12 @@ export function ScoringThresholdHistory({ limit = 20 }: ScoringThresholdHistoryP
                       </button>
                       {index < group.versions.length - 1 && (
                         <button
-                          onClick={() =>
-                            setCompareVersions([version, group.versions[index + 1]])
-                          }
+                          onClick={() => {
+                            const nextVersion = group.versions[index + 1];
+                            if (nextVersion) {
+                              setCompareVersions([version, nextVersion]);
+                            }
+                          }}
                           className="px-3 py-1 text-purple-600 hover:bg-purple-50 rounded"
                         >
                           Compare

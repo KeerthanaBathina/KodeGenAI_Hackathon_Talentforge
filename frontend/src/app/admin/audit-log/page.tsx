@@ -66,7 +66,11 @@ function toBoundaryIsoDate(dateValue: string, boundary: 'from' | 'to'): string {
   return `${dateValue}T23:59:59.999Z`;
 }
 
-function toQueryFilters(searchParams: ReadonlyURLSearchParams): AuditLogQueryFilters {
+type SearchParamsReader = {
+  get(name: string): string | null;
+};
+
+function toQueryFilters(searchParams: SearchParamsReader): AuditLogQueryFilters {
   return {
     actorEmail: searchParams.get('actorEmail') || undefined,
     eventTypes: parseEventTypes(searchParams.get('eventTypes')),

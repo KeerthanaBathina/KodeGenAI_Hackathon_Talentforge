@@ -9,9 +9,18 @@ const genericMessage = 'If this email is new to us, you will receive a verificat
 
 function getApiUrl(pathname: string): string {
   const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-  if (!base || (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')) {
+  const isLocalDevHost =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost');
+
+  if (isLocalDevHost) {
+    return `http://localhost:3001${pathname}`;
+  }
+
+  if (!base) {
     return pathname;
   }
+
   return `${base}${pathname}`;
 }
 
@@ -64,6 +73,7 @@ export default function VerifyOtpPage() {
       const response = await fetch(getApiUrl('/api/auth/verify-otp'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email, otp })
       });
 
@@ -71,12 +81,17 @@ export default function VerifyOtpPage() {
         message?: string;
         redirectTo?: string;
         canResend?: boolean;
+        accessToken?: string;
       };
 
       if (!response.ok) {
         setError(body.message ?? 'Unable to verify code.');
         setCanResend(Boolean(body.canResend));
         return;
+      }
+
+      if (body.accessToken && typeof window !== 'undefined') {
+        localStorage.setItem('auth_token', body.accessToken);
       }
 
       router.push(body.redirectTo ?? '/onboarding/profile');
@@ -99,6 +114,7 @@ export default function VerifyOtpPage() {
       const response = await fetch(getApiUrl('/api/auth/resend-otp'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email })
       });
 

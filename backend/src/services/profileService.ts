@@ -25,7 +25,8 @@ const MIN_WORK_HISTORY_COUNT = 1;
 export async function createProfile(
     candidateId: string,
     profileData: Partial<ProfileData>,
-    actorId?: string
+    actorId?: string,
+    actorRole?: string
 ): Promise<any> {
     // Verify candidate exists
     const candidate = await prisma.candidate.findUnique({
@@ -73,10 +74,11 @@ export async function createProfile(
     });
 
     // Audit log
+    const isInternalActor = actorRole !== 'candidate';
     await auditService.logEvent({
         eventType: 'profile_created',
-        actorId: actorId || candidateId,
-        actorRole: actorId ? 'admin' : 'candidate',
+        actorId: isInternalActor ? actorId ?? null : null,
+        actorRole: actorRole ?? 'candidate',
         resourceType: 'profile',
         resourceId: profile.id,
         metadata: { candidateId, initialCompletion: completion.percentage },
@@ -112,6 +114,7 @@ export async function updateProfile(
     candidateId: string,
     updates: Partial<ProfileData>,
     actorId?: string,
+    actorRole?: string,
     ipAddress?: string
 ): Promise<any> {
     const existing = await prisma.profile.findUnique({
@@ -127,6 +130,8 @@ export async function updateProfile(
         logger.warn({ candidateId }, 'Attempted to clear all skills');
     }
 
+    const isInternalActor = actorRole !== 'candidate';
+
     // Apply updates
     const updatedProfile = await prisma.profile.update({
         where: { candidateId },
@@ -136,7 +141,7 @@ export async function updateProfile(
             ...(updates.skills !== undefined && { skills: updates.skills }),
             ...(updates.education !== undefined && { education: updates.education as any }),
             ...(updates.workHistory !== undefined && { workHistory: updates.workHistory as any }),
-            editedById: actorId,
+            editedById: isInternalActor ? actorId : null,
             editedAt: new Date(),
         },
     });
@@ -149,15 +154,14 @@ export async function updateProfile(
         where: { id: updatedProfile.id },
         data: {
             profileCompletionPercentage: completion.percentage,
-            lastCompletedSection: completion.completedSections[completion.completedSections.length - 1] || null,
         },
     });
 
     // Audit log
     await auditService.logEvent({
         eventType: 'profile_updated',
-        actorId: actorId || candidateId,
-        actorRole: actorId ? 'admin' : 'candidate',
+        actorId: isInternalActor ? actorId ?? null : null,
+        actorRole: actorRole ?? 'candidate',
         resourceType: 'profile',
         resourceId: updatedProfile.id,
         metadata: {

@@ -34,7 +34,7 @@ export const ScoringThresholdEditor: React.FC = () => {
     aiShortlistThreshold: 0.85,
     confidenceThreshold: 0.75,
     experienceThresholdYears: 5,
-    effectiveFrom: new Date().toISOString().split('T')[0],
+    effectiveFrom: new Date().toISOString().slice(0, 10),
   });
 
   // Load job families on mount
@@ -114,24 +114,15 @@ export const ScoringThresholdEditor: React.FC = () => {
     }
 
     // Validate required fields
-    if (
-      formData.aiShortlistThreshold === '' ||
-      formData.aiShortlistThreshold === null ||
-      formData.aiShortlistThreshold === undefined
-    ) {
+    if (formData.aiShortlistThreshold === undefined || Number.isNaN(formData.aiShortlistThreshold)) {
       newErrors.aiShortlistThreshold = 'Required';
     }
-    if (
-      formData.confidenceThreshold === '' ||
-      formData.confidenceThreshold === null ||
-      formData.confidenceThreshold === undefined
-    ) {
+    if (formData.confidenceThreshold === undefined || Number.isNaN(formData.confidenceThreshold)) {
       newErrors.confidenceThreshold = 'Required';
     }
     if (
-      formData.experienceThresholdYears === '' ||
-      formData.experienceThresholdYears === null ||
-      formData.experienceThresholdYears === undefined
+      formData.experienceThresholdYears === undefined ||
+      Number.isNaN(formData.experienceThresholdYears)
     ) {
       newErrors.experienceThresholdYears = 'Required';
     }
@@ -206,7 +197,7 @@ export const ScoringThresholdEditor: React.FC = () => {
       aiShortlistThreshold: 0.85,
       confidenceThreshold: 0.75,
       experienceThresholdYears: 5,
-      effectiveFrom: new Date().toISOString().split('T')[0],
+      effectiveFrom: new Date().toISOString().slice(0, 10),
     });
     setErrors({});
   };
@@ -389,7 +380,7 @@ export const ScoringThresholdEditor: React.FC = () => {
               name="effectiveFrom"
               value={formData.effectiveFrom}
               onChange={handleChange}
-              min={new Date().toISOString().split('T')[0]}
+              min={new Date().toISOString().slice(0, 10)}
               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
                 errors.effectiveFrom
                   ? 'border-red-300 focus:ring-red-500'

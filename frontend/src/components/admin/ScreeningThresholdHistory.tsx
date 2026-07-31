@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { ScreeningThreshold } from '../types/policy';
-import { policyService } from '../services/policyService';
+import { ScreeningThreshold } from '../../types/policy';
+import { policyService } from '../../services/policyService';
 import { ChangeBadge } from './ChangeBadge';
 import { ScreeningThresholdDetailsModal } from './PolicyVersionDetailsModal';
 import { ScreeningThresholdComparisonModal } from './PolicyVersionComparisonModal';
@@ -125,7 +125,12 @@ export function ScreeningThresholdHistory({ limit = 20 }: ScreeningThresholdHist
                   </button>
                   {index < history.length - 1 && (
                     <button
-                      onClick={() => setCompareVersions([version, history[index + 1]])}
+                      onClick={() => {
+                        const nextVersion = history[index + 1];
+                        if (nextVersion) {
+                          setCompareVersions([version, nextVersion]);
+                        }
+                      }}
                       className="px-3 py-1 text-purple-600 hover:bg-purple-50 rounded"
                     >
                       Compare

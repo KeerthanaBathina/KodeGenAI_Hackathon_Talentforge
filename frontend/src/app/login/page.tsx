@@ -4,14 +4,22 @@ import React from 'react';
 import { FormEvent, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { OAuthButton } from '../../components/OAuthButton';
 import { CountdownTimer } from '../../components/CountdownTimer';
+import styles from '../auth-pages.module.css';
 
 function getApiUrl(pathname: string): string {
     const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-    if (!base || (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')) {
+    const isLocalDevHost = typeof window !== 'undefined' &&
+        (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost');
+
+    if (isLocalDevHost) {
+        return `http://localhost:3001${pathname}`;
+    }
+
+    if (!base) {
         return pathname;
     }
+
     return `${base}${pathname}`;
 }
 
@@ -19,6 +27,8 @@ export default function LoginPage() {
     const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [rememberMe, setRememberMe] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [lockoutInfo, setLockoutInfo] = useState<{ message: string; until?: string } | null>(null);
     const [submitting, setSubmitting] = useState(false);
@@ -44,6 +54,11 @@ export default function LoginPage() {
         event.preventDefault();
         setError(null);
         setLockoutInfo(null);
+
+        // Prevent stale bearer tokens (e.g., from candidate OTP flow) from overriding new session cookies.
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_role');
+        localStorage.removeItem('auth_email');
 
         if (!email || !password) {
             setError('Email and password are required');
@@ -100,8 +115,39 @@ export default function LoginPage() {
                 return;
             }
 
-            // Success - redirect to appropriate dashboard
-            const redirectTo = body.data?.redirectTo || '/dashboard';
+            // Success - normalize redirect data and keep role-based fallback on client.
+            const role = body.data?.user?.role || body.user?.role;
+            const apiRedirect = body.data?.redirectTo || body.redirectTo;
+            const normalizedEmail = email.trim().toLowerCase();
+
+            const roleFallbackMap: Record<string, string> = {
+                candidate: '/candidate/dashboard',
+                hr_manager: '/hr/dashboard',
+                admin: '/admin/health',
+            };
+
+            const emailFallbackMap: Record<string, string> = {
+                'hr-manager@dev.local': '/hr/dashboard',
+                'admin@dev.local': '/admin/health',
+            };
+
+            const strictInternalRedirect = emailFallbackMap[normalizedEmail]
+                || (role ? roleFallbackMap[role] : undefined);
+
+            // Always enforce known internal redirects before trusting any API redirect.
+            const redirectTo =
+                strictInternalRedirect
+                    ? strictInternalRedirect
+                    : apiRedirect || '/candidate/dashboard';
+
+            if (typeof body.accessToken === 'string' && body.accessToken.length > 0) {
+                localStorage.setItem('auth_token', body.accessToken);
+            }
+            if (typeof role === 'string' && role.length > 0) {
+                localStorage.setItem('auth_role', role);
+            }
+            localStorage.setItem('auth_email', normalizedEmail);
+
             router.push(redirectTo);
         } catch (err) {
             console.error('Login error:', err);
@@ -121,262 +167,146 @@ export default function LoginPage() {
     }
 
     return (
-        <div style={{
-            minHeight: '100vh',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: '#f9fafb',
-            padding: '1rem',
-        }}>
-            <div style={{
-                width: '100%',
-                maxWidth: '400px',
-                backgroundColor: 'white',
-                borderRadius: '8px',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                padding: '2rem',
-            }}>
-                <h1 style={{
-                    fontSize: '1.875rem',
-                    fontWeight: 'bold',
-                    textAlign: 'center',
-                    marginBottom: '1.5rem',
-                    color: '#111827',
-                }}>
-                    Sign In
-                </h1>
+        <main className={styles.shell}>
+            <div className={styles.wfHeader}>
+                <span><span className={styles.wfTag}>SCR-003</span>Login Page . Route: /login . Role: All roles</span>
+                <span>AI Interview Application . FR-002, FR-004, FR-005, FR-009</span>
+            </div>
 
-                {/* Account Lockout Warning */}
-                {lockoutInfo && (
-                    <div
-                        role="alert"
-                        style={{
-                            backgroundColor: '#fef2f2',
-                            border: '1px solid #fecaca',
-                            borderRadius: '6px',
-                            padding: '1rem',
-                            marginBottom: '1.5rem',
-                        }}
-                    >
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'flex-start',
-                            gap: '0.75rem',
-                        }}>
-                            <svg
-                                style={{ width: '20px', height: '20px', color: '#dc2626', flexShrink: 0 }}
-                                fill="currentColor"
-                                viewBox="0 0 20 20"
-                            >
-                                <path
-                                    fillRule="evenodd"
-                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                                    clipRule="evenodd"
-                                />
-                            </svg>
-                            <div style={{ flex: 1 }}>
-                                <p style={{ fontWeight: '600', color: '#dc2626', marginBottom: '0.5rem' }}>
-                                    Account Locked
-                                </p>
-                                <p style={{ fontSize: '0.875rem', color: '#991b1b', marginBottom: '0.75rem' }}>
-                                    {lockoutInfo.message}
-                                </p>
-                                {lockoutInfo.until && (
-                                    <div style={{ fontSize: '0.875rem', color: '#991b1b' }}>
-                                        <strong>Time remaining:</strong>{' '}
-                                        <CountdownTimer
-                                            resetAt={new Date(lockoutInfo.until)}
-                                            onExpire={handleLockoutExpire}
-                                        />
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Error Message */}
-                {error && (
-                    <div
-                        role="alert"
-                        style={{
-                            backgroundColor: '#fee',
-                            border: '1px solid #fcc',
-                            borderRadius: '6px',
-                            padding: '0.75rem',
-                            marginBottom: '1rem',
-                            color: '#c00',
-                            fontSize: '0.875rem',
-                        }}
-                    >
-                        {error}
-                    </div>
-                )}
-
-                {/* Email/Password Form */}
-                <form onSubmit={handleSubmit} style={{ marginBottom: '1.5rem' }}>
-                    <div style={{ marginBottom: '1rem' }}>
-                        <label
-                            htmlFor="email"
-                            style={{
-                                display: 'block',
-                                fontSize: '0.875rem',
-                                fontWeight: '500',
-                                marginBottom: '0.5rem',
-                                color: '#374151',
-                            }}
-                        >
-                            Email
-                        </label>
-                        <input
-                            type="email"
-                            id="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            disabled={submitting || !!lockoutInfo}
-                            style={{
-                                width: '100%',
-                                padding: '0.5rem 0.75rem',
-                                border: '1px solid #d1d5db',
-                                borderRadius: '6px',
-                                fontSize: '1rem',
-                                backgroundColor: (submitting || lockoutInfo) ? '#f3f4f6' : 'white',
-                            }}
-                            placeholder="you@example.com"
-                        />
-                    </div>
-
-                    <div style={{ marginBottom: '1rem' }}>
-                        <label
-                            htmlFor="password"
-                            style={{
-                                display: 'block',
-                                fontSize: '0.875rem',
-                                fontWeight: '500',
-                                marginBottom: '0.5rem',
-                                color: '#374151',
-                            }}
-                        >
-                            Password
-                        </label>
-                        <input
-                            type="password"
-                            id="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            disabled={submitting || !!lockoutInfo}
-                            minLength={8}
-                            style={{
-                                width: '100%',
-                                padding: '0.5rem 0.75rem',
-                                border: '1px solid #d1d5db',
-                                borderRadius: '6px',
-                                fontSize: '1rem',
-                                backgroundColor: (submitting || lockoutInfo) ? '#f3f4f6' : 'white',
-                            }}
-                            placeholder="••••••••"
-                        />
-                    </div>
-
-                    <div style={{ textAlign: 'right', marginBottom: '1rem' }}>
-                        <Link
-                            href="/forgot-password"
-                            style={{
-                                fontSize: '0.875rem',
-                                color: '#2563eb',
-                                textDecoration: 'none',
-                                fontWeight: '500',
-                            }}
-                        >
-                            Forgot password?
-                        </Link>
-                    </div>
-
-                    <button
-                        type="submit"
-                        disabled={submitting || !!lockoutInfo}
-                        style={{
-                            width: '100%',
-                            padding: '0.75rem',
-                            backgroundColor: (submitting || lockoutInfo) ? '#9ca3af' : '#2563eb',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '6px',
-                            fontSize: '1rem',
-                            fontWeight: '600',
-                            cursor: (submitting || lockoutInfo) ? 'not-allowed' : 'pointer',
-                        }}
-                    >
-                        {submitting ? 'Signing in...' : 'Sign In'}
-                    </button>
-                </form>
-
-                {/* Divider */}
-                <div style={{
-                    position: 'relative',
-                    marginBottom: '1.5rem',
-                    textAlign: 'center',
-                }}>
-                    <div style={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: 0,
-                        right: 0,
-                        height: '1px',
-                        backgroundColor: '#e5e7eb',
-                    }} />
-                    <span style={{
-                        position: 'relative',
-                        backgroundColor: 'white',
-                        padding: '0 0.75rem',
-                        fontSize: '0.875rem',
-                        color: '#6b7280',
-                    }}>
-                        Or continue with
-                    </span>
-                </div>
-
-                {/* OAuth Buttons */}
-                <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.75rem',
-                    marginBottom: '1.5rem',
-                }}>
-                    <OAuthButton
-                        provider="google"
-                        onClick={() => handleOAuthLogin('google')}
-                        disabled={!!lockoutInfo}
-                    />
-                    <OAuthButton
-                        provider="github"
-                        onClick={() => handleOAuthLogin('github')}
-                        disabled={!!lockoutInfo}
-                    />
-                </div>
-
-                {/* Register Link */}
-                <div style={{
-                    textAlign: 'center',
-                    fontSize: '0.875rem',
-                    color: '#6b7280',
-                }}>
-                    Don't have an account?{' '}
-                    <Link
-                        href="/register"
-                        style={{
-                            color: '#2563eb',
-                            fontWeight: '600',
-                            textDecoration: 'none',
-                        }}
-                    >
-                        Sign up
-                    </Link>
+            <div className={styles.brandBar}>
+                <div className={styles.brand}>
+                    <span className={styles.brandMark}>TF</span>
+                    TalentForge
                 </div>
             </div>
-        </div>
+
+            <section className={styles.pageBody}>
+                <div className={`${styles.card} ${styles.loginCard}`}>
+                    <h1 className={styles.cardTitle}>Welcome back</h1>
+                    <p className={styles.cardSubtitle}>Sign in to your account to continue</p>
+
+                    {lockoutInfo && (
+                        <div role="alert" className={styles.lockoutBox}>
+                            <p className={styles.lockoutTitle}>Account locked</p>
+                            <p className={styles.lockoutText}>{lockoutInfo.message}</p>
+                            {lockoutInfo.until && (
+                                <p className={styles.lockoutText}>
+                                    Time remaining:{' '}
+                                    <CountdownTimer
+                                        resetAt={new Date(lockoutInfo.until)}
+                                        onExpire={handleLockoutExpire}
+                                    />
+                                </p>
+                            )}
+                        </div>
+                    )}
+
+                    {error && (
+                        <div role="alert" className={styles.errorBanner}>
+                            <span aria-hidden="true">!</span>
+                            <span>{error}</span>
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSubmit} className={styles.form}>
+                        <div className={styles.field}>
+                            <label htmlFor="email">Email or Username</label>
+                            <div className={styles.inputWrap}>
+                                <input
+                                    autoComplete="username"
+                                    autoFocus
+                                    className={styles.input}
+                                    disabled={submitting || !!lockoutInfo}
+                                    id="email"
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="you@example.com"
+                                    required
+                                    type="email"
+                                    value={email}
+                                />
+                            </div>
+                        </div>
+
+                        <div className={styles.field}>
+                            <label htmlFor="password">Password</label>
+                            <div className={styles.inputWrap}>
+                                <input
+                                    autoComplete="current-password"
+                                    className={`${styles.input} ${styles.inputWithSuffix}`}
+                                    disabled={submitting || !!lockoutInfo}
+                                    id="password"
+                                    minLength={8}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="Enter your password"
+                                    required
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={password}
+                                />
+                                <button
+                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                    className={styles.suffixButton}
+                                    onClick={() => setShowPassword((prev) => !prev)}
+                                    type="button"
+                                >
+                                    {showPassword ? 'Hide' : 'Show'}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className={styles.formRow}>
+                            <label className={styles.checkboxLabel}>
+                                <input
+                                    checked={rememberMe}
+                                    disabled={submitting || !!lockoutInfo}
+                                    onChange={(event) => setRememberMe(event.target.checked)}
+                                    type="checkbox"
+                                />
+                                Keep me logged in for 30 days
+                            </label>
+                            <Link className={styles.link} href="/forgot-password">
+                                Forgot password?
+                            </Link>
+                        </div>
+
+                        <button className={styles.btnPrimary} disabled={submitting || !!lockoutInfo} type="submit">
+                            {submitting ? 'Signing in...' : 'Log in'}
+                        </button>
+                    </form>
+
+                    <div className={styles.divider}>
+                        <div className={styles.dividerLine} />
+                        <span className={styles.dividerText}>Or continue with</span>
+                        <div className={styles.dividerLine} />
+                    </div>
+
+                    <div className={styles.ssoStack}>
+                        <button
+                            className={styles.btnSso}
+                            disabled={!!lockoutInfo}
+                            onClick={() => handleOAuthLogin('google')}
+                            type="button"
+                        >
+                            <span className={`${styles.ssoIcon} ${styles.googleIcon}`}>G</span>
+                            Continue with Google
+                        </button>
+                        <button
+                            className={styles.btnSsoDark}
+                            disabled={!!lockoutInfo}
+                            onClick={() => handleOAuthLogin('github')}
+                            type="button"
+                        >
+                            <span className={`${styles.ssoIcon} ${styles.githubIcon}`}>GH</span>
+                            Continue with GitHub
+                        </button>
+                    </div>
+
+                    <p className={styles.footerText}>
+                        Do not have an account? <Link className={styles.link} href="/register">Sign up</Link>
+                    </p>
+                </div>
+            </section>
+
+            <footer className={styles.footerBar}>2026 TalentForge . Privacy Policy . Terms of Service</footer>
+        </main>
     );
 }

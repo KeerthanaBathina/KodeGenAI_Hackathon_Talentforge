@@ -19,7 +19,7 @@ type SortField = "name" | "email" | "created";
 type SortDirection = "asc" | "desc";
 
 export function UserListTable({ currentUserId }: UserListTableProps) {
-  const { showToast } = useToast();
+  const { addToast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>("");
@@ -65,8 +65,9 @@ export function UserListTable({ currentUserId }: UserListTableProps) {
       const message =
         err instanceof Error ? err.message : "Failed to load users";
       setError(message);
-      showToast({
+      addToast({
         type: "error",
+        title: "Failed to load users",
         message,
       });
     } finally {
@@ -124,16 +125,18 @@ export function UserListTable({ currentUserId }: UserListTableProps) {
   const handleReactivate = async (userId: string, userName: string) => {
     try {
       await adminUserService.reactivateUser(userId);
-      showToast({
+      addToast({
         type: "success",
+        title: "User reactivated",
         message: `User ${userName} has been reactivated`,
       });
       await loadUsers();
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to reactivate user";
-      showToast({
+      addToast({
         type: "error",
+        title: "Reactivation failed",
         message,
       });
     }

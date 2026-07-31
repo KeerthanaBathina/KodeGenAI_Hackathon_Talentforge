@@ -10,7 +10,14 @@ import type { ImportResultData } from '@/components/requisitions/types';
 
 function getApiUrl(pathname: string): string {
   const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-  if (!base || (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')) {
+  const isLocalDevHost = typeof window !== 'undefined' &&
+    (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost');
+
+  if (isLocalDevHost) {
+    return `http://localhost:3001${pathname}`;
+  }
+
+  if (!base) {
     return pathname;
   }
 
@@ -160,8 +167,8 @@ export default function BulkImportPage() {
       {importResult ? <ImportResults result={importResult} /> : null}
 
       <div className="mt-8">
-        <Link href="/requisitions" className="text-blue-600 hover:text-blue-800">
-          Back to Requisitions
+        <Link href="/jobs" className="text-blue-600 hover:text-blue-800">
+          Back to Jobs
         </Link>
       </div>
     </main>

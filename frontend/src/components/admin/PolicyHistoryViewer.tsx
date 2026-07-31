@@ -9,8 +9,8 @@ import {
   scoringThresholdHistoryToCSV,
   approvalPolicyHistoryToCSV,
   downloadCSV,
-} from '../utils/historyExport';
-import { policyService } from '../services/policyService';
+} from '../../utils/historyExport';
+import { policyService } from '../../services/policyService';
 
 type HistoryTab = 'screening' | 'scoring' | 'approval';
 
@@ -35,15 +35,15 @@ export function PolicyHistoryViewer() {
       if (activeTab === 'screening') {
         const data = await policyService.getScreeningThresholdHistory(1000);
         const csv = screeningThresholdHistoryToCSV(data);
-        downloadCSV(`screening-threshold-history-${new Date().toISOString().split('T')[0]}.csv`, csv);
+        downloadCSV(`screening-threshold-history-${new Date().toISOString().slice(0, 10)}.csv`, csv);
       } else if (activeTab === 'scoring') {
         const data = await policyService.getScoringThresholdHistory(1000);
         const csv = scoringThresholdHistoryToCSV(data);
-        downloadCSV(`scoring-threshold-history-${new Date().toISOString().split('T')[0]}.csv`, csv);
+        downloadCSV(`scoring-threshold-history-${new Date().toISOString().slice(0, 10)}.csv`, csv);
       } else if (activeTab === 'approval') {
         const data = await policyService.getApprovalPoliciesHistory(1000);
         const csv = approvalPolicyHistoryToCSV(data);
-        downloadCSV(`approval-policy-history-${new Date().toISOString().split('T')[0]}.csv`, csv);
+        downloadCSV(`approval-policy-history-${new Date().toISOString().slice(0, 10)}.csv`, csv);
       }
     } catch (error) {
       console.error('Export failed:', error);

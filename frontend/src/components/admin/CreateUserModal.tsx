@@ -29,7 +29,7 @@ export function CreateUserModal({
   onClose,
   onUserCreated,
 }: CreateUserModalProps) {
-  const { showToast } = useToast();
+  const { addToast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [temporaryPassword, setTemporaryPassword] = useState<string | null>(null);
   const [createdUserEmail, setCreatedUserEmail] = useState<string>("");
@@ -72,11 +72,12 @@ export function CreateUserModal({
     try {
       const response = await adminUserService.createUser(formData);
 
-      setTemporaryPassword(response.user.temporaryPassword || "");
+      setTemporaryPassword(response.temporaryPassword || "");
       setCreatedUserEmail(response.user.email);
 
-      showToast({
+      addToast({
         type: "success",
+        title: "User created",
         message: `User created successfully. Onboarding email sent to ${response.user.email}`,
       });
     } catch (error) {
@@ -87,8 +88,9 @@ export function CreateUserModal({
           email: "A user with this email already exists",
         });
       } else {
-        showToast({
+        addToast({
           type: "error",
+          title: "User creation failed",
           message,
         });
       }
@@ -101,13 +103,15 @@ export function CreateUserModal({
     if (temporaryPassword) {
       try {
         await navigator.clipboard.writeText(temporaryPassword);
-        showToast({
+        addToast({
           type: "success",
+          title: "Password copied",
           message: "Password copied to clipboard",
         });
       } catch {
-        showToast({
+        addToast({
           type: "error",
+          title: "Copy failed",
           message: "Failed to copy password",
         });
       }

@@ -117,7 +117,7 @@ export function NoShowSparkline({ trend30d, loading, error }: NoShowSparklinePro
 
   const fallbackIndex = chartPoints.length - 1;
   const safeActiveIndex = activePointIndex !== null && chartPoints[activePointIndex] ? activePointIndex : fallbackIndex;
-  const activePoint = chartPoints[safeActiveIndex];
+  const activePoint = chartPoints[safeActiveIndex] ?? chartPoints[fallbackIndex]!;
   const activeSummary = `${formatDate(activePoint.date)}: ${formatPercent(activePoint.noShowRatePct)} (${activePoint.noShowCount} of ${activePoint.scheduledCount})`;
 
   return (

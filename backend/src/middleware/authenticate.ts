@@ -28,6 +28,31 @@ const INTERNAL_USER_ROLES = new Set([
     'compliance'
 ]);
 
+function extractAuthToken(req: Request): string | null {
+    const authHeader = req.headers.authorization;
+    if (typeof authHeader === 'string' && authHeader.toLowerCase().startsWith('bearer ')) {
+        const bearerToken = authHeader.slice(7).trim();
+        if (bearerToken.length > 0) {
+            return bearerToken;
+        }
+    }
+
+    const cookieToken = req.cookies?.auth_token;
+    if (typeof cookieToken === 'string' && cookieToken.length > 0) {
+        return cookieToken;
+    }
+
+    const rawCookieHeader = req.headers.cookie;
+    if (typeof rawCookieHeader === 'string' && rawCookieHeader.length > 0) {
+        const match = rawCookieHeader.match(/(?:^|;\s*)auth_token=([^;]+)/);
+        if (match?.[1]) {
+            return decodeURIComponent(match[1]);
+        }
+    }
+
+    return null;
+}
+
 /**
  * Authentication middleware that verifies JWT token from cookie.
  * Checks user active status from database on every request.
@@ -40,7 +65,7 @@ export async function authenticate(
 ): Promise<void> {
     try {
         // Get token from cookie
-        const token = req.cookies?.auth_token;
+        const token = extractAuthToken(req);
 
         if (!token) {
             res.status(401).json({

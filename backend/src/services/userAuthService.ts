@@ -57,6 +57,12 @@ function normalizeEmail(email: string): string {
     return email.trim().toLowerCase();
 }
 
+function safeAudit(payload: Parameters<typeof auditEvent>[0]): void {
+    void auditEvent(payload).catch((error) => {
+        logger.error({ error, eventType: payload.eventType }, 'Internal auth audit event failed');
+    });
+}
+
 // ============================================================================
 // Service Functions
 // ============================================================================
@@ -91,7 +97,7 @@ export async function authenticateInternalUser(input: UserLoginInput): Promise<U
 
     // Check if user exists
     if (!user) {
-        await auditEvent({
+        safeAudit({
             eventType: 'login_failed',
             entityType: 'user',
             entityId: '00000000-0000-0000-0000-000000000000',
@@ -115,7 +121,7 @@ export async function authenticateInternalUser(input: UserLoginInput): Promise<U
 
     // Check if user has credentials
     if (!user.credential) {
-        await auditEvent({
+        safeAudit({
             eventType: 'login_failed',
             entityType: 'user',
             entityId: user.id,
@@ -139,7 +145,7 @@ export async function authenticateInternalUser(input: UserLoginInput): Promise<U
     // Check if user is active BEFORE password verification
     // This prevents timing attacks and follows security best practices
     if (!user.active) {
-        await auditEvent({
+        safeAudit({
             eventType: 'login_blocked',
             entityType: 'user',
             entityId: user.id,
@@ -164,7 +170,7 @@ export async function authenticateInternalUser(input: UserLoginInput): Promise<U
     const isPasswordValid = await bcrypt.compare(password, user.credential.passwordHash);
 
     if (!isPasswordValid) {
-        await auditEvent({
+        safeAudit({
             eventType: 'login_failed',
             entityType: 'user',
             entityId: user.id,
@@ -187,7 +193,7 @@ export async function authenticateInternalUser(input: UserLoginInput): Promise<U
     }
 
     // Successful login - log audit event
-    await auditEvent({
+    safeAudit({
         eventType: 'login_success',
         entityType: 'user',
         entityId: user.id,

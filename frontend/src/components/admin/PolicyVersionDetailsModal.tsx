@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ScreeningThreshold, ScoringThreshold, ApprovalPolicy } from '../types/policy';
+import { ScreeningThreshold, ScoringThreshold, ApprovalPolicy } from '../../types/policy';
 
 interface ModalProps {
   isOpen: boolean;
@@ -87,6 +87,10 @@ function DetailField({ label, value, highlight }: DetailFieldProps) {
       </p>
     </div>
   );
+}
+
+function formatOptionalDate(value?: string): string {
+  return value ? new Date(value).toLocaleString() : 'N/A';
 }
 
 // ====== Screening Threshold Details Modal ======
@@ -335,7 +339,7 @@ export function ApprovalPolicyDetailsModal({
           />
           <DetailField
             label="Effective From"
-            value={new Date(policy.effectiveFrom).toLocaleString()}
+            value={formatOptionalDate(policy.effectiveFrom)}
           />
           <DetailField
             label="Created By"
@@ -343,7 +347,7 @@ export function ApprovalPolicyDetailsModal({
           />
           <DetailField
             label="Created"
-            value={new Date(policy.createdAt).toLocaleString()}
+            value={formatOptionalDate(policy.createdAt)}
           />
         </div>
 

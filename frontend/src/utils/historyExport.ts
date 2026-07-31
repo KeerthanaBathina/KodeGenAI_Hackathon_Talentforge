@@ -120,11 +120,15 @@ function formatApproverTiers(approvers: any[]): string {
 /**
  * Format date to ISO string for CSV
  */
-function formatDateForCSV(date: string | Date): string {
-  if (typeof date === 'string') {
-    return new Date(date).toISOString().split('T')[0];
+function formatDateForCSV(date?: string | Date): string {
+  if (!date) {
+    return 'N/A';
   }
-  return date.toISOString().split('T')[0];
+
+  if (typeof date === 'string') {
+    return new Date(date).toISOString().slice(0, 10);
+  }
+  return date.toISOString().slice(0, 10);
 }
 
 /**

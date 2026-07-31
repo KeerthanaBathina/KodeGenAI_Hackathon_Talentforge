@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { ApprovalPolicy, ApprovalTier } from '../types/policy';
-import { policyService } from '../services/policyService';
+import { ApprovalPolicy, ApprovalTier } from '../../types/policy';
+import { policyService } from '../../services/policyService';
 import { ApprovalPolicyDetailsModal } from './PolicyVersionDetailsModal';
 import { ApprovalPolicyComparisonModal } from './PolicyVersionComparisonModal';
 
@@ -43,6 +43,8 @@ export function ApprovalPolicyHistory({ limit = 20 }: ApprovalPolicyHistoryProps
       maximumFractionDigits: 2,
     })}`;
   };
+
+  const formatOptionalDate = (value?: string) => (value ? new Date(value).toLocaleString() : 'N/A');
 
   if (loading) {
     return (
@@ -103,16 +105,16 @@ export function ApprovalPolicyHistory({ limit = 20 }: ApprovalPolicyHistoryProps
                   <ApproverTierSummary approvers={policy.requiredApprovers} />
                 </td>
                 <td className="px-4 py-3 text-sm">
-                  {new Date(policy.effectiveFrom).toLocaleString()}
+                  {formatOptionalDate(policy.effectiveFrom)}
                 </td>
                 <td className="px-4 py-3">
-                  <StatusBadge active={policy.active} />
+                  <StatusBadge active={policy.active ?? false} />
                 </td>
                 <td className="px-4 py-3 text-sm">
                   {policy.createdBy || 'N/A'}
                 </td>
                 <td className="px-4 py-3 text-sm">
-                  {new Date(policy.createdAt).toLocaleString()}
+                  {formatOptionalDate(policy.createdAt)}
                 </td>
                 <td className="px-4 py-3 text-sm space-x-2">
                   <button
@@ -123,7 +125,12 @@ export function ApprovalPolicyHistory({ limit = 20 }: ApprovalPolicyHistoryProps
                   </button>
                   {index < history.length - 1 && (
                     <button
-                      onClick={() => setComparePolicies([policy, history[index + 1]])}
+                      onClick={() => {
+                        const nextPolicy = history[index + 1];
+                        if (nextPolicy) {
+                          setComparePolicies([policy, nextPolicy]);
+                        }
+                      }}
                       className="px-3 py-1 text-purple-600 hover:bg-purple-50 rounded"
                     >
                       Compare
