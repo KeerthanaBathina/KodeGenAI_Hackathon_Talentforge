@@ -1,5 +1,6 @@
 import prisma from '../db/prisma';
 import bcrypt from 'bcrypt';
+import crypto from 'node:crypto';
 import { CandidateStatus } from '@prisma/client';
 import { sendAccountLockoutEmail } from './emailService';
 import { auditEvent } from './auditService';
@@ -38,6 +39,29 @@ const LOCKOUT_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 
 function normalizeEmail(email: string): string {
     return email.trim().toLowerCase();
+}
+
+function isScryptHash(hash: string): boolean {
+    const parts = hash.split(':');
+    return parts.length === 2 && parts[0].length > 0 && parts[1].length > 0;
+}
+
+async function verifyCandidatePassword(password: string, storedHash: string): Promise<boolean> {
+    // Backward-compatible verification: candidate credentials may be bcrypt or scrypt(salt:hash).
+    if (isScryptHash(storedHash)) {
+        const [salt, expectedHash] = storedHash.split(':');
+        const computedHash = crypto.scryptSync(password, salt, 64).toString('hex');
+        const expectedBuffer = Buffer.from(expectedHash, 'hex');
+        const computedBuffer = Buffer.from(computedHash, 'hex');
+
+        if (expectedBuffer.length !== computedBuffer.length) {
+            return false;
+        }
+
+        return crypto.timingSafeEqual(expectedBuffer, computedBuffer);
+    }
+
+    return bcrypt.compare(password, storedHash);
 }
 
 export async function authenticateUser(input: LoginInput): Promise<LoginResult> {
@@ -131,7 +155,7 @@ export async function authenticateUser(input: LoginInput): Promise<LoginResult> 
     }
 
     // 4. Verify password
-    const isPasswordValid = await bcrypt.compare(password, candidate.credential.passwordHash);
+    const isPasswordValid = await verifyCandidatePassword(password, candidate.credential.passwordHash);
 
     if (!isPasswordValid) {
         // Increment failure counter

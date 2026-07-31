@@ -14,18 +14,16 @@ describe('Login and Lockout Integration Tests', () => {
         testUser = await prisma.candidate.create({
             data: {
                 email: testEmail,
-                fullName: 'Test User',
-                phoneNumber: null,
                 status: 'active',
                 failedLoginAttempts: 0,
-                credentials: {
+                credential: {
                     create: {
                         passwordHash,
                     },
                 },
             },
             include: {
-                credentials: true,
+                credential: true,
             },
         });
     });
@@ -46,6 +44,7 @@ describe('Login and Lockout Integration Tests', () => {
 
         expect(response.body.success).toBe(true);
         expect(response.body.message).toBe('Login successful');
+        expect(response.body.accessToken).toEqual(expect.any(String));
         expect(response.body.data.user.email).toBe(testEmail);
         expect(response.body.data.user.role).toBe('candidate');
         expect(response.body.data.redirectTo).toBe('/candidate/applications');

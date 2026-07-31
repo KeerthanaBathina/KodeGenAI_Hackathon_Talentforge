@@ -49,6 +49,7 @@ function getInternalRedirectByRole(role: string | null): string | null {
     }
 
     const roleRedirectMap: Record<string, string> = {
+        hr_reviewer: '/hr/dashboard',
         hr_manager: '/hr/dashboard',
         admin: '/admin/health',
     };
@@ -62,11 +63,17 @@ function getInternalRedirectByEmail(email: string | null): string | null {
     }
 
     const emailRedirectMap: Record<string, string> = {
+        'hr-reviewer@dev.local': '/hr/dashboard',
         'hr-manager@dev.local': '/hr/dashboard',
         'admin@dev.local': '/admin/health',
     };
 
     return emailRedirectMap[email.trim().toLowerCase()] ?? null;
+}
+
+function shouldApplyEmailFallback(role: string | null): boolean {
+    // Email fallback is only for legacy sessions where role is not yet available.
+    return !role;
 }
 
 export default function ProfilePage() {
@@ -104,16 +111,19 @@ export default function ProfilePage() {
     // Load existing profile
     useEffect(() => {
         async function loadProfile() {
-            const roleRedirect = getInternalRedirectByRole(localStorage.getItem('auth_role'));
+            const role = localStorage.getItem('auth_role');
+            const roleRedirect = getInternalRedirectByRole(role);
             if (roleRedirect) {
                 router.replace(roleRedirect);
                 return;
             }
 
-            const emailRedirect = getInternalRedirectByEmail(localStorage.getItem('auth_email'));
-            if (emailRedirect) {
-                router.replace(emailRedirect);
-                return;
+            if (shouldApplyEmailFallback(role)) {
+                const emailRedirect = getInternalRedirectByEmail(localStorage.getItem('auth_email'));
+                if (emailRedirect) {
+                    router.replace(emailRedirect);
+                    return;
+                }
             }
 
             try {

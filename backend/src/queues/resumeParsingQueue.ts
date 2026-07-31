@@ -15,31 +15,46 @@ const connection = {
     password: process.env.REDIS_PASSWORD,
 };
 
-export const resumeParsingQueue = new Queue<ResumeParsingJobData>('resume-parsing', {
-    connection,
-    defaultJobOptions: {
-        attempts: 3,
-        backoff: {
-            type: 'exponential',
-            delay: 2000,
-        },
-        removeOnComplete: {
-            age: 86400, // 24 hours
-            count: 100,
-        },
-        removeOnFail: {
-            age: 604800, // 7 days
-        },
-    },
-});
+const REDIS_QUEUES_ENABLED =
+    process.env.ENABLE_REDIS_QUEUES === 'true' || process.env.NODE_ENV !== 'development';
 
-resumeParsingQueue.on('error', (error) => {
-    logger.error('Resume parsing queue error', { error });
-});
+export const resumeParsingQueue: Queue<ResumeParsingJobData> | null = REDIS_QUEUES_ENABLED
+    ? new Queue<ResumeParsingJobData>('resume-parsing', {
+        connection,
+        defaultJobOptions: {
+            attempts: 3,
+            backoff: {
+                type: 'exponential',
+                delay: 2000,
+            },
+            removeOnComplete: {
+                age: 86400,
+                count: 100,
+            },
+            removeOnFail: {
+                age: 604800,
+            },
+        },
+    })
+    : null;
 
-logger.info('Resume parsing queue initialized');
+if (resumeParsingQueue) {
+    resumeParsingQueue.on('error', (error) => {
+        logger.error('Resume parsing queue error', { error });
+    });
+}
+
+if (REDIS_QUEUES_ENABLED) {
+    logger.info('Resume parsing queue initialized');
+} else {
+    logger.warn('Resume parsing queue disabled in development (set ENABLE_REDIS_QUEUES=true to enable)');
+}
 
 export async function enqueueResumeForParsing(data: ResumeParsingJobData): Promise<string> {
+    if (!resumeParsingQueue) {
+        throw new Error('Resume parsing queue is disabled in development. Set ENABLE_REDIS_QUEUES=true to enable.');
+    }
+
     const job = await resumeParsingQueue.add('parse-resume', data, {
         jobId: `parse-${data.resumeId}`,
     });

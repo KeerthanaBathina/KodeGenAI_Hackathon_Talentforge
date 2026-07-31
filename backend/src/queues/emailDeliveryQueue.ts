@@ -4,8 +4,12 @@ import { env } from '../config/env';
 import { TemplateType } from '@prisma/client';
 import logger from '../utils/logger';
 
+const REDIS_QUEUES_ENABLED =
+  process.env.ENABLE_REDIS_QUEUES === 'true' || process.env.NODE_ENV !== 'development';
+
 const connection = new IORedis(env.REDIS_URL, {
-  maxRetriesPerRequest: null
+  maxRetriesPerRequest: null,
+  lazyConnect: !REDIS_QUEUES_ENABLED
 });
 
 // Job payload interface
@@ -21,20 +25,22 @@ export interface EmailDeliveryJobData {
 }
 
 // Create email delivery queue
-export const emailDeliveryQueue = new Queue('email-delivery', {
-  connection,
-  defaultJobOptions: {
-    attempts: 5,
-    backoff: {
-      type: 'exponential',
-      delay: 30000 // 30 seconds initial delay
-    },
-    removeOnComplete: {
-      age: 86400 // 24 hours
-    },
-    removeOnFail: false // Keep failed jobs for DLQ processing
-  }
-});
+export const emailDeliveryQueue: Queue | null = REDIS_QUEUES_ENABLED
+  ? new Queue('email-delivery', {
+    connection,
+    defaultJobOptions: {
+      attempts: 5,
+      backoff: {
+        type: 'exponential',
+        delay: 30000
+      },
+      removeOnComplete: {
+        age: 86400
+      },
+      removeOnFail: false
+    }
+  })
+  : null;
 
 /**
  * Enqueue email delivery job
@@ -45,6 +51,17 @@ export const emailDeliveryQueue = new Queue('email-delivery', {
 export async function enqueueEmailDelivery(
   data: EmailDeliveryJobData
 ): Promise<void> {
+  if (!emailDeliveryQueue) {
+    logger.warn(
+      {
+        communicationId: data.communicationId,
+        eventType: data.eventType
+      },
+      'Email delivery queue disabled in development; enqueue skipped'
+    );
+    return;
+  }
+
   const jobId = `email-${data.communicationId}`;
 
   await emailDeliveryQueue.add(
@@ -75,6 +92,10 @@ export async function enqueueEmailDelivery(
  * @param communicationId - Communication ID
  */
 export async function cancelEmailDelivery(communicationId: string): Promise<void> {
+  if (!emailDeliveryQueue) {
+    return;
+  }
+
   const jobId = `email-${communicationId}`;
   const job = await emailDeliveryQueue.getJob(jobId);
 
@@ -97,6 +118,15 @@ export async function getQueueStats(): Promise<{
   completed: number;
   failed: number;
 }> {
+  if (!emailDeliveryQueue) {
+    return {
+      waiting: 0,
+      active: 0,
+      completed: 0,
+      failed: 0
+    };
+  }
+
   const [waiting, active, completed, failed] = await Promise.all([
     emailDeliveryQueue.getWaitingCount(),
     emailDeliveryQueue.getActiveCount(),
@@ -118,7 +148,7 @@ export async function getQueueStats(): Promise<{
  * Call this during application shutdown.
  */
 export async function closeEmailQueue(): Promise<void> {
-  await emailDeliveryQueue.close();
+  await emailDeliveryQueue?.close();
   logger.info('Email delivery queue closed');
 }
 

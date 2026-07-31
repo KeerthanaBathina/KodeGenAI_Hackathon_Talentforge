@@ -17,30 +17,48 @@ const connection = {
     password: process.env.REDIS_PASSWORD,
 };
 
-export const screeningQueue = new Queue<ScreeningJobData>('resume-screening', {
-    connection,
-    defaultJobOptions: {
-        attempts: 3,
-        backoff: {
-            type: 'exponential',
-            delay: 5000, // 5s, then 10s, then 20s
-        },
-        timeout: 60000, // 60 seconds max
-        removeOnComplete: {
-            age: 86400, // 24 hours
-            count: 1000,
-        },
-        removeOnFail: {
-            age: 604800, // 7 days
-        },
-    },
-});
+const REDIS_QUEUES_ENABLED =
+    process.env.ENABLE_REDIS_QUEUES === 'true' || process.env.NODE_ENV !== 'development';
 
-screeningQueue.on('error', (error) => {
-    logger.error('Screening queue error', { error });
-});
+export const screeningQueue: Queue<ScreeningJobData> | null = REDIS_QUEUES_ENABLED
+    ? new Queue<ScreeningJobData>('resume-screening', {
+        connection,
+        defaultJobOptions: {
+            attempts: 3,
+            backoff: {
+                type: 'exponential',
+                delay: 5000,
+            },
+            timeout: 60000,
+            removeOnComplete: {
+                age: 86400,
+                count: 1000,
+            },
+            removeOnFail: {
+                age: 604800,
+            },
+        },
+    })
+    : null;
+
+if (screeningQueue) {
+    screeningQueue.on('error', (error) => {
+        logger.error('Screening queue error', { error });
+    });
+}
 
 export async function enqueueScreening(data: ScreeningJobData): Promise<string | null> {
+    if (!REDIS_QUEUES_ENABLED || !screeningQueue) {
+        await prisma.application.update({
+            where: { id: data.applicationId },
+            data: {
+                status: 'pending_review',
+                manualReviewReason: 'queue_unavailable_dev',
+            },
+        });
+        return null;
+    }
+
     // Check if fallback mode is active
     const fallbackActive = await FallbackModeService.isFallbackModeActive();
 
@@ -76,10 +94,11 @@ export async function enqueueScreening(data: ScreeningJobData): Promise<string |
 }
 
 // Screening worker
-export const screeningWorker = new Worker<ScreeningJobData>(
-    'resume-screening',
-    async (job) => {
-        const { applicationId, triggeredBy } = job.data;
+export const screeningWorker: Worker<ScreeningJobData> | null = REDIS_QUEUES_ENABLED
+    ? new Worker<ScreeningJobData>(
+        'resume-screening',
+        async (job) => {
+            const { applicationId, triggeredBy } = job.data;
 
         // Update worker heartbeat
         await SystemHealthWorker.updateWorkerHeartbeat();
@@ -118,30 +137,45 @@ export const screeningWorker = new Worker<ScreeningJobData>(
 
             throw error;
         }
-    },
-    {
-        connection,
-        concurrency: 5, // Process 5 screenings concurrently
-    }
-);
+        },
+        {
+            connection,
+            concurrency: 5,
+        }
+    )
+    : null;
 
-screeningWorker.on('completed', (job, result) => {
-    logger.info('Screening worker completed job', {
-        jobId: job.id,
-        applicationId: job.data.applicationId,
-        score: result.score,
+if (screeningWorker) {
+    screeningWorker.on('completed', (job, result) => {
+        logger.info('Screening worker completed job', {
+            jobId: job.id,
+            applicationId: job.data.applicationId,
+            score: result.score,
+        });
     });
-});
 
-screeningWorker.on('failed', (job, error) => {
-    logger.error('Screening worker failed job', {
-        jobId: job?.id,
-        applicationId: job?.data.applicationId,
-        error: error.message,
+    screeningWorker.on('failed', (job, error) => {
+        logger.error('Screening worker failed job', {
+            jobId: job?.id,
+            applicationId: job?.data.applicationId,
+            error: error.message,
+        });
     });
-});
+}
 
 export async function getScreeningQueueHealth() {
+    if (!screeningQueue) {
+        return {
+            queue: 'resume-screening',
+            waiting: 0,
+            active: 0,
+            completed: 0,
+            failed: 0,
+            delayed: 0,
+            healthy: true,
+        };
+    }
+
     const [waiting, active, completed, failed, delayed] = await Promise.all([
         screeningQueue.getWaitingCount(),
         screeningQueue.getActiveCount(),
@@ -161,4 +195,8 @@ export async function getScreeningQueueHealth() {
     };
 }
 
-logger.info('Screening queue and worker initialized');
+if (REDIS_QUEUES_ENABLED) {
+    logger.info('Screening queue and worker initialized');
+} else {
+    logger.warn('Screening queue disabled in development (set ENABLE_REDIS_QUEUES=true to enable)');
+}

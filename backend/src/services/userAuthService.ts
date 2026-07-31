@@ -112,10 +112,10 @@ export async function authenticateInternalUser(input: UserLoginInput): Promise<U
 
         logger.warn({ email: normalizedEmail }, 'Login attempt for non-existent internal user account');
 
-        // Generic error to prevent user enumeration
+        // Preserve generic messaging while allowing the route layer to fall back to candidate auth.
         throw new UserAuthError(
             'Invalid email or password',
-            'INVALID_CREDENTIALS'
+            'ACCOUNT_NOT_FOUND'
         );
     }
 

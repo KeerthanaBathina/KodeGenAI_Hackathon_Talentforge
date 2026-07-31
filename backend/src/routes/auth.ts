@@ -33,7 +33,10 @@ import logger from '../utils/logger';
 
 const registerSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8)
+  password: z.string().min(8),
+  firstName: z.string().trim().min(1).max(100),
+  lastName: z.string().trim().min(1).max(100),
+  phone: z.string().trim().min(7).max(20)
 });
 
 const verifyOtpSchema = z.object({
@@ -63,10 +66,30 @@ router.post('/register', async (req, res) => {
   }
 
   try {
-    await registerCandidate(parsed.data);
+    const result = await registerCandidate(parsed.data);
+
+    if (result.candidateDbId && result.email) {
+      const { token, options } = JwtService.createAuthCookie({
+        sub: result.candidateDbId,
+        email: result.email,
+        role: 'candidate',
+        candidateId: result.candidateDbId
+      });
+
+      res.cookie('auth_token', token, options);
+
+      res.status(201).json({
+        message: result.message,
+        redirectTo: result.redirectTo,
+        candidateId: result.candidateId,
+        accessToken: token
+      });
+      return;
+    }
+
     res.status(202).json({
-      message: GENERIC_REGISTRATION_MESSAGE,
-      next: '/verify-otp'
+      message: result.message,
+      redirectTo: result.redirectTo
     });
   } catch (error) {
     if (error instanceof AuthError && error.code === 'INVALID_PASSWORD') {
@@ -267,11 +290,13 @@ router.post('/login', async (req, res) => {
     // Determine redirect URL based on role
     const redirectMap: Record<string, string> = {
       candidate: '/jobs',
+      hr_reviewer: '/hr/dashboard',
       hr_manager: '/hr/dashboard',
       admin: '/admin/health',
     };
 
     const emailRedirectMap: Record<string, string> = {
+      'hr-reviewer@dev.local': '/hr/dashboard',
       'hr-manager@dev.local': '/hr/dashboard',
       'admin@dev.local': '/admin/health',
     };
@@ -285,6 +310,7 @@ router.post('/login', async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'Login successful',
+      accessToken: token,
       data: {
         user: {
           id: result.user.id,
@@ -424,6 +450,7 @@ router.get('/oauth/google/callback', async (req, res) => {
     // Redirect to appropriate dashboard
     const redirectMap: Record<string, string> = {
       candidate: '/jobs',
+      hr_reviewer: '/hr/dashboard',
       hr_manager: '/hr/dashboard',
       admin: '/admin/health',
     };
@@ -492,6 +519,7 @@ router.get('/oauth/github/callback', async (req, res) => {
     // Redirect to appropriate dashboard
     const redirectMap: Record<string, string> = {
       candidate: '/jobs',
+      hr_reviewer: '/hr/dashboard',
       hr_manager: '/hr/dashboard',
       admin: '/admin/health',
     };

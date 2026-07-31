@@ -105,6 +105,7 @@ describe('Login Integration - Deactivated Users', () => {
             expect(response.status).toBe(200);
             expect(response.body.success).toBe(true);
             expect(response.body.message).toBe('Login successful');
+            expect(response.body.accessToken).toEqual(expect.any(String));
             expect(response.body.data.user).toBeDefined();
             expect(response.body.data.user.email).toBe('active-login@login-integration-test.com');
             expect(response.body.data.user.role).toBe(UserRole.recruiter);

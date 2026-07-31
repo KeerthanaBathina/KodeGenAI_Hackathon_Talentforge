@@ -7,8 +7,14 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../../services/authService', () => ({
-  GENERIC_REGISTRATION_MESSAGE: 'If this email is new to us, you will receive a verification code',
-  registerCandidate: vi.fn().mockResolvedValue({ message: 'If this email is new to us, you will receive a verification code' }),
+  GENERIC_REGISTRATION_MESSAGE: 'Registration successful. Continue to complete your profile.',
+  registerCandidate: vi.fn().mockResolvedValue({
+    message: 'Registration successful. Continue to complete your profile.',
+    redirectTo: '/profile',
+    candidateDbId: 'candidate-db-id',
+    candidateId: 'CAND-ABC123',
+    email: 'user@example.com'
+  }),
   verifyOtp: vi.fn().mockResolvedValue({
     redirectTo: '/onboarding/profile',
     candidateId: 'CAND-ABC123'
@@ -139,17 +145,21 @@ describe('auth routes', () => {
     expect(response.body.message).toBe('Invalid request payload');
   });
 
-  it('POST /api/auth/register returns 202 on accepted registration', async () => {
+  it('POST /api/auth/register returns 201 on accepted registration', async () => {
     const app = createTestApp();
 
     const response = await request(app).post('/api/auth/register').send({
       email: 'user@example.com',
-      password: 'ValidPass1'
+      password: 'ValidPass1',
+      firstName: 'Jane',
+      lastName: 'Doe',
+      phone: '+919876543210'
     });
 
-    expect(response.status).toBe(202);
-    expect(response.body.message).toBe('If this email is new to us, you will receive a verification code');
-    expect(response.body.next).toBe('/verify-otp');
+    expect(response.status).toBe(201);
+    expect(response.body.message).toBe('Registration successful. Continue to complete your profile.');
+    expect(response.body.redirectTo).toBe('/profile');
+    expect(response.body.accessToken).toBeDefined();
   });
 
   it('POST /api/auth/verify-otp returns 200 on valid OTP', async () => {
@@ -186,7 +196,7 @@ describe('auth routes', () => {
     });
 
     expect(response.status).toBe(202);
-    expect(response.body.message).toBe('If this email is new to us, you will receive a verification code');
+    expect(response.body.message).toBe('Registration successful. Continue to complete your profile.');
   });
 
   it('POST /api/auth/logout clears auth cookie and emits logout audit event', async () => {

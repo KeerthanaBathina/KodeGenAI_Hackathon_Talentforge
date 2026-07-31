@@ -15,14 +15,21 @@ export function getAuthToken(): string | null {
     return null; // Server-side, cannot access cookies here
   }
 
+  const storedToken = window.localStorage.getItem('auth_token');
+  if (storedToken) {
+    return storedToken;
+  }
+
   const cookies = document.cookie.split('; ');
-  const authCookie = cookies.find(row => row.startsWith('authToken='));
+  const authCookie = cookies.find((row) => row.startsWith('auth_token='))
+    ?? cookies.find((row) => row.startsWith('authToken='));
   
   if (!authCookie) {
     return null;
   }
 
-  return authCookie.split('=')[1] || null;
+  const token = authCookie.split('=')[1] || null;
+  return token ? decodeURIComponent(token) : null;
 }
 
 /**
@@ -36,10 +43,12 @@ export function setAuthToken(token: string, expiresInDays: number = 7): void {
     return; // Server-side, cannot set cookies here
   }
 
+  window.localStorage.setItem('auth_token', token);
+
   const expires = new Date();
   expires.setDate(expires.getDate() + expiresInDays);
 
-  document.cookie = `authToken=${token}; expires=${expires.toUTCString()}; path=/; secure; samesite=strict`;
+  document.cookie = `auth_token=${encodeURIComponent(token)}; expires=${expires.toUTCString()}; path=/; secure; samesite=strict`;
 }
 
 /**
@@ -50,5 +59,8 @@ export function removeAuthToken(): void {
     return; // Server-side, cannot remove cookies here
   }
 
+  window.localStorage.removeItem('auth_token');
+
+  document.cookie = 'auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
   document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
 }

@@ -6,7 +6,7 @@ import logger from '../utils/logger';
 import { sendOtpEmail } from './emailService';
 
 export const GENERIC_REGISTRATION_MESSAGE =
-  'If this email is new to us, you will receive a verification code';
+  'Registration successful. Continue to complete your profile.';
 
 const OTP_EXPIRED_MESSAGE = 'Code expired - please request a new one';
 
@@ -15,6 +15,9 @@ const PASSWORD_POLICY_REGEX = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
 export type RegistrationInput = {
   email: string;
   password: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
 };
 
 export type VerifyOtpInput = {
@@ -31,6 +34,14 @@ export type VerifyOtpResult = {
   candidateId: string;
   candidateDbId: string;
   email: string;
+};
+
+export type RegistrationResult = {
+  message: string;
+  redirectTo: string;
+  candidateDbId?: string;
+  candidateId?: string;
+  email?: string;
 };
 
 export class AuthError extends Error {
@@ -89,8 +100,12 @@ async function createOtpChallenge(candidateId: string, email: string): Promise<{
   return { otp, expiresAt };
 }
 
-export async function registerCandidate(input: RegistrationInput): Promise<{ message: string }> {
+export async function registerCandidate(input: RegistrationInput): Promise<RegistrationResult> {
   const email = normalizeEmail(input.email);
+  const firstName = input.firstName.trim();
+  const lastName = input.lastName.trim();
+  const fullName = [firstName, lastName].filter(Boolean).join(' ').trim();
+  const phone = input.phone.trim();
 
   if (!isPasswordStrong(input.password)) {
     throw new AuthError('INVALID_PASSWORD', 'Password must be at least 8 characters with one uppercase letter and one number');
@@ -103,17 +118,22 @@ export async function registerCandidate(input: RegistrationInput): Promise<{ mes
 
   if (existing) {
     logger.info({ email }, 'auth: duplicate registration attempt handled with generic response');
-    return { message: GENERIC_REGISTRATION_MESSAGE };
+    return { message: GENERIC_REGISTRATION_MESSAGE, redirectTo: '/profile' };
   }
 
   try {
     const passwordHash = hashPassword(input.password);
+    const candidatePublicId = generateCandidatePublicId();
 
     const candidate = await prisma.$transaction(async (tx) => {
       const created = await tx.candidate.create({
         data: {
           email,
-          status: CandidateStatus.pending_verification
+          firstName,
+          lastName,
+          phone,
+          status: CandidateStatus.active,
+          candidatePublicId
         }
       });
 
@@ -124,21 +144,38 @@ export async function registerCandidate(input: RegistrationInput): Promise<{ mes
         }
       });
 
+      await tx.profile.create({
+        data: {
+          candidateId: created.id,
+          fullName,
+          experienceYears: 0,
+          skills: [],
+          education: [],
+          workHistory: [],
+          profileCompletionPercentage: 0,
+          lastCompletedSection: null,
+          rawParseJson: {}
+        }
+      });
+
       return created;
     });
 
-    const challenge = await createOtpChallenge(candidate.id, email);
-    await sendOtpEmail({ email, otp: challenge.otp, expiresAt: challenge.expiresAt });
-
-    logger.info({ email, candidateId: candidate.id }, 'auth: registration completed with OTP issuance');
-    return { message: GENERIC_REGISTRATION_MESSAGE };
+    logger.info({ email, candidateId: candidate.id }, 'auth: registration completed with direct activation');
+    return {
+      message: GENERIC_REGISTRATION_MESSAGE,
+      redirectTo: '/profile',
+      candidateDbId: candidate.id,
+      candidateId: candidatePublicId,
+      email
+    };
   } catch (error) {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === 'P2002'
     ) {
       logger.info({ email }, 'auth: duplicate registration race handled with generic response');
-      return { message: GENERIC_REGISTRATION_MESSAGE };
+      return { message: GENERIC_REGISTRATION_MESSAGE, redirectTo: '/profile' };
     }
 
     throw error;

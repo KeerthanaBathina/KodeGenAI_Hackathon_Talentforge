@@ -5,12 +5,16 @@ import { updateWorkerHeartbeat } from '../services/healthMetricsService';
 import { WORKER_HEARTBEAT_KEYS } from '../constants/workerHeartbeats';
 import logger from '../utils/logger';
 
+const REDIS_QUEUES_ENABLED =
+  process.env.ENABLE_REDIS_QUEUES === 'true' || process.env.NODE_ENV !== 'development';
+
 /**
  * BullMQ worker for processing offer-related jobs
  */
-export const offerWorker = new Worker(
-  'offers',
-  async (job: Job<OfferExpiryJobData>) => {
+export const offerWorker: Worker | null = REDIS_QUEUES_ENABLED
+  ? new Worker(
+    'offers',
+    async (job: Job<OfferExpiryJobData>) => {
     // Update worker heartbeat
     await updateWorkerHeartbeat(WORKER_HEARTBEAT_KEYS.OFFER_PROCESSING);
 
@@ -37,19 +41,20 @@ export const offerWorker = new Worker(
       }, 'Offer job processing failed');
       throw error; // Re-throw to trigger retry
     }
-  },
-  {
-    connection,
-    concurrency: 5,
-    limiter: {
-      max: 10,
-      duration: 1000 // Max 10 jobs per second
+    },
+    {
+      connection,
+      concurrency: 5,
+      limiter: {
+        max: 10,
+        duration: 1000
+      }
     }
-  }
-);
+  )
+  : null;
 
 // Worker event handlers
-offerWorker.on('completed', (job) => {
+offerWorker?.on('completed', (job) => {
   logger.info({
     jobId: job.id,
     jobName: job.name,
@@ -57,7 +62,7 @@ offerWorker.on('completed', (job) => {
   }, 'Offer job completed');
 });
 
-offerWorker.on('failed', (job, error) => {
+offerWorker?.on('failed', (job, error) => {
   logger.error({
     jobId: job?.id,
     jobName: job?.name,
@@ -66,19 +71,19 @@ offerWorker.on('failed', (job, error) => {
   }, 'Offer job failed');
 });
 
-offerWorker.on('error', (error) => {
+offerWorker?.on('error', (error) => {
   logger.error({ error: error.message }, 'Worker error');
 });
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   logger.info('SIGTERM received, closing offer worker');
-  await offerWorker.close();
+  await offerWorker?.close();
 });
 
 process.on('SIGINT', async () => {
   logger.info('SIGINT received, closing offer worker');
-  await offerWorker.close();
+  await offerWorker?.close();
 });
 
 export default offerWorker;

@@ -16,9 +16,14 @@
 import cron from 'node-cron';
 import { screeningQueue } from '../queues/screeningQueue';
 import { redis } from '../db/redis';
+import { env } from '../config/env';
 import { FallbackModeService } from '../services/fallbackModeService';
 
 const WORKER_HEARTBEAT_KEY = 'worker:screening:heartbeat';
+
+function shouldSkipHealthWorkerInDev(): boolean {
+    return env.NODE_ENV === 'development' && env.UPSTASH_REDIS_REST_URL.includes('example.upstash.io');
+}
 
 /**
  * Get last worker heartbeat timestamp
@@ -54,6 +59,11 @@ async function performHealthCheck(): Promise<void> {
  * Start system health monitoring cron job
  */
 export function startSystemHealthWorker(): void {
+    if (shouldSkipHealthWorkerInDev()) {
+        console.log('[SystemHealth] Skipping health monitoring in development (placeholder UPSTASH config detected).');
+        return;
+    }
+
     console.log('[SystemHealth] Starting health monitoring (every 1 minute)');
 
     // Run every minute

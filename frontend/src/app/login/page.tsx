@@ -122,11 +122,13 @@ export default function LoginPage() {
 
             const roleFallbackMap: Record<string, string> = {
                 candidate: '/candidate/dashboard',
+                hr_reviewer: '/hr/dashboard',
                 hr_manager: '/hr/dashboard',
                 admin: '/admin/health',
             };
 
             const emailFallbackMap: Record<string, string> = {
+                'hr-reviewer@dev.local': '/hr/dashboard',
                 'hr-manager@dev.local': '/hr/dashboard',
                 'admin@dev.local': '/admin/health',
             };
@@ -168,10 +170,6 @@ export default function LoginPage() {
 
     return (
         <main className={styles.shell}>
-            <div className={styles.wfHeader}>
-                <span><span className={styles.wfTag}>SCR-003</span>Login Page . Route: /login . Role: All roles</span>
-                <span>AI Interview Application . FR-002, FR-004, FR-005, FR-009</span>
-            </div>
 
             <div className={styles.brandBar}>
                 <div className={styles.brand}>

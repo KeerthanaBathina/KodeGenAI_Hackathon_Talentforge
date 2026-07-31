@@ -17,46 +17,57 @@ const connection = {
     password: process.env.REDIS_PASSWORD,
 };
 
-export const resumeParseQueue = new Queue<ResumeParseJobData>('resume-parse', {
-    connection,
-    defaultJobOptions: {
-        attempts: 3,
-        backoff: {
-            type: 'exponential',
-            delay: 2000, // Start at 2 seconds, then 4s, 8s
+const REDIS_QUEUES_ENABLED =
+    process.env.ENABLE_REDIS_QUEUES === 'true' || process.env.NODE_ENV !== 'development';
+
+export const resumeParseQueue: Queue<ResumeParseJobData> | null = REDIS_QUEUES_ENABLED
+    ? new Queue<ResumeParseJobData>('resume-parse', {
+        connection,
+        defaultJobOptions: {
+            attempts: 3,
+            backoff: {
+                type: 'exponential',
+                delay: 2000,
+            },
+            timeout: 30000,
+            removeOnComplete: {
+                age: 86400,
+                count: 500,
+            },
+            removeOnFail: {
+                age: 604800,
+            },
         },
-        timeout: 30000, // 30 seconds max per job
-        removeOnComplete: {
-            age: 86400, // 24 hours
-            count: 500,
-        },
-        removeOnFail: {
-            age: 604800, // 7 days
-        },
-    },
-});
+    })
+    : null;
 
 // Dead-letter queue for permanently failed jobs
-export const resumeParseDeadLetterQueue = new Queue('resume-parse-dead-letter', {
-    connection,
-    defaultJobOptions: {
-        removeOnComplete: false,
-        removeOnFail: false,
-    },
-});
+export const resumeParseDeadLetterQueue: Queue | null = REDIS_QUEUES_ENABLED
+    ? new Queue('resume-parse-dead-letter', {
+        connection,
+        defaultJobOptions: {
+            removeOnComplete: false,
+            removeOnFail: false,
+        },
+    })
+    : null;
 
-resumeParseQueue.on('error', (error) => {
-    logger.error('Resume parse queue error', { error });
-});
+if (resumeParseQueue) {
+    resumeParseQueue.on('error', (error) => {
+        logger.error('Resume parse queue error', { error });
+    });
+}
 
-resumeParseDeadLetterQueue.on('error', (error) => {
-    logger.error('Dead-letter queue error', { error });
-});
+if (resumeParseDeadLetterQueue) {
+    resumeParseDeadLetterQueue.on('error', (error) => {
+        logger.error('Dead-letter queue error', { error });
+    });
+}
 
 // Listen for failed events and move to dead-letter queue after final attempt
-const queueEvents = new QueueEvents('resume-parse', { connection });
+const queueEvents = REDIS_QUEUES_ENABLED ? new QueueEvents('resume-parse', { connection }) : null;
 
-queueEvents.on('failed', async ({ jobId, failedReason, prev }) => {
+queueEvents?.on('failed', async ({ jobId, failedReason, prev }) => {
     if (prev === 'completed') return;
 
     try {
@@ -107,9 +118,17 @@ queueEvents.on('failed', async ({ jobId, failedReason, prev }) => {
     }
 });
 
-logger.info('Resume parse queue initialized');
+if (REDIS_QUEUES_ENABLED) {
+    logger.info('Resume parse queue initialized');
+} else {
+    logger.warn('Resume parse queue disabled in development (set ENABLE_REDIS_QUEUES=true to enable)');
+}
 
 export async function enqueueResumeForParse(data: ResumeParseJobData): Promise<string> {
+    if (!resumeParseQueue) {
+        throw new Error('Resume parse queue is disabled in development. Set ENABLE_REDIS_QUEUES=true to enable.');
+    }
+
     const job = await resumeParseQueue.add('parse-resume', data, {
         jobId: `parse-${data.resumeId}`,
         priority: 1,
@@ -125,6 +144,19 @@ export async function enqueueResumeForParse(data: ResumeParseJobData): Promise<s
 }
 
 export async function getQueueHealth() {
+    if (!resumeParseQueue || !resumeParseDeadLetterQueue) {
+        return {
+            queue: 'resume-parse',
+            waiting: 0,
+            active: 0,
+            failed: 0,
+            delayed: 0,
+            completed: 0,
+            deadLetterCount: 0,
+            healthy: true,
+        };
+    }
+
     const [waiting, active, failed, delayed, completed] = await Promise.all([
         resumeParseQueue.getWaitingCount(),
         resumeParseQueue.getActiveCount(),

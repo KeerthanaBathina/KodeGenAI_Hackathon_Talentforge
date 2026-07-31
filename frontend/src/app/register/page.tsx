@@ -2,11 +2,11 @@
 
 import React from 'react';
 import { FormEvent, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import styles from '../auth-pages.module.css';
 
-const genericMessage = 'If this email is new to us, you will receive a verification code';
+const registrationSuccessMessage = 'Registration successful. Continue to complete your profile.';
 
 function isPasswordStrong(password: string): boolean {
   return /^(?=.*[A-Z])(?=.*\d).{8,}$/.test(password);
@@ -35,6 +35,7 @@ function getApiUrl(pathname: string): string {
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -56,6 +57,16 @@ export default function RegisterPage() {
     setError(null);
     setNotice(null);
 
+    if (!firstName.trim() || !lastName.trim()) {
+      setError('First name and last name are required.');
+      return;
+    }
+
+    if (!phoneNumber.trim()) {
+      setError('Phone number is required.');
+      return;
+    }
+
     if (!isPasswordStrong(password)) {
       setError(passwordHint);
       return;
@@ -67,19 +78,39 @@ export default function RegisterPage() {
       const response = await fetch(getApiUrl('/api/auth/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({
+          email,
+          password,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          phone: `${phoneCode}${phoneNumber.replace(/\s+/g, '')}`
+        })
       });
 
-      const body = (await response.json()) as { message?: string; redirectTo?: string };
+      const body = (await response.json()) as { message?: string; redirectTo?: string; next?: string; accessToken?: string };
 
       if (!response.ok) {
         setError(body.message ?? 'Unable to register now. Please try again.');
         return;
       }
 
-      setNotice(body.message ?? genericMessage);
-      //router.push(`/verify-otp?email=${encodeURIComponent(email.trim().toLowerCase())}`);
-      router.push(body.redirectTo ?? '/onboarding/profile');
+      setNotice(body.message ?? registrationSuccessMessage);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('auth_role', 'candidate');
+        localStorage.setItem('auth_email', email.trim().toLowerCase());
+
+        if (body.accessToken) {
+          localStorage.setItem('auth_token', body.accessToken);
+        } else {
+          // Prevent stale non-candidate sessions from hijacking profile redirects.
+          localStorage.removeItem('auth_token');
+        }
+      }
+      const normalizedEmail = encodeURIComponent(email.trim().toLowerCase());
+      const requestedNext = searchParams.get('next');
+      const nextPath = requestedNext ?? body.redirectTo ?? body.next ?? '/profile';
+      const separator = nextPath.includes('?') ? '&' : '?';
+      router.push(`${nextPath}${separator}email=${normalizedEmail}`);
     } catch {
       setError('Unable to register now. Please try again.');
     } finally {
@@ -91,10 +122,6 @@ export default function RegisterPage() {
 
   return (
     <main className={styles.shell}>
-      <div className={styles.wfHeader}>
-        <span><span className={styles.wfTag}>SCR-002</span>Registration Page . Route: /register . Role: Applicant</span>
-        <span>FR-001, FR-003, FR-006, FR-007, FR-008</span>
-      </div>
 
       <div className={styles.brandBar}>
         <div className={styles.brand}>
@@ -136,6 +163,7 @@ export default function RegisterPage() {
                   value={firstName}
                   onChange={(event) => setFirstName(event.target.value)}
                   placeholder="Jane"
+                    required
                 />
               </div>
 
@@ -148,6 +176,7 @@ export default function RegisterPage() {
                   value={lastName}
                   onChange={(event) => setLastName(event.target.value)}
                   placeholder="Doe"
+                  required
                 />
               </div>
             </div>
@@ -165,7 +194,7 @@ export default function RegisterPage() {
                 placeholder="jane.doe@example.com"
                 required
               />
-              <p className={styles.helperText}>OTP will be sent to verify this email.</p>
+              <p className={styles.helperText}>This email will be used for your candidate profile and application updates.</p>
             </div>
 
             <div className={styles.field}>
@@ -188,6 +217,7 @@ export default function RegisterPage() {
                   value={phoneNumber}
                   onChange={(event) => setPhoneNumber(event.target.value)}
                   placeholder="98765 43210"
+                  required
                 />
               </div>
               <p className={styles.noteBox}>Country code and phone capture are collected for screening communications.</p>

@@ -9,6 +9,9 @@ import { updateWorkerHeartbeat } from '../services/healthMetricsService';
 import { persistAuditEventOrThrow } from '../services/auditService';
 import logger from '../utils/logger';
 
+const REDIS_QUEUES_ENABLED =
+  process.env.ENABLE_REDIS_QUEUES === 'true' || process.env.NODE_ENV !== 'development';
+
 const AUDIT_WORKER_HEARTBEAT_KEY = 'worker:audit:heartbeat';
 const DEFAULT_MAX_ATTEMPTS = 5;
 
@@ -165,17 +168,19 @@ export async function processAuditEventJob(job: Job<AuditEventQueueJobData>): Pr
   }
 }
 
-export const auditEventWorker = new Worker<AuditEventQueueJobData>(
-  AUDIT_EVENT_QUEUE_NAME,
-  processAuditEventJob,
-  {
-    connection,
-    concurrency: 10,
-    lockDuration: 30000
-  }
-);
+export const auditEventWorker: Worker<AuditEventQueueJobData> | null = REDIS_QUEUES_ENABLED
+  ? new Worker<AuditEventQueueJobData>(
+    AUDIT_EVENT_QUEUE_NAME,
+    processAuditEventJob,
+    {
+      connection,
+      concurrency: 10,
+      lockDuration: 30000
+    }
+  )
+  : null;
 
-auditEventWorker.on('completed', (job) => {
+auditEventWorker?.on('completed', (job) => {
   logger.debug(
     {
       jobId: job.id,
@@ -187,7 +192,7 @@ auditEventWorker.on('completed', (job) => {
   );
 });
 
-auditEventWorker.on('failed', async (job, error) => {
+auditEventWorker?.on('failed', async (job, error) => {
   if (!job) {
     return;
   }
@@ -249,7 +254,7 @@ auditEventWorker.on('failed', async (job, error) => {
   }
 });
 
-auditEventWorker.on('error', (error) => {
+auditEventWorker?.on('error', (error) => {
   logger.error(
     {
       error: error.message
@@ -260,7 +265,7 @@ auditEventWorker.on('error', (error) => {
 
 export async function shutdownAuditEventWorker(): Promise<void> {
   logger.info('Shutting down audit event worker');
-  await auditEventWorker.close();
+  await auditEventWorker?.close();
 }
 
 export function getAuditWorkerTelemetrySnapshot(): AuditWorkerTelemetryState {

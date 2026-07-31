@@ -8,6 +8,747 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+model User {
+  id                          String                   @id @default(uuid()) @db.Uuid
+  email                       String                   @unique @db.VarChar(255)
+  role                        UserRole
+  fullName                    String                   @db.VarChar(255)
+  timezone                    String                   @default("UTC") @db.VarChar(50)
+  active                      Boolean                  @default(true)
+  createdAt                   DateTime                 @default(now())
+  updatedAt                   DateTime                 @updatedAt
+  pathOverrideApprovals       Application[]            @relation("PathOverrideApprover")
+  approvalPoliciesAuthored    ApprovalPolicy[]         @relation("ApprovalPolicyAuthor")
+  approvals                   Approval[]               @relation("Approver")
+  auditEvents                 AuditEvent[]             @relation("AuditActor")
+  decisions                   Decision[]               @relation("DecisionMaker")
+  interviewScorecards         InterviewScorecard[]     @relation("Interviewer")
+  jobFamiliesCreated          JobFamily[]              @relation("JobFamilyCreator")
+  notificationPreferences     NotificationPreference[] @relation("UserNotificationPreferences")
+  notifications               Notification[]           @relation("UserNotifications")
+  panelAvailability           PanelAvailability[]
+  panelistConfirmations       PanelistConfirmation[]   @relation("PanelistConfirmations")
+  profileEdits                Profile[]                @relation("ProfileEditor")
+  reviews                     Review[]                 @relation("Reviewer")
+  scoringThresholdsAuthored   ScoringThreshold[]       @relation("ThresholdAuthor")
+  screeningThresholdsAuthored ScreeningThreshold[]     @relation("ScreeningThresholdAuthor")
+  assignedTasks               Task[]                   @relation("TaskAssignee")
+  templateVersionsAuthored    TemplateVersion[]        @relation("TemplateVersionAuthor")
+  credential                  UserCredential?
+
+  @@map("users")
+}
+
+model UserCredential {
+  userId       String   @id @db.Uuid
+  passwordHash String   @db.VarChar(255)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_credentials")
+}
+
+model PanelAvailability {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  weekday   Int
+  startHour Int
+  endHour   Int
+  timezone  String   @default("UTC") @db.VarChar(50)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, weekday, active], map: "idx_panel_availability_user_weekday")
+  @@map("panel_availability")
+}
+
+model Candidate {
+  id                    String                  @id @default(uuid()) @db.Uuid
+  email                 String                  @unique @db.VarChar(255)
+  phone                 String?                 @unique @db.VarChar(50)
+  timezone              String                  @default("UTC") @db.VarChar(50)
+  consentVersion        String                  @default("1.0") @db.VarChar(20)
+  consentTimestamp      DateTime                @default(now())
+  status                CandidateStatus         @default(pending_verification)
+  candidatePublicId     String?                 @unique @db.VarChar(64)
+  anonymisedAt          DateTime?               @map("anonymised_at")
+  anonymisationVersion  String?                 @map("anonymisation_version") @db.VarChar(32)
+  failedLoginAttempts   Int                     @default(0)
+  lockedUntil           DateTime?
+  lastLoginAttemptAt    DateTime?
+  lastSuccessfulLoginAt DateTime?
+  noShowCount           Int                     @default(0)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  firstName             String?                 @db.VarChar(100)
+  lastName              String?                 @db.VarChar(100)
+  applications          Application[]
+  credential            CandidateCredential?
+  otpChallenges         CandidateOtpChallenge[]
+  gdprErasureRequests   GdprErasureRequest[]
+  passwordResetTokens   PasswordResetToken[]
+  privacyConsents       PrivacyConsent[]
+  profile               Profile?
+
+  @@index([email, lockedUntil], map: "idx_candidate_lockout_check")
+  @@map("candidates")
+}
+
+model CandidateCredential {
+  candidateId  String    @id @db.Uuid
+  passwordHash String    @db.VarChar(255)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  candidate    Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@map("candidate_credentials")
+}
+
+model CandidateOtpChallenge {
+  id          String              @id @default(uuid()) @db.Uuid
+  candidateId String              @db.Uuid
+  purpose     OtpChallengePurpose @default(registration)
+  otpHash     String              @db.VarChar(128)
+  expiresAt   DateTime
+  consumedAt  DateTime?
+  createdAt   DateTime            @default(now())
+  candidate   Candidate           @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([candidateId, purpose, createdAt(sort: Desc)], map: "idx_candidate_otp_challenge_lookup")
+  @@index([expiresAt], map: "idx_candidate_otp_expires_at")
+  @@map("candidate_otp_challenges")
+}
+
+model PasswordResetToken {
+  id          String    @id @default(uuid()) @db.Uuid
+  candidateId String    @db.Uuid
+  token       String    @unique @db.VarChar(255)
+  expiresAt   DateTime
+  usedAt      DateTime?
+  ipAddress   String?   @db.VarChar(45)
+  userAgent   String?
+  createdAt   DateTime  @default(now())
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([candidateId, expiresAt], map: "idx_password_reset_candidate_expiry")
+  @@index([expiresAt], map: "idx_password_reset_expiry")
+  @@map("password_reset_tokens")
+}
+
+model PrivacyConsent {
+  id            String    @id @default(uuid()) @db.Uuid
+  candidateId   String    @db.Uuid
+  policyVersion String    @db.VarChar(20)
+  acceptedAt    DateTime  @default(now())
+  ipAddress     String    @db.VarChar(45)
+  userAgent     String?
+  revokedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  candidate     Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([candidateId, policyVersion], map: "idx_privacy_consent_candidate_version")
+  @@index([acceptedAt], map: "idx_privacy_consent_accepted")
+  @@map("privacy_consents")
+}
+
+model GdprErasureRequest {
+  id            String                   @id @default(uuid()) @db.Uuid
+  candidateId   String                   @map("candidate_id") @db.Uuid
+  requestedAt   DateTime                 @default(now()) @map("requested_at") @db.Timestamptz(6)
+  dueAt         DateTime                 @map("due_at") @db.Timestamptz(6)
+  status        GdprErasureRequestStatus @default(pending)
+  processedAt   DateTime?                @map("processed_at") @db.Timestamptz(6)
+  failureReason String?                  @map("failure_reason")
+  requestReason String?                  @map("request_reason")
+  createdAt     DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+  candidate     Candidate                @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([candidateId, status, requestedAt(sort: Desc)], map: "idx_gdpr_erasure_candidate_status_requested")
+  @@index([status, dueAt], map: "idx_gdpr_erasure_status_due")
+  @@map("gdpr_erasure_requests")
+}
+
+model Profile {
+  id                          String             @id @default(uuid()) @db.Uuid
+  candidateId                 String             @unique @db.Uuid
+  fullName                    String             @db.VarChar(255)
+  experienceYears             Int
+  skills                      String[]
+  education                   Json
+  workHistory                 Json?
+  profileCompletionPercentage Int                @default(0)
+  lastCompletedSection        OnboardingSection?
+  rawParseJson                Json
+  editedById                  String?            @db.Uuid
+  editedAt                    DateTime?
+  createdAt                   DateTime           @default(now())
+  updatedAt                   DateTime           @updatedAt
+  candidate                   Candidate          @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  editedBy                    User?              @relation("ProfileEditor", fields: [editedById], references: [id])
+
+  @@map("profiles")
+}
+
+model JobFamily {
+  id                       String             @id @default(uuid()) @db.Uuid
+  name                     String             @db.VarChar(255)
+  thresholdVersion         Int                @default(1)
+  matchScoreThreshold      Int
+  confidenceThreshold      Decimal            @db.Decimal(5, 4)
+  experienceThresholdYears Int
+  effectiveFrom            DateTime
+  createdById              String             @db.Uuid
+  createdAt                DateTime           @default(now())
+  createdBy                User               @relation("JobFamilyCreator", fields: [createdById], references: [id])
+  requisitions             Requisition[]
+  scoringThresholds        ScoringThreshold[]
+
+  @@map("job_families")
+}
+
+model ReasonCode {
+  id              String             @id @default(uuid()) @db.Uuid
+  category        ReasonCodeCategory
+  code            String             @db.VarChar(50)
+  displayText     String             @db.VarChar(255)
+  description     String?
+  displayOrder    Int                @default(0)
+  active          Boolean            @default(true)
+  decisions       Decision[]
+  interviewStages InterviewStage[]
+  reviews         Review[]
+
+  @@unique([category, code])
+  @@index([category, displayOrder])
+  @@map("reason_codes")
+}
+
+model Template {
+  id             String            @id @default(uuid()) @db.Uuid
+  name           String            @db.VarChar(255)
+  type           TemplateType
+  locale         String            @db.VarChar(10)
+  version        Int               @default(1)
+  subject        String            @db.VarChar(500)
+  bodyHtml       String
+  bodyText       String
+  active         Boolean           @default(true)
+  createdAt      DateTime          @default(now())
+  communications Communication[]
+  versions       TemplateVersion[]
+
+  @@unique([type, locale, version])
+  @@map("templates")
+}
+
+model TemplateVersion {
+  id            String       @id @default(uuid()) @db.Uuid
+  templateId    String       @db.Uuid
+  versionNumber Int
+  name          String       @db.VarChar(255)
+  type          TemplateType
+  locale        String       @db.VarChar(10)
+  subject       String       @db.VarChar(500)
+  bodyHtml      String
+  bodyText      String
+  createdById   String       @db.Uuid
+  createdAt     DateTime     @default(now()) @db.Timestamptz(6)
+  createdBy     User         @relation("TemplateVersionAuthor", fields: [createdById], references: [id])
+  template      Template     @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, versionNumber])
+  @@index([templateId, createdAt(sort: Desc)])
+  @@map("template_versions")
+}
+
+model ApprovalPolicy {
+  id                  String        @id @default(uuid()) @db.Uuid
+  compensationBandMin Decimal       @db.Decimal(12, 2)
+  compensationBandMax Decimal       @db.Decimal(12, 2)
+  requiredApprovers   Json
+  active              Boolean       @default(true)
+  effectiveFrom       DateTime      @default(dbgenerated("'1970-01-01 05:30:00+05:30'::timestamp with time zone")) @db.Timestamptz(6)
+  createdById         String?       @db.Uuid
+  createdAt           DateTime      @default(now())
+  applications        Application[]
+  createdBy           User?         @relation("ApprovalPolicyAuthor", fields: [createdById], references: [id])
+
+  @@index([compensationBandMin, compensationBandMax, effectiveFrom(sort: Desc)], map: "idx_approval_policies_band_effective")
+  @@map("approval_policies")
+}
+
+model ScoringThreshold {
+  id                       String        @id @default(uuid()) @db.Uuid
+  jobFamilyId              String        @db.Uuid
+  aiShortlistThreshold     Decimal       @db.Decimal(5, 4)
+  confidenceThreshold      Decimal       @db.Decimal(5, 4)
+  experienceThresholdYears Int
+  effectiveFrom            DateTime      @db.Timestamptz(6)
+  createdById              String        @db.Uuid
+  createdAt                DateTime      @default(now()) @db.Timestamptz(6)
+  applications             Application[]
+  createdBy                User          @relation("ThresholdAuthor", fields: [createdById], references: [id])
+  jobFamily                JobFamily     @relation(fields: [jobFamilyId], references: [id])
+
+  @@index([jobFamilyId, effectiveFrom(sort: Desc)], map: "idx_scoring_thresholds_jf_effective")
+  @@map("scoring_thresholds")
+}
+
+model ScreeningThreshold {
+  id                 String        @id @default(uuid()) @db.Uuid
+  shortlistThreshold Int
+  borderlineMin      Int
+  borderlineMax      Int
+  rejectThreshold    Int
+  version            Int           @default(1)
+  effectiveFrom      DateTime      @default(now()) @db.Timestamptz(6)
+  createdById        String?       @db.Uuid
+  createdAt          DateTime      @default(now()) @db.Timestamptz(6)
+  applications       Application[]
+  createdBy          User?         @relation("ScreeningThresholdAuthor", fields: [createdById], references: [id])
+
+  @@index([effectiveFrom(sort: Desc)], map: "idx_screening_thresholds_effective")
+  @@index([createdById], map: "idx_screening_threshold_creator")
+  @@map("screening_thresholds")
+}
+
+model Requisition {
+  id                  String            @id @default(uuid()) @db.Uuid
+  title               String            @db.VarChar(255)
+  department          String            @db.VarChar(100)
+  jobFamilyId         String            @db.Uuid
+  location            String            @db.VarChar(255)
+  jobType             JobType
+  slots               Int
+  filledSlots         Int               @default(0)
+  status              RequisitionStatus @default(draft)
+  eligibilityCriteria Json
+  requiredSkills      String[]          @default([])
+  preferredSkills     String[]          @default([])
+  minExperienceYears  Int               @default(0)
+  educationLevel      String?
+  openedAt            DateTime?
+  closedAt            DateTime?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  applications        Application[]
+  jobFamily           JobFamily         @relation(fields: [jobFamilyId], references: [id])
+
+  @@index([status], map: "idx_requisitions_status")
+  @@index([department], map: "idx_requisitions_department")
+  @@index([location], map: "idx_requisitions_location")
+  @@index([jobType], map: "idx_requisitions_job_type")
+  @@index([status, openedAt(sort: Desc), createdAt(sort: Desc)], map: "idx_requisitions_status_opened_created")
+  @@map("requisitions")
+}
+
+model Application {
+  id                        String              @id @default(uuid()) @db.Uuid
+  candidateId               String              @db.Uuid
+  requisitionId             String              @db.Uuid
+  status                    ApplicationStatus   @default(submitted)
+  manualReviewReason        String?             @db.VarChar(100)
+  path                      ApplicationPath?
+  pathOverridden            Boolean             @default(false)
+  pathOverrideJustification String?
+  pathOverrideApproverId    String?             @db.Uuid
+  draftData                 Json?
+  draftSavedAt              DateTime?
+  submittedAt               DateTime            @default(now())
+  createdAt                 DateTime            @default(now())
+  updatedAt                 DateTime            @updatedAt
+  screeningThresholdId      String?             @db.Uuid
+  scoringThresholdId        String?             @db.Uuid
+  approvalPolicyId          String?             @db.Uuid
+  approvalPolicy            ApprovalPolicy?     @relation(fields: [approvalPolicyId], references: [id])
+  candidate                 Candidate           @relation(fields: [candidateId], references: [id])
+  pathOverrideApprover      User?               @relation("PathOverrideApprover", fields: [pathOverrideApproverId], references: [id])
+  requisition               Requisition         @relation(fields: [requisitionId], references: [id])
+  scoringThreshold          ScoringThreshold?   @relation(fields: [scoringThresholdId], references: [id])
+  screeningThreshold        ScreeningThreshold? @relation(fields: [screeningThresholdId], references: [id])
+  assessmentSessions        AssessmentSession[]
+  assessments               Assessment[]
+  communications            Communication[]
+  decision                  Decision?
+  interviewStages           InterviewStage[]
+  offers                    Offer[]
+  resume                    Resume?
+  reviews                   Review[]
+  screenings                Screening[]
+
+  @@unique([candidateId, requisitionId, status], name: "unique_candidate_requisition_draft")
+  @@index([requisitionId, status], map: "idx_applications_requisition_status")
+  @@index([candidateId, status], map: "idx_applications_candidate_status")
+  @@index([status, submittedAt(sort: Desc)], map: "idx_applications_status_submitted_at")
+  @@index([candidateId, requisitionId, status], map: "idx_applications_candidate_req_status")
+  @@index([screeningThresholdId], map: "idx_application_screening_threshold")
+  @@index([scoringThresholdId], map: "idx_application_scoring_threshold")
+  @@index([approvalPolicyId], map: "idx_application_approval_policy")
+  @@map("applications")
+}
+
+model Resume {
+  id            String           @id @default(uuid()) @db.Uuid
+  applicationId String           @unique @db.Uuid
+  storageKey    String           @db.Uuid
+  fileName      String           @db.VarChar(255)
+  fileSize      Int
+  mimeType      String           @db.VarChar(100)
+  scanStatus    ResumeScanStatus @default(pending)
+  scanResult    Json?
+  parsedData    Json?
+  uploadedAt    DateTime         @default(now())
+  application   Application      @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@map("resumes")
+}
+
+model Screening {
+  id               String                   @id @default(uuid()) @db.Uuid
+  applicationId    String                   @db.Uuid
+  score            Int
+  recommendation   ScreeningRecommendation?
+  factors          Json
+  thresholdVersion Int?
+  screenedAt       DateTime                 @default(now())
+  modelVersion     String?                  @db.VarChar(50)
+  confidence       Decimal?                 @db.Decimal(5, 4)
+  evaluatedAt      DateTime                 @default(now())
+  version          Int                      @default(1)
+  application      Application              @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, version(sort: Desc)], map: "idx_screenings_application_version")
+  @@index([recommendation], map: "idx_screenings_recommendation")
+  @@index([screenedAt(sort: Desc)], map: "idx_screenings_screened_at")
+  @@map("screenings")
+}
+
+model Review {
+  id            String         @id @default(uuid()) @db.Uuid
+  applicationId String         @db.Uuid
+  reviewerId    String         @db.Uuid
+  decision      ReviewDecision
+  reasonCodeId  String?        @db.Uuid
+  notes         String?
+  decidedAt     DateTime       @default(now())
+  application   Application    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  reasonCode    ReasonCode?    @relation(fields: [reasonCodeId], references: [id], onDelete: Restrict)
+  reviewer      User           @relation("Reviewer", fields: [reviewerId], references: [id])
+
+  @@index([applicationId, decidedAt(sort: Desc)], map: "idx_reviews_application_decided_at")
+  @@map("reviews")
+}
+
+model Assessment {
+  id            String         @id @default(uuid()) @db.Uuid
+  applicationId String         @db.Uuid
+  type          AssessmentType
+  providerRef   String         @db.VarChar(255)
+  score         Decimal?       @db.Decimal(6, 2)
+  metadata      Json?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  application   Application    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@map("assessments")
+}
+
+model InterviewStage {
+  id                    String                 @id @default(uuid()) @db.Uuid
+  applicationId         String                 @db.Uuid
+  type                  InterviewStageType
+  scheduledAt           DateTime?
+  endAt                 DateTime?
+  timezone              String                 @db.VarChar(50)
+  panelMembers          String[]               @db.Uuid
+  state                 InterviewStageState    @default(scheduled)
+  reasonCodeId          String?                @db.Uuid
+  cancelReason          String?
+  rescheduledFromId     String?                @unique @db.Uuid
+  rescheduledToId       String?                @unique @db.Uuid
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  interviewScorecards   InterviewScorecard[]
+  application           Application            @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  reasonCode            ReasonCode?            @relation(fields: [reasonCodeId], references: [id])
+  rescheduledFrom       InterviewStage?        @relation("RescheduledFrom", fields: [rescheduledFromId], references: [id])
+  rescheduledFromThis   InterviewStage?        @relation("RescheduledFrom")
+  rescheduledTo         InterviewStage?        @relation("RescheduledTo", fields: [rescheduledToId], references: [id])
+  rescheduledToThis     InterviewStage?        @relation("RescheduledTo")
+  panelistConfirmations PanelistConfirmation[]
+
+  @@index([applicationId, type], map: "idx_interview_stages_application_type")
+  @@map("interview_stages")
+}
+
+model PanelistConfirmation {
+  id                 String                     @id @default(uuid()) @db.Uuid
+  interviewStageId   String                     @db.Uuid
+  panelistId         String                     @db.Uuid
+  status             PanelistConfirmationStatus @default(pending)
+  tokenHash          String?                    @unique @db.VarChar(255)
+  confirmationSentAt DateTime?
+  respondedAt        DateTime?
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+  interviewStage     InterviewStage             @relation(fields: [interviewStageId], references: [id], onDelete: Cascade)
+  panelist           User                       @relation("PanelistConfirmations", fields: [panelistId], references: [id], onDelete: Cascade)
+
+  @@unique([interviewStageId, panelistId])
+  @@index([interviewStageId], map: "idx_panelist_confirmations_interview")
+  @@index([panelistId, status], map: "idx_panelist_confirmations_panelist")
+  @@index([tokenHash], map: "idx_panelist_confirmations_token")
+  @@map("panelist_confirmations")
+}
+
+model InterviewScorecard {
+  id               String                   @id @default(cuid())
+  interviewStageId String                   @db.Uuid
+  interviewerId    String                   @db.Uuid
+  status           ScorecardStatus          @default(draft)
+  recommendation   InterviewRecommendation?
+  aggregateScore   Decimal?                 @db.Decimal(3, 1)
+  submittedAt      DateTime?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  interviewStage   InterviewStage           @relation(fields: [interviewStageId], references: [id], onDelete: Cascade)
+  interviewer      User                     @relation("Interviewer", fields: [interviewerId], references: [id])
+  dimensions       ScorecardDimension[]
+
+  @@unique([interviewStageId, interviewerId])
+  @@index([interviewStageId], map: "idx_scorecards_interview_stage")
+  @@index([interviewerId, status], map: "idx_scorecards_interviewer_status")
+  @@map("interview_scorecards")
+}
+
+model ScorecardDimension {
+  id            String             @id @default(cuid())
+  scorecardId   String
+  dimensionName String             @db.VarChar(100)
+  score         Int?
+  notes         String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  scorecard     InterviewScorecard @relation(fields: [scorecardId], references: [id], onDelete: Cascade)
+
+  @@unique([scorecardId, dimensionName])
+  @@index([scorecardId], map: "idx_scorecard_dimensions_scorecard")
+  @@map("scorecard_dimensions")
+}
+
+model RubricTemplate {
+  id            String   @id @default(cuid())
+  stageType     String   @db.VarChar(50)
+  dimensionName String   @db.VarChar(100)
+  displayOrder  Int
+  description   String
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([stageType, dimensionName])
+  @@index([stageType, isActive, displayOrder], map: "idx_rubric_templates_lookup")
+  @@map("rubric_templates")
+}
+
+model Decision {
+  id               String          @id @default(uuid()) @db.Uuid
+  applicationId    String          @unique @db.Uuid
+  outcome          DecisionOutcome
+  reasonCodeId     String?         @db.Uuid
+  compensationBand String?         @db.VarChar(50)
+  offerDetails     Json?
+  pdfUrl           String?
+  decidedById      String          @db.Uuid
+  decidedAt        DateTime        @default(now())
+  approvals        Approval[]
+  application      Application     @relation(fields: [applicationId], references: [id])
+  decidedBy        User            @relation("DecisionMaker", fields: [decidedById], references: [id])
+  reasonCode       ReasonCode?     @relation(fields: [reasonCodeId], references: [id], onDelete: Restrict)
+  offer            Offer?
+
+  @@map("decisions")
+}
+
+model Approval {
+  id          String         @id @default(uuid()) @db.Uuid
+  decisionId  String         @db.Uuid
+  approverId  String         @db.Uuid
+  tier        String         @db.VarChar(50)
+  status      ApprovalStatus @default(pending)
+  comments    String?
+  respondedAt DateTime?
+  createdAt   DateTime       @default(now())
+  approver    User           @relation("Approver", fields: [approverId], references: [id])
+  decision    Decision       @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+
+  @@map("approvals")
+}
+
+model Offer {
+  id             String      @id @default(uuid()) @db.Uuid
+  decisionId     String      @unique @db.Uuid
+  applicationId  String      @db.Uuid
+  pdfUrl         String?
+  pdfStoragePath String?
+  status         OfferStatus @default(pending)
+  expiresAt      DateTime
+  respondedAt    DateTime?
+  responseReason String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  application    Application @relation(fields: [applicationId], references: [id])
+  decision       Decision    @relation(fields: [decisionId], references: [id])
+
+  @@index([status, expiresAt])
+  @@index([applicationId])
+  @@map("offers")
+}
+
+model Task {
+  id          String    @id @default(uuid()) @db.Uuid
+  assignedTo  String    @db.Uuid
+  title       String
+  description String?
+  dueDate     DateTime  @map("due_date")
+  status      String    @default("pending") @db.VarChar(20)
+  priority    String    @default("normal") @db.VarChar(10)
+  entityType  String    @map("entity_type") @db.VarChar(50)
+  entityId    String    @map("entity_id") @db.Uuid
+  metadata    Json      @default("{}")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  assignee    User      @relation("TaskAssignee", fields: [assignedTo], references: [id])
+
+  @@index([assignedTo, status], map: "idx_tasks_assigned_to_status")
+  @@index([dueDate], map: "idx_tasks_due_date")
+  @@index([entityType, entityId], map: "idx_tasks_entity")
+  @@map("tasks")
+}
+
+model Communication {
+  id            String               @id @default(uuid()) @db.Uuid
+  applicationId String               @db.Uuid
+  templateId    String               @db.Uuid
+  channel       CommunicationChannel
+  providerName  String               @db.VarChar(50)
+  messageId     String?              @db.VarChar(255)
+  status        CommunicationStatus  @default(queued)
+  retryCount    Int                  @default(0)
+  sentAt        DateTime?
+  deliveredAt   DateTime?
+  createdAt     DateTime             @default(now())
+  application   Application          @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  template      Template             @relation(fields: [templateId], references: [id])
+
+  @@index([applicationId, status], map: "idx_communications_application_status")
+  @@map("communications")
+}
+
+model Notification {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  eventType String    @db.VarChar(100)
+  payload   Json
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt], map: "notification_user_read_idx")
+  @@index([userId, createdAt(sort: Desc)], map: "notification_user_created_idx")
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id               String               @id @default(uuid()) @db.Uuid
+  userId           String               @db.Uuid
+  notificationType NotificationTypeEnum
+  channel          NotificationChannel
+  enabled          Boolean              @default(true)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  user             User                 @relation("UserNotificationPreferences", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, notificationType, channel], name: "user_notification_channel_unique")
+  @@index([userId], map: "notification_pref_user_idx")
+  @@map("notification_preferences")
+}
+
+model AuditEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  actorId     String?  @db.Uuid
+  eventType   String   @db.VarChar(100)
+  entityType  String   @db.VarChar(50)
+  entityId    String   @db.Uuid
+  payloadJson Json
+  ipAddress   String?  @db.Inet
+  userAgent   String?  @db.VarChar(512)
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  actor       User?    @relation("AuditActor", fields: [actorId], references: [id])
+
+  @@index([createdAt(sort: Desc), id(sort: Desc)], map: "idx_audit_events_created_id")
+  @@index([eventType, createdAt(sort: Desc), id(sort: Desc)], map: "idx_audit_events_event_created_id")
+  @@index([entityType, entityId, createdAt(sort: Desc), id(sort: Desc)], map: "idx_audit_events_entity_created_id")
+  @@index([actorId, createdAt(sort: Desc), id(sort: Desc)], map: "idx_audit_events_actor_created_id")
+  @@map("audit_events")
+}
+
+model AuditArchiveIndex {
+  id                String   @id @default(uuid()) @db.Uuid
+  sourceWindowStart DateTime @map("source_window_start") @db.Timestamptz(6)
+  sourceWindowEnd   DateTime @map("source_window_end") @db.Timestamptz(6)
+  rowCount          Int      @map("row_count")
+  storagePath       String   @unique @map("storage_path") @db.VarChar(1024)
+  checksum          String   @db.VarChar(128)
+  hashAlgorithm     String   @default("sha256") @map("hash_algorithm") @db.VarChar(32)
+  archivedAt        DateTime @default(now()) @map("archived_at") @db.Timestamptz(6)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([sourceWindowStart, sourceWindowEnd], map: "idx_audit_archive_window")
+  @@index([archivedAt(sort: Desc)], map: "idx_audit_archive_archived_at")
+  @@map("audit_archive_index")
+}
+
+model AssessmentProvider {
+  id                 String              @id @default(uuid()) @db.Uuid
+  name               String              @db.VarChar(255)
+  apiEndpoint        String              @db.VarChar(500)
+  authMode           String              @db.VarChar(50)
+  hmacSecret         String?             @db.VarChar(255)
+  timeoutSeconds     Int                 @default(30)
+  active             Boolean             @default(true)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  assessmentSessions AssessmentSession[]
+
+  @@index([active], map: "idx_assessment_providers_active")
+  @@map("assessment_providers")
+}
+
+model AssessmentSession {
+  id            String                  @id @default(uuid()) @db.Uuid
+  applicationId String                  @db.Uuid
+  providerId    String                  @db.Uuid
+  sessionToken  String                  @db.VarChar(500)
+  testUrl       String                  @db.VarChar(1000)
+  status        AssessmentSessionStatus @default(in_progress)
+  launchedAt    DateTime                @default(now())
+  completedAt   DateTime?
+  score         Decimal?                @db.Decimal(6, 2)
+  metadata      Json?
+  application   Application             @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  provider      AssessmentProvider      @relation(fields: [providerId], references: [id])
+
+  @@index([applicationId, status], map: "idx_assessment_sessions_application_status")
+  @@index([sessionToken], map: "idx_assessment_sessions_session_token")
+  @@map("assessment_sessions")
+}
+
 enum UserRole {
   candidate
   recruiter
@@ -208,465 +949,6 @@ enum GdprErasureRequestStatus {
   failed
 }
 
-model User {
-  id                        String                 @id @default(uuid()) @db.Uuid
-  email                     String                 @unique @db.VarChar(255)
-  role                      UserRole
-  fullName                  String                 @db.VarChar(255)
-  timezone                  String                 @default("UTC") @db.VarChar(50)
-  active                    Boolean                @default(true)
-  createdAt                 DateTime               @default(now())
-  updatedAt                 DateTime               @updatedAt
-  credential                UserCredential?
-  profileEdits              Profile[]              @relation("ProfileEditor")
-  pathOverrideApprovals     Application[]          @relation("PathOverrideApprover")
-  reviews                   Review[]               @relation("Reviewer")
-  interviewScorecards       InterviewScorecard[]   @relation("Interviewer")
-  decisions                 Decision[]             @relation("DecisionMaker")
-  approvals                 Approval[]             @relation("Approver")
-  panelAvailability         PanelAvailability[]
-  jobFamiliesCreated        JobFamily[]            @relation("JobFamilyCreator")
-  scoringThresholdsAuthored ScoringThreshold[]     @relation("ThresholdAuthor")
-  screeningThresholdsAuthored ScreeningThreshold[] @relation("ScreeningThresholdAuthor")
-  approvalPoliciesAuthored  ApprovalPolicy[]       @relation("ApprovalPolicyAuthor")
-  auditEvents               AuditEvent[]           @relation("AuditActor")
-  panelistConfirmations     PanelistConfirmation[] @relation("PanelistConfirmations")
-  assignedTasks             Task[]                 @relation("TaskAssignee")
-  templateVersionsAuthored  TemplateVersion[]      @relation("TemplateVersionAuthor")
-  notifications             Notification[]         @relation("UserNotifications")
-  notificationPreferences   NotificationPreference[] @relation("UserNotificationPreferences")
-
-  @@map("users")
-}
-
-model UserCredential {
-  userId       String   @id @db.Uuid
-  passwordHash String   @db.VarChar(255)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("user_credentials")
-}
-
-model PanelAvailability {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
-  weekday   Int
-  startHour Int
-  endHour   Int
-  timezone  String   @default("UTC") @db.VarChar(50)
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, weekday, active], name: "idx_panel_availability_user_weekday")
-  @@map("panel_availability")
-}
-
-model Candidate {
-  id                String          @id @default(uuid()) @db.Uuid
-  email             String          @unique @db.VarChar(255)
-  phone             String?         @unique @db.VarChar(50)
-  timezone          String          @default("UTC") @db.VarChar(50)
-  consentVersion    String          @default("1.0") @db.VarChar(20)
-  consentTimestamp  DateTime        @default(now())
-  status            CandidateStatus @default(pending_verification)
-  candidatePublicId String?         @unique @db.VarChar(64)
-  anonymisedAt      DateTime?       @map("anonymised_at")
-  anonymisationVersion String?      @db.VarChar(32) @map("anonymisation_version")
-
-  // Account Security & Lockout
-  failedLoginAttempts   Int       @default(0)
-  lockedUntil           DateTime?
-  lastLoginAttemptAt    DateTime?
-  lastSuccessfulLoginAt DateTime?
-
-  // Interview No-Show Tracking
-  noShowCount Int @default(0)
-
-  createdAt           DateTime                @default(now())
-  updatedAt           DateTime                @updatedAt
-  profile             Profile?
-  applications        Application[]
-  credential          CandidateCredential?
-  otpChallenges       CandidateOtpChallenge[]
-  passwordResetTokens PasswordResetToken[]
-  privacyConsents     PrivacyConsent[]
-  gdprErasureRequests GdprErasureRequest[]
-
-  @@index([email, lockedUntil], name: "idx_candidate_lockout_check")
-  @@map("candidates")
-}
-
-model CandidateCredential {
-  candidateId  String    @id @db.Uuid
-  passwordHash String    @db.VarChar(255)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  candidate    Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-
-  @@map("candidate_credentials")
-}
-
-model CandidateOtpChallenge {
-  id          String              @id @default(uuid()) @db.Uuid
-  candidateId String              @db.Uuid
-  purpose     OtpChallengePurpose @default(registration)
-  otpHash     String              @db.VarChar(128)
-  expiresAt   DateTime
-  consumedAt  DateTime?
-  createdAt   DateTime            @default(now())
-  candidate   Candidate           @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-
-  @@index([candidateId, purpose, createdAt(sort: Desc)], name: "idx_candidate_otp_challenge_lookup")
-  @@index([expiresAt], name: "idx_candidate_otp_expires_at")
-  @@map("candidate_otp_challenges")
-}
-
-model PasswordResetToken {
-  id          String    @id @default(uuid()) @db.Uuid
-  candidateId String    @db.Uuid
-  token       String    @unique @db.VarChar(255)
-  expiresAt   DateTime
-  usedAt      DateTime?
-  ipAddress   String?   @db.VarChar(45)
-  userAgent   String?   @db.Text
-  createdAt   DateTime  @default(now())
-  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-
-  @@index([candidateId, expiresAt], name: "idx_password_reset_candidate_expiry")
-  @@index([expiresAt], name: "idx_password_reset_expiry")
-  @@map("password_reset_tokens")
-}
-
-model PrivacyConsent {
-  id            String    @id @default(uuid()) @db.Uuid
-  candidateId   String    @db.Uuid
-  policyVersion String    @db.VarChar(20)
-  acceptedAt    DateTime  @default(now())
-  ipAddress     String    @db.VarChar(45)
-  userAgent     String?   @db.Text
-  revokedAt     DateTime?
-  createdAt     DateTime  @default(now())
-  candidate     Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-
-  @@index([candidateId, policyVersion], name: "idx_privacy_consent_candidate_version")
-  @@index([acceptedAt], name: "idx_privacy_consent_accepted")
-  @@map("privacy_consents")
-}
-
-model GdprErasureRequest {
-  id            String                   @id @default(uuid()) @db.Uuid
-  candidateId   String                   @db.Uuid @map("candidate_id")
-  requestedAt   DateTime                 @default(now()) @db.Timestamptz @map("requested_at")
-  dueAt         DateTime                 @db.Timestamptz @map("due_at")
-  status        GdprErasureRequestStatus @default(pending)
-  processedAt   DateTime?                @db.Timestamptz @map("processed_at")
-  failureReason String?                  @db.Text @map("failure_reason")
-  requestReason String?                  @db.Text @map("request_reason")
-  createdAt     DateTime                 @default(now()) @db.Timestamptz @map("created_at")
-  updatedAt     DateTime                 @updatedAt @db.Timestamptz @map("updated_at")
-  candidate     Candidate                @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-
-  @@index([candidateId, status, requestedAt(sort: Desc)], name: "idx_gdpr_erasure_candidate_status_requested")
-  @@index([status, dueAt], name: "idx_gdpr_erasure_status_due")
-  @@map("gdpr_erasure_requests")
-}
-
-model Profile {
-  id                          String             @id @default(uuid()) @db.Uuid
-  candidateId                 String             @unique @db.Uuid
-  fullName                    String             @db.VarChar(255)
-  experienceYears             Int
-  skills                      String[]           @db.Text
-  education                   Json               @db.JsonB
-  workHistory                 Json?              @db.JsonB
-  profileCompletionPercentage Int                @default(0)
-  lastCompletedSection        OnboardingSection?
-  rawParseJson                Json               @db.JsonB
-  editedById                  String?            @db.Uuid
-  editedAt                    DateTime?
-  createdAt                   DateTime           @default(now())
-  updatedAt                   DateTime           @updatedAt
-  candidate                   Candidate          @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  editedBy                    User?              @relation("ProfileEditor", fields: [editedById], references: [id], onDelete: SetNull)
-
-  @@map("profiles")
-}
-
-model JobFamily {
-  id                       String             @id @default(uuid()) @db.Uuid
-  name                     String             @db.VarChar(255)
-  thresholdVersion         Int                @default(1)
-  matchScoreThreshold      Int
-  confidenceThreshold      Decimal            @db.Decimal(5, 4)
-  experienceThresholdYears Int
-  effectiveFrom            DateTime
-  createdById              String             @db.Uuid
-  createdAt                DateTime           @default(now())
-  createdBy                User               @relation("JobFamilyCreator", fields: [createdById], references: [id], onDelete: Restrict)
-  requisitions             Requisition[]
-  scoringThresholds        ScoringThreshold[]
-
-  @@map("job_families")
-}
-
-model ReasonCode {
-  id              String             @id @default(uuid()) @db.Uuid
-  category        ReasonCodeCategory
-  code            String             @db.VarChar(50)
-  displayText     String             @db.VarChar(255)
-  description     String?            @db.Text
-  displayOrder    Int                @default(0)
-  active          Boolean            @default(true)
-  reviews         Review[]
-  decisions       Decision[]
-  interviewStages InterviewStage[]
-
-  @@unique([category, code])
-  @@index([category, displayOrder])
-  @@map("reason_codes")
-}
-
-model Template {
-  id             String            @id @default(uuid()) @db.Uuid
-  name           String            @db.VarChar(255)
-  type           TemplateType
-  locale         String            @db.VarChar(10)
-  version        Int               @default(1)
-  subject        String            @db.VarChar(500)
-  bodyHtml       String            @db.Text
-  bodyText       String            @db.Text
-  active         Boolean           @default(true)
-  createdAt      DateTime          @default(now())
-  communications Communication[]
-  versions       TemplateVersion[]
-
-  @@unique([type, locale, version])
-  @@map("templates")
-}
-
-model TemplateVersion {
-  id            String       @id @default(uuid()) @db.Uuid
-  templateId    String       @db.Uuid
-  versionNumber Int
-  name          String       @db.VarChar(255)
-  type          TemplateType
-  locale        String       @db.VarChar(10)
-  subject       String       @db.VarChar(500)
-  bodyHtml      String       @db.Text
-  bodyText      String       @db.Text
-  createdById   String       @db.Uuid
-  createdAt     DateTime     @default(now()) @db.Timestamptz
-
-  template  Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  createdBy User     @relation("TemplateVersionAuthor", fields: [createdById], references: [id], onDelete: Restrict)
-
-  @@unique([templateId, versionNumber])
-  @@index([templateId, createdAt(sort: Desc)])
-  @@map("template_versions")
-}
-
-model ApprovalPolicy {
-  id                  String        @id @default(uuid()) @db.Uuid
-  compensationBandMin Decimal       @db.Decimal(12, 2)
-  compensationBandMax Decimal       @db.Decimal(12, 2)
-  requiredApprovers   Json          @db.JsonB
-  active              Boolean       @default(true)
-  effectiveFrom       DateTime      @default(dbgenerated("'1970-01-01 00:00:00+00'::timestamp with time zone")) @db.Timestamptz
-  createdById         String?       @db.Uuid
-  createdAt           DateTime      @default(now())
-  
-  createdBy           User?         @relation("ApprovalPolicyAuthor", fields: [createdById], references: [id], onDelete: SetNull)
-  applications        Application[]
-
-  @@index([compensationBandMin, compensationBandMax, effectiveFrom(sort: Desc)], name: "idx_approval_policies_band_effective")
-  @@map("approval_policies")
-}
-
-model ScoringThreshold {
-  id                       String        @id @default(uuid()) @db.Uuid
-  jobFamilyId              String        @db.Uuid
-  aiShortlistThreshold     Decimal       @db.Decimal(5, 4)
-  confidenceThreshold      Decimal       @db.Decimal(5, 4)
-  experienceThresholdYears Int
-  effectiveFrom            DateTime      @db.Timestamptz
-  createdById              String        @db.Uuid
-  createdAt                DateTime      @default(now()) @db.Timestamptz
-  
-  jobFamily                JobFamily     @relation(fields: [jobFamilyId], references: [id], onDelete: Restrict)
-  createdBy                User          @relation("ThresholdAuthor", fields: [createdById], references: [id], onDelete: Restrict)
-  applications             Application[]
-
-  @@index([jobFamilyId, effectiveFrom(sort: Desc)], name: "idx_scoring_thresholds_jf_effective")
-  @@map("scoring_thresholds")
-}
-
-model ScreeningThreshold {
-  id                 String        @id @default(uuid()) @db.Uuid
-  shortlistThreshold Int
-  borderlineMin      Int
-  borderlineMax      Int
-  rejectThreshold    Int
-  version            Int           @default(1)
-  effectiveFrom      DateTime      @default(now()) @db.Timestamptz
-  createdById        String?       @db.Uuid
-  createdAt          DateTime      @default(now()) @db.Timestamptz
-  
-  createdBy          User?         @relation("ScreeningThresholdAuthor", fields: [createdById], references: [id], onDelete: SetNull)
-  applications       Application[]
-
-  @@index([effectiveFrom(sort: Desc)], name: "idx_screening_thresholds_effective")
-  @@index([createdById], name: "idx_screening_threshold_creator")
-  @@map("screening_thresholds")
-}
-
-model Requisition {
-  id                  String            @id @default(uuid()) @db.Uuid
-  title               String            @db.VarChar(255)
-  department          String            @db.VarChar(100)
-  jobFamilyId         String            @db.Uuid
-  location            String            @db.VarChar(255)
-  jobType             JobType
-  slots               Int
-  filledSlots         Int               @default(0)
-  status              RequisitionStatus @default(draft)
-  eligibilityCriteria Json              @db.JsonB
-  requiredSkills      String[]          @default([])
-  preferredSkills     String[]          @default([])
-  minExperienceYears  Int               @default(0)
-  educationLevel      String?
-  openedAt            DateTime?
-  closedAt            DateTime?
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
-  jobFamily           JobFamily         @relation(fields: [jobFamilyId], references: [id], onDelete: Restrict)
-  applications        Application[]
-
-  @@index([status], name: "idx_requisitions_status")
-  @@index([department], name: "idx_requisitions_department")
-  @@index([location], name: "idx_requisitions_location")
-  @@index([jobType], name: "idx_requisitions_job_type")
-  @@index([status, openedAt(sort: Desc), createdAt(sort: Desc)], name: "idx_requisitions_status_opened_created")
-  @@map("requisitions")
-}
-
-model Application {
-  id                        String              @id @default(uuid()) @db.Uuid
-  candidateId               String              @db.Uuid
-  requisitionId             String              @db.Uuid
-  status                    ApplicationStatus   @default(submitted)
-  manualReviewReason        String?             @db.VarChar(100)
-  path                      ApplicationPath?
-  pathOverridden            Boolean             @default(false)
-  pathOverrideJustification String?             @db.Text
-  pathOverrideApproverId    String?             @db.Uuid
-  draftData                 Json?               @db.JsonB
-  draftSavedAt              DateTime?
-  submittedAt               DateTime            @default(now())
-  createdAt                 DateTime            @default(now())
-  updatedAt                 DateTime            @updatedAt
-  
-  // Policy version tracking for in-flight isolation
-  screeningThresholdId      String?             @db.Uuid
-  scoringThresholdId        String?             @db.Uuid
-  approvalPolicyId          String?             @db.Uuid
-  
-  candidate                 Candidate           @relation(fields: [candidateId], references: [id], onDelete: Restrict)
-  requisition               Requisition         @relation(fields: [requisitionId], references: [id], onDelete: Restrict)
-  pathOverrideApprover      User?               @relation("PathOverrideApprover", fields: [pathOverrideApproverId], references: [id], onDelete: SetNull)
-  screeningThreshold        ScreeningThreshold? @relation(fields: [screeningThresholdId], references: [id], onDelete: SetNull)
-  scoringThreshold          ScoringThreshold?   @relation(fields: [scoringThresholdId], references: [id], onDelete: SetNull)
-  approvalPolicy            ApprovalPolicy?     @relation(fields: [approvalPolicyId], references: [id], onDelete: SetNull)
-  resume                    Resume?
-  screenings                Screening[]
-  reviews                   Review[]
-  assessments               Assessment[]
-  assessmentSessions        AssessmentSession[]
-  interviewStages           InterviewStage[]
-  decision                  Decision?
-  communications            Communication[]
-  offers                    Offer[]
-
-  @@unique([candidateId, requisitionId, status], name: "unique_candidate_requisition_draft")
-  @@index([requisitionId, status], name: "idx_applications_requisition_status")
-  @@index([candidateId, status], name: "idx_applications_candidate_status")
-  @@index([status, submittedAt(sort: Desc)], name: "idx_applications_status_submitted_at")
-  @@index([candidateId, requisitionId, status], name: "idx_applications_candidate_req_status")
-  @@index([screeningThresholdId], name: "idx_application_screening_threshold")
-  @@index([scoringThresholdId], name: "idx_application_scoring_threshold")
-  @@index([approvalPolicyId], name: "idx_application_approval_policy")
-  @@map("applications")
-}
-
-model Resume {
-  id            String           @id @default(uuid()) @db.Uuid
-  applicationId String           @unique @db.Uuid
-  storageKey    String           @db.Uuid
-  fileName      String           @db.VarChar(255)
-  fileSize      Int
-  mimeType      String           @db.VarChar(100)
-  scanStatus    ResumeScanStatus @default(pending)
-  scanResult    Json?            @db.JsonB
-  parsedData    Json?            @db.JsonB
-  uploadedAt    DateTime         @default(now())
-  application   Application      @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-
-  @@map("resumes")
-}
-
-model Screening {
-  id               String                   @id @default(uuid()) @db.Uuid
-  applicationId    String                   @db.Uuid
-  score            Int
-  recommendation   ScreeningRecommendation?
-  factors          Json                     @db.JsonB
-  thresholdVersion Int?
-  screenedAt       DateTime                 @default(now())
-  modelVersion     String?                  @db.VarChar(50)
-  confidence       Decimal?                 @db.Decimal(5, 4)
-  evaluatedAt      DateTime                 @default(now())
-  version          Int                      @default(1)
-  application      Application              @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-
-  @@index([applicationId, version(sort: Desc)], name: "idx_screenings_application_version")
-  @@index([recommendation], name: "idx_screenings_recommendation")
-  @@index([screenedAt(sort: Desc)], name: "idx_screenings_screened_at")
-  @@map("screenings")
-}
-
-model Review {
-  id            String         @id @default(uuid()) @db.Uuid
-  applicationId String         @db.Uuid
-  reviewerId    String         @db.Uuid
-  decision      ReviewDecision
-  reasonCodeId  String?        @db.Uuid
-  notes         String?        @db.Text
-  decidedAt     DateTime       @default(now())
-  application   Application    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  reviewer      User           @relation("Reviewer", fields: [reviewerId], references: [id], onDelete: Restrict)
-  reasonCode    ReasonCode?    @relation(fields: [reasonCodeId], references: [id], onDelete: Restrict)
-
-  @@index([applicationId, decidedAt(sort: Desc)], name: "idx_reviews_application_decided_at")
-  @@map("reviews")
-}
-
-model Assessment {
-  id            String         @id @default(uuid()) @db.Uuid
-  applicationId String         @db.Uuid
-  type          AssessmentType
-  providerRef   String         @db.VarChar(255)
-  score         Decimal?       @db.Decimal(6, 2)
-  metadata      Json?          @db.JsonB
-  startedAt     DateTime?
-  completedAt   DateTime?
-  application   Application    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-
-  @@map("assessments")
-}
-
 enum PanelistConfirmationStatus {
   pending
   confirmed
@@ -682,297 +964,4 @@ enum InterviewRecommendation {
   advance
   hold
   reject
-}
-
-model InterviewStage {
-  id                    String                 @id @default(uuid()) @db.Uuid
-  applicationId         String                 @db.Uuid
-  type                  InterviewStageType
-  scheduledAt           DateTime?
-  endAt                 DateTime?
-  timezone              String                 @db.VarChar(50)
-  panelMembers          String[]               @db.Uuid
-  state                 InterviewStageState    @default(scheduled)
-  reasonCodeId          String?                @db.Uuid
-  cancelReason          String?                @db.Text
-  rescheduledFromId     String?                @unique @db.Uuid
-  rescheduledToId       String?                @unique @db.Uuid
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
-  application           Application            @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  reasonCode            ReasonCode?            @relation(fields: [reasonCodeId], references: [id], onDelete: SetNull)
-  rescheduledFrom       InterviewStage?        @relation("RescheduledFrom", fields: [rescheduledFromId], references: [id], onDelete: SetNull)
-  rescheduledTo         InterviewStage?        @relation("RescheduledTo", fields: [rescheduledToId], references: [id], onDelete: SetNull)
-  rescheduledFromThis   InterviewStage?        @relation("RescheduledFrom")
-  rescheduledToThis     InterviewStage?        @relation("RescheduledTo")
-  interviewScorecards   InterviewScorecard[]
-  panelistConfirmations PanelistConfirmation[]
-
-  @@index([applicationId, type], name: "idx_interview_stages_application_type")
-  @@map("interview_stages")
-}
-
-model PanelistConfirmation {
-  id                 String                     @id @default(uuid()) @db.Uuid
-  interviewStageId   String                     @db.Uuid
-  panelistId         String                     @db.Uuid
-  status             PanelistConfirmationStatus @default(pending)
-  tokenHash          String?                    @unique @db.VarChar(255)
-  confirmationSentAt DateTime?
-  respondedAt        DateTime?
-  createdAt          DateTime                   @default(now())
-  updatedAt          DateTime                   @updatedAt
-  interviewStage     InterviewStage             @relation(fields: [interviewStageId], references: [id], onDelete: Cascade)
-  panelist           User                       @relation("PanelistConfirmations", fields: [panelistId], references: [id], onDelete: Cascade)
-
-  @@unique([interviewStageId, panelistId])
-  @@index([interviewStageId], name: "idx_panelist_confirmations_interview")
-  @@index([panelistId, status], name: "idx_panelist_confirmations_panelist")
-  @@index([tokenHash], name: "idx_panelist_confirmations_token")
-  @@map("panelist_confirmations")
-}
-
-model InterviewScorecard {
-  id               String                   @id @default(cuid())
-  interviewStageId String                   @db.Uuid
-  interviewerId    String                   @db.Uuid
-  status           ScorecardStatus          @default(draft)
-  recommendation   InterviewRecommendation?
-  aggregateScore   Decimal?                 @db.Decimal(3, 1)
-  submittedAt      DateTime?
-  createdAt        DateTime                 @default(now())
-  updatedAt        DateTime                 @updatedAt
-  interviewStage   InterviewStage           @relation(fields: [interviewStageId], references: [id], onDelete: Cascade)
-  interviewer      User                     @relation("Interviewer", fields: [interviewerId], references: [id], onDelete: Restrict)
-  dimensions       ScorecardDimension[]
-
-  @@unique([interviewStageId, interviewerId])
-  @@index([interviewStageId], name: "idx_scorecards_interview_stage")
-  @@index([interviewerId, status], name: "idx_scorecards_interviewer_status")
-  @@map("interview_scorecards")
-}
-
-model ScorecardDimension {
-  id            String             @id @default(cuid())
-  scorecardId   String
-  dimensionName String             @db.VarChar(100)
-  score         Int?
-  notes         String?            @db.Text
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  scorecard     InterviewScorecard @relation(fields: [scorecardId], references: [id], onDelete: Cascade)
-
-  @@unique([scorecardId, dimensionName])
-  @@index([scorecardId], name: "idx_scorecard_dimensions_scorecard")
-  @@map("scorecard_dimensions")
-}
-
-model RubricTemplate {
-  id            String   @id @default(cuid())
-  stageType     String   @db.VarChar(50)
-  dimensionName String   @db.VarChar(100)
-  displayOrder  Int
-  description   String   @db.Text
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  @@unique([stageType, dimensionName])
-  @@index([stageType, isActive, displayOrder], name: "idx_rubric_templates_lookup")
-  @@map("rubric_templates")
-}
-
-model Decision {
-  id               String          @id @default(uuid()) @db.Uuid
-  applicationId    String          @unique @db.Uuid
-  outcome          DecisionOutcome
-  reasonCodeId     String?         @db.Uuid
-  compensationBand String?         @db.VarChar(50)
-  offerDetails     Json?           @db.JsonB
-  pdfUrl           String?         @db.Text
-  decidedById      String          @db.Uuid
-  decidedAt        DateTime        @default(now())
-  application      Application     @relation(fields: [applicationId], references: [id], onDelete: Restrict)
-  reasonCode       ReasonCode?     @relation(fields: [reasonCodeId], references: [id], onDelete: Restrict)
-  decidedBy        User            @relation("DecisionMaker", fields: [decidedById], references: [id], onDelete: Restrict)
-  approvals        Approval[]
-  offer            Offer?
-
-  @@map("decisions")
-}
-
-model Approval {
-  id          String         @id @default(uuid()) @db.Uuid
-  decisionId  String         @db.Uuid
-  approverId  String         @db.Uuid
-  tier        String         @db.VarChar(50)
-  status      ApprovalStatus @default(pending)
-  comments    String?        @db.Text
-  respondedAt DateTime?
-  createdAt   DateTime       @default(now())
-  decision    Decision       @relation(fields: [decisionId], references: [id], onDelete: Cascade)
-  approver    User           @relation("Approver", fields: [approverId], references: [id], onDelete: Restrict)
-
-  @@map("approvals")
-}
-
-model Offer {
-  id             String      @id @default(uuid()) @db.Uuid
-  decisionId     String      @unique @db.Uuid
-  applicationId  String      @db.Uuid
-  pdfUrl         String?     @db.Text
-  pdfStoragePath String?     @db.Text
-  status         OfferStatus @default(pending)
-  expiresAt      DateTime
-  respondedAt    DateTime?
-  responseReason String?     @db.Text
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-  decision       Decision    @relation(fields: [decisionId], references: [id], onDelete: Restrict)
-  application    Application @relation(fields: [applicationId], references: [id], onDelete: Restrict)
-
-  @@index([status, expiresAt])
-  @@index([applicationId])
-  @@map("offers")
-}
-
-model Task {
-  id          String    @id @default(uuid()) @db.Uuid
-  assignedTo  String    @db.Uuid
-  title       String    @db.Text
-  description String?   @db.Text
-  dueDate     DateTime  @map("due_date")
-  status      String    @default("pending") @db.VarChar(20)
-  priority    String    @default("normal") @db.VarChar(10)
-  entityType  String    @map("entity_type") @db.VarChar(50)
-  entityId    String    @map("entity_id") @db.Uuid
-  metadata    Json      @default("{}") @db.JsonB
-  completedAt DateTime? @map("completed_at")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  assignee    User      @relation("TaskAssignee", fields: [assignedTo], references: [id], onDelete: Restrict)
-
-  @@index([assignedTo, status], name: "idx_tasks_assigned_to_status")
-  @@index([dueDate], name: "idx_tasks_due_date")
-  @@index([entityType, entityId], name: "idx_tasks_entity")
-  @@map("tasks")
-}
-
-model Communication {
-  id            String               @id @default(uuid()) @db.Uuid
-  applicationId String               @db.Uuid
-  templateId    String               @db.Uuid
-  channel       CommunicationChannel
-  providerName  String               @db.VarChar(50)
-  messageId     String?              @db.VarChar(255)
-  status        CommunicationStatus  @default(queued)
-  retryCount    Int                  @default(0)
-  sentAt        DateTime?
-  deliveredAt   DateTime?
-  createdAt     DateTime             @default(now())
-  application   Application          @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  template      Template             @relation(fields: [templateId], references: [id], onDelete: Restrict)
-
-  @@index([applicationId, status], name: "idx_communications_application_status")
-  @@map("communications")
-}
-
-model Notification {
-  id        String    @id @default(uuid()) @db.Uuid
-  userId    String    @db.Uuid
-  user      User      @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
-  eventType String    @db.VarChar(100)
-  payload   Json      @db.JsonB
-  readAt    DateTime?
-  createdAt DateTime  @default(now())
-
-  @@index([userId, readAt], name: "notification_user_read_idx")
-  @@index([userId, createdAt(sort: Desc)], name: "notification_user_created_idx")
-  @@map("notifications")
-}
-
-model NotificationPreference {
-  id               String                 @id @default(uuid()) @db.Uuid
-  userId           String                 @db.Uuid
-  user             User                   @relation("UserNotificationPreferences", fields: [userId], references: [id], onDelete: Cascade)
-  notificationType NotificationTypeEnum
-  channel          NotificationChannel
-  enabled          Boolean                @default(true)
-  createdAt        DateTime               @default(now())
-  updatedAt        DateTime               @updatedAt
-
-  @@unique([userId, notificationType, channel], name: "user_notification_channel_unique")
-  @@index([userId], name: "notification_pref_user_idx")
-  @@map("notification_preferences")
-}
-
-model AuditEvent {
-  id          String   @id @default(uuid()) @db.Uuid
-  actorId     String?  @db.Uuid
-  eventType   String   @db.VarChar(100)
-  entityType  String   @db.VarChar(50)
-  entityId    String   @db.Uuid
-  payloadJson Json     @db.JsonB
-  ipAddress   String?  @db.Inet
-  userAgent   String?  @db.VarChar(512)
-  createdAt   DateTime @default(now()) @db.Timestamptz
-  actor       User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
-
-  @@index([createdAt(sort: Desc), id(sort: Desc)], name: "idx_audit_events_created_id")
-  @@index([eventType, createdAt(sort: Desc), id(sort: Desc)], name: "idx_audit_events_event_created_id")
-  @@index([entityType, entityId, createdAt(sort: Desc), id(sort: Desc)], name: "idx_audit_events_entity_created_id")
-  @@index([actorId, createdAt(sort: Desc), id(sort: Desc)], name: "idx_audit_events_actor_created_id")
-  @@map("audit_events")
-}
-
-model AuditArchiveIndex {
-  id                String   @id @default(uuid()) @db.Uuid
-  sourceWindowStart DateTime @db.Timestamptz @map("source_window_start")
-  sourceWindowEnd   DateTime @db.Timestamptz @map("source_window_end")
-  rowCount          Int      @map("row_count")
-  storagePath       String   @db.VarChar(1024) @map("storage_path")
-  checksum          String   @db.VarChar(128)
-  hashAlgorithm     String   @default("sha256") @db.VarChar(32) @map("hash_algorithm")
-  archivedAt        DateTime @default(now()) @db.Timestamptz @map("archived_at")
-  createdAt         DateTime @default(now()) @db.Timestamptz @map("created_at")
-
-  @@index([sourceWindowStart, sourceWindowEnd], name: "idx_audit_archive_window")
-  @@index([archivedAt(sort: Desc)], name: "idx_audit_archive_archived_at")
-  @@unique([storagePath], name: "uq_audit_archive_storage_path")
-  @@map("audit_archive_index")
-}
-
-model AssessmentProvider {
-  id                 String              @id @default(uuid()) @db.Uuid
-  name               String              @db.VarChar(255)
-  apiEndpoint        String              @db.VarChar(500)
-  authMode           String              @db.VarChar(50)
-  hmacSecret         String?             @db.VarChar(255)
-  timeoutSeconds     Int                 @default(30)
-  active             Boolean             @default(true)
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  assessmentSessions AssessmentSession[]
-
-  @@index([active], name: "idx_assessment_providers_active")
-  @@map("assessment_providers")
-}
-
-model AssessmentSession {
-  id            String                  @id @default(uuid()) @db.Uuid
-  applicationId String                  @db.Uuid
-  providerId    String                  @db.Uuid
-  sessionToken  String                  @db.VarChar(500)
-  testUrl       String                  @db.VarChar(1000)
-  status        AssessmentSessionStatus @default(in_progress)
-  launchedAt    DateTime                @default(now())
-  completedAt   DateTime?
-  score         Decimal?                @db.Decimal(6, 2)
-  metadata      Json?                   @db.JsonB
-  application   Application             @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  provider      AssessmentProvider      @relation(fields: [providerId], references: [id], onDelete: Restrict)
-
-  @@index([applicationId, status], name: "idx_assessment_sessions_application_status")
-  @@index([sessionToken], name: "idx_assessment_sessions_session_token")
-  @@map("assessment_sessions")
 }

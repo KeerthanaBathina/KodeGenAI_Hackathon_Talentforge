@@ -216,7 +216,7 @@ async function seedScreeningsAndReviews(prisma: PrismaClient): Promise<void> {
       modelVersion: 'v1.0.0',
       score: 82,
       confidence: 0.91,
-      factorsJson: { skillMatch: 0.88, experienceMatch: 0.76 },
+      factors: { skillMatch: 0.88, experienceMatch: 0.76 },
       evaluatedAt: new Date('2026-07-10T02:00:00.000Z'),
       version: 1
     }
@@ -231,7 +231,7 @@ async function seedScreeningsAndReviews(prisma: PrismaClient): Promise<void> {
       modelVersion: 'v1.0.0',
       score: 58,
       confidence: 0.86,
-      factorsJson: { skillMatch: 0.52, experienceMatch: 0.61 },
+      factors: { skillMatch: 0.52, experienceMatch: 0.61 },
       evaluatedAt: new Date('2026-07-11T02:00:00.000Z'),
       version: 1
     }

@@ -1,0 +1,122 @@
+.page {
+  margin: 0 auto;
+  max-width: 72rem;
+  padding: clamp(1rem, 2vw, 2rem);
+}
+
+.header {
+  margin-bottom: 1.5rem;
+}
+
+.title {
+  color: #0f172a;
+  font-size: clamp(1.75rem, 3vw, 2.2rem);
+  margin: 0;
+}
+
+.subtitle {
+  color: #64748b;
+  margin: 0.5rem 0 0;
+}
+
+.howToSection,
+.formatSection,
+.uploadSection,
+.resultsSection {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.85rem;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.04);
+  margin-bottom: 1.25rem;
+  padding: 1.15rem;
+}
+
+.howToSection {
+  background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
+  border-color: #bfdbfe;
+}
+
+.howToTitle,
+.formatTitle {
+  color: #0f172a;
+  font-size: 1.05rem;
+  margin: 0 0 0.8rem;
+}
+
+.howToList {
+  color: #1e3a8a;
+  line-height: 1.6;
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.howToAction {
+  margin-top: 1rem;
+}
+
+.templateButton {
+  background: #2563eb;
+  border: none;
+  border-radius: 0.55rem;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 600;
+  padding: 0.6rem 0.95rem;
+}
+
+.templateButton:hover {
+  background: #1d4ed8;
+}
+
+.formatBody {
+  color: #334155;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.groupLabel {
+  color: #1f2937;
+  display: inline-block;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.columnList {
+  line-height: 1.6;
+  margin: 0.35rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.code {
+  background: #e2e8f0;
+  border-radius: 0.3rem;
+  color: #0f172a;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: 0.82rem;
+  padding: 0.1rem 0.3rem;
+}
+
+.backLinkWrap {
+  margin-top: 1rem;
+}
+
+.backLink {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.backLink:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+@media (max-width: 42rem) {
+  .howToSection,
+  .formatSection,
+  .uploadSection,
+  .resultsSection {
+    padding: 0.9rem;
+  }
+}

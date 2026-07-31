@@ -12,8 +12,12 @@ const AUDIT_EVENT_JOB_ATTEMPTS = 5;
 const AUDIT_EVENT_JOB_BACKOFF_DELAY_MS = 1000;
 const DUPLICATE_JOB_ERROR_PATTERNS = ['jobid', 'already exists', 'already waiting', 'duplicated'];
 
+const REDIS_QUEUES_ENABLED =
+  process.env.ENABLE_REDIS_QUEUES === 'true' || process.env.NODE_ENV !== 'development';
+
 const connection = new IORedis(env.REDIS_URL, {
-  maxRetriesPerRequest: null
+  maxRetriesPerRequest: null,
+  lazyConnect: !REDIS_QUEUES_ENABLED
 });
 
 export interface AuditEventQueueJobData {
@@ -42,32 +46,36 @@ const auditQueueTelemetry: AuditQueueTelemetryState = {
   enqueueDuplicateSuppressed: 0
 };
 
-export const auditEventQueue = new Queue<AuditEventQueueJobData>(AUDIT_EVENT_QUEUE_NAME, {
-  connection,
-  defaultJobOptions: {
-    attempts: AUDIT_EVENT_JOB_ATTEMPTS,
-    backoff: {
-      type: 'exponential',
-      delay: AUDIT_EVENT_JOB_BACKOFF_DELAY_MS
-    },
-    removeOnComplete: {
-      age: 86400,
-      count: 10000
-    },
-    removeOnFail: false
-  }
-});
-
-export const auditEventDeadLetterQueue = new Queue<AuditEventDeadLetterJobData>(
-  AUDIT_EVENT_DEAD_LETTER_QUEUE_NAME,
-  {
+export const auditEventQueue: Queue<AuditEventQueueJobData> | null = REDIS_QUEUES_ENABLED
+  ? new Queue<AuditEventQueueJobData>(AUDIT_EVENT_QUEUE_NAME, {
     connection,
     defaultJobOptions: {
-      removeOnComplete: false,
+      attempts: AUDIT_EVENT_JOB_ATTEMPTS,
+      backoff: {
+        type: 'exponential',
+        delay: AUDIT_EVENT_JOB_BACKOFF_DELAY_MS
+      },
+      removeOnComplete: {
+        age: 86400,
+        count: 10000
+      },
       removeOnFail: false
     }
-  }
-);
+  })
+  : null;
+
+export const auditEventDeadLetterQueue: Queue<AuditEventDeadLetterJobData> | null = REDIS_QUEUES_ENABLED
+  ? new Queue<AuditEventDeadLetterJobData>(
+    AUDIT_EVENT_DEAD_LETTER_QUEUE_NAME,
+    {
+      connection,
+      defaultJobOptions: {
+        removeOnComplete: false,
+        removeOnFail: false
+      }
+    }
+  )
+  : null;
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -186,6 +194,19 @@ export async function enqueueAuditEvent(data: AuditEventQueueJobData): Promise<s
 
   const jobId = buildAuditEventJobId(data);
 
+  if (!auditEventQueue) {
+    logger.debug(
+      {
+        jobId,
+        eventType: data.event.eventType,
+        entityType: data.event.entityType,
+        entityId: data.event.entityId
+      },
+      'Audit queue disabled in development; enqueue skipped'
+    );
+    return jobId;
+  }
+
   try {
     await auditEventQueue.add(AUDIT_EVENT_JOB_NAME, data, {
       jobId,
@@ -251,6 +272,18 @@ export async function moveAuditEventToDeadLetter(params: {
   data: AuditEventQueueJobData;
 }): Promise<string> {
   const deadLetterJobId = `dlq-${params.originalJobId}`;
+  if (!auditEventDeadLetterQueue) {
+    logger.warn(
+      {
+        deadLetterJobId,
+        originalJobId: params.originalJobId,
+        failedReason: params.failedReason
+      },
+      'Audit dead-letter queue disabled in development; dead-letter write skipped'
+    );
+    return deadLetterJobId;
+  }
+
   const deadLetterPayload: AuditEventDeadLetterJobData = {
     ...params.data,
     originalJobId: params.originalJobId,
@@ -279,7 +312,10 @@ export async function moveAuditEventToDeadLetter(params: {
 }
 
 export async function closeAuditEventQueues(): Promise<void> {
-  await Promise.all([auditEventQueue.close(), auditEventDeadLetterQueue.close()]);
+  await Promise.all([
+    auditEventQueue?.close(),
+    auditEventDeadLetterQueue?.close()
+  ]);
 }
 
 export function getAuditQueueTelemetrySnapshot(): AuditQueueTelemetryState {
@@ -290,22 +326,26 @@ export function getAuditQueueTelemetrySnapshot(): AuditQueueTelemetryState {
   };
 }
 
-auditEventQueue.on('error', (error) => {
-  logger.error(
-    {
-      error: error instanceof Error ? error.message : String(error)
-    },
-    'Audit event queue error'
-  );
-});
+if (auditEventQueue) {
+  auditEventQueue.on('error', (error) => {
+    logger.error(
+      {
+        error: error instanceof Error ? error.message : String(error)
+      },
+      'Audit event queue error'
+    );
+  });
+}
 
-auditEventDeadLetterQueue.on('error', (error) => {
-  logger.error(
-    {
-      error: error instanceof Error ? error.message : String(error)
-    },
-    'Audit event dead-letter queue error'
-  );
-});
+if (auditEventDeadLetterQueue) {
+  auditEventDeadLetterQueue.on('error', (error) => {
+    logger.error(
+      {
+        error: error instanceof Error ? error.message : String(error)
+      },
+      'Audit event dead-letter queue error'
+    );
+  });
+}
 
 export { connection };

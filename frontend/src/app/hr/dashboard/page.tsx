@@ -63,12 +63,6 @@ const recentActivity = [
 export default function HrDashboardPage() {
   return (
     <main className={styles.page}>
-      <div className={styles.topMetaBar}>
-        <span>
-          <strong>SCR-301</strong> HR Dashboard . Route: /hr/dashboard . Role: HR Manager
-        </span>
-        <span>FR-029, FR-034, FR-036</span>
-      </div>
 
       <div className={styles.alertBanner} role="status" aria-live="polite">
         <span className={styles.alertIcon}>!</span>

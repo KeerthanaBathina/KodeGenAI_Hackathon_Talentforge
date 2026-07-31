@@ -16,32 +16,50 @@ const connection = {
     password: process.env.REDIS_PASSWORD,
 };
 
-export const interviewReminderQueue = new Queue<InterviewReminderJobData>('interview-reminders', {
-    connection,
-    defaultJobOptions: {
-        attempts: 3,
-        backoff: {
-            type: 'exponential',
-            delay: 5000,
-        },
-        removeOnComplete: {
-            age: 86400,
-            count: 500,
-        },
-        removeOnFail: {
-            age: 604800,
-        },
-    },
-});
+const REDIS_QUEUES_ENABLED =
+    process.env.ENABLE_REDIS_QUEUES === 'true' || process.env.NODE_ENV !== 'development';
 
-interviewReminderQueue.on('error', (error) => {
-    logger.error('Interview reminder queue error', { error });
-});
+export const interviewReminderQueue: Queue<InterviewReminderJobData> | null = REDIS_QUEUES_ENABLED
+    ? new Queue<InterviewReminderJobData>('interview-reminders', {
+        connection,
+        defaultJobOptions: {
+            attempts: 3,
+            backoff: {
+                type: 'exponential',
+                delay: 5000,
+            },
+            removeOnComplete: {
+                age: 86400,
+                count: 500,
+            },
+            removeOnFail: {
+                age: 604800,
+            },
+        },
+    })
+    : null;
+
+if (interviewReminderQueue) {
+    interviewReminderQueue.on('error', (error) => {
+        logger.error('Interview reminder queue error', { error });
+    });
+}
 
 export async function enqueueInterviewReminder(
     data: InterviewReminderJobData,
     delayMs: number
 ): Promise<string> {
+    if (!interviewReminderQueue) {
+        logger.warn(
+            {
+                interviewId: data.interviewId,
+                reminderType: data.reminderType,
+            },
+            '[reminders] Queue disabled in development; reminder not enqueued'
+        );
+        return 'disabled';
+    }
+
     const job = await interviewReminderQueue.add(`interview-reminder-${data.reminderType}`, data, {
         jobId: `${data.interviewId}:${data.reminderType}`,
         delay: Math.max(0, delayMs),
@@ -61,6 +79,10 @@ export async function enqueueInterviewReminder(
  * Cancel all reminder jobs for an interview
  */
 export async function cancelInterviewReminders(interviewId: string): Promise<void> {
+    if (!interviewReminderQueue) {
+        return;
+    }
+
     try {
         await interviewReminderQueue.remove(`${interviewId}:24h`);
         await interviewReminderQueue.remove(`${interviewId}:1h`);
@@ -78,10 +100,11 @@ export async function cancelInterviewReminders(interviewId: string): Promise<voi
 /**
  * Worker to process reminder jobs
  */
-export const interviewReminderWorker = new Worker<InterviewReminderJobData>(
-    'interview-reminders',
-    async (job: Job<InterviewReminderJobData>) => {
-        const { interviewId, reminderType } = job.data;
+export const interviewReminderWorker: Worker<InterviewReminderJobData> | null = REDIS_QUEUES_ENABLED
+    ? new Worker<InterviewReminderJobData>(
+        'interview-reminders',
+        async (job: Job<InterviewReminderJobData>) => {
+            const { interviewId, reminderType } = job.data;
 
         logger.info(
             { interviewId, reminderType, jobId: job.id },
@@ -102,21 +125,24 @@ export const interviewReminderWorker = new Worker<InterviewReminderJobData>(
             );
             throw error; // BullMQ will retry
         }
-    },
-    {
-        connection,
-        concurrency: 5,
-    }
-);
+        },
+        {
+            connection,
+            concurrency: 5,
+        }
+    )
+    : null;
 
 // Error handling
-interviewReminderWorker.on('failed', (job, err) => {
-    logger.error(
-        {
-            jobId: job?.id,
-            interviewId: job?.data?.interviewId,
-            error: err,
-        },
-        '[reminders] Reminder job failed'
-    );
-});
+if (interviewReminderWorker) {
+    interviewReminderWorker.on('failed', (job, err) => {
+        logger.error(
+            {
+                jobId: job?.id,
+                interviewId: job?.data?.interviewId,
+                error: err,
+            },
+            '[reminders] Reminder job failed'
+        );
+    });
+}

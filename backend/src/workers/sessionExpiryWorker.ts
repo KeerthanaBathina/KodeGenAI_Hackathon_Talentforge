@@ -21,6 +21,9 @@ import {
     checkReconnectWindow 
 } from '../services/sessionTimerService';
 
+const SESSION_EXPIRY_WORKER_ENABLED =
+    process.env.ENABLE_REDIS_QUEUES === 'true' || process.env.NODE_ENV !== 'development';
+
 /**
  * Statistics for monitoring
  */
@@ -92,6 +95,11 @@ async function checkSessionExpiry(): Promise<ExpiryStats> {
  * Start session expiry monitoring cron job
  */
 export function startSessionExpiryWorker(): void {
+    if (!SESSION_EXPIRY_WORKER_ENABLED) {
+        logger.warn('Session expiry worker disabled in development (set ENABLE_REDIS_QUEUES=true to enable)');
+        return;
+    }
+
     logger.info('Starting session expiry monitoring (every 1 minute)');
 
     // Run every minute

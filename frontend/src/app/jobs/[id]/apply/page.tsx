@@ -70,6 +70,11 @@ export default function ApplicationFormPage() {
                     credentials: 'include',
                 });
 
+                if (profileResponse.status === 401) {
+                    router.replace('/register?next=/profile');
+                    return;
+                }
+
                 if (profileResponse.ok) {
                     const profile = await profileResponse.json();
                     setFormData((prev) => ({
@@ -86,6 +91,11 @@ export default function ApplicationFormPage() {
                 const draftResponse = await fetch(getApiUrl(`/api/applications/drafts/${requisitionId}`), {
                     credentials: 'include',
                 });
+
+                if (draftResponse.status === 401) {
+                    router.replace('/register?next=/profile');
+                    return;
+                }
 
                 if (draftResponse.ok) {
                     const draft = await draftResponse.json();

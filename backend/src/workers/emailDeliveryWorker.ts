@@ -16,6 +16,9 @@ import { updateWorkerHeartbeat } from '../services/healthMetricsService';
 import { WORKER_HEARTBEAT_KEYS } from '../constants/workerHeartbeats';
 import { logger } from '../utils/logger';
 
+const REDIS_QUEUES_ENABLED =
+  process.env.ENABLE_REDIS_QUEUES === 'true' || process.env.NODE_ENV !== 'development';
+
 /**
  * Process an email delivery job.
  * 
@@ -163,20 +166,22 @@ async function processEmailDeliveryJob(
  * - Lock duration: 30 seconds
  * - Retry strategy: exponential backoff (configured in queue)
  */
-export const emailDeliveryWorker = new Worker(
-  'email-delivery',
-  processEmailDeliveryJob,
-  {
-    connection,
-    concurrency: 5,
-    lockDuration: 30000, // 30 seconds
-  }
-);
+export const emailDeliveryWorker: Worker | null = REDIS_QUEUES_ENABLED
+  ? new Worker(
+    'email-delivery',
+    processEmailDeliveryJob,
+    {
+      connection,
+      concurrency: 5,
+      lockDuration: 30000,
+    }
+  )
+  : null;
 
 
 
 // Event: Job completed successfully
-emailDeliveryWorker.on('completed', (job) => {
+emailDeliveryWorker?.on('completed', (job) => {
   logger.info(
     {
       jobId: job.id,
@@ -188,7 +193,7 @@ emailDeliveryWorker.on('completed', (job) => {
 });
 
 // Event: Job failed
-emailDeliveryWorker.on('failed', async (job, error) => {
+emailDeliveryWorker?.on('failed', async (job, error) => {
   if (!job) return;
 
   const { communicationId } = job.data;
@@ -245,7 +250,7 @@ emailDeliveryWorker.on('failed', async (job, error) => {
 });
 
 // Event: Worker error
-emailDeliveryWorker.on('error', (error) => {
+emailDeliveryWorker?.on('error', (error) => {
   logger.error(
     { error: error.message },
     'Email delivery worker error'
@@ -259,7 +264,7 @@ emailDeliveryWorker.on('error', (error) => {
  */
 export async function shutdownEmailDeliveryWorker(): Promise<void> {
   logger.info('Shutting down email delivery worker...');
-  await emailDeliveryWorker.close();
+  await emailDeliveryWorker?.close();
   logger.info('Email delivery worker shut down');
 }
 

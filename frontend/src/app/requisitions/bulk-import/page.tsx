@@ -7,6 +7,7 @@ import { ImportResults } from '@/components/requisitions/ImportResults';
 import { getAuthToken } from '@/lib/auth';
 import { useToast } from '@/contexts/ToastContext';
 import type { ImportResultData } from '@/components/requisitions/types';
+import styles from './page.module.css';
 
 function getApiUrl(pathname: string): string {
   const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
@@ -74,30 +75,30 @@ export default function BulkImportPage() {
   };
 
   return (
-    <main className="max-w-4xl mx-auto p-4 sm:p-8">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Bulk Import Requisitions</h1>
-        <p className="text-gray-600 mt-2">
+    <main className={styles.page}>
+      <header className={styles.header}>
+        <h1 className={styles.title}>Bulk Import Requisitions</h1>
+        <p className={styles.subtitle}>
           Upload a CSV file to import multiple job requisitions at once.
         </p>
       </header>
 
-      <section className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8" aria-labelledby="bulk-import-howto">
-        <h2 id="bulk-import-howto" className="text-lg font-semibold text-blue-900 mb-3">
+      <section className={styles.howToSection} aria-labelledby="bulk-import-howto">
+        <h2 id="bulk-import-howto" className={styles.howToTitle}>
           How to Import
         </h2>
-        <ol className="list-decimal list-inside space-y-2 text-blue-800">
+        <ol className={styles.howToList}>
           <li>Download the CSV template to see the required format.</li>
           <li>Fill in your requisition data following the template structure.</li>
           <li>Upload your completed CSV file using the uploader below.</li>
           <li>Review the import results and download any error reports.</li>
         </ol>
 
-        <div className="mt-4">
+        <div className={styles.howToAction}>
           <button
             type="button"
             onClick={handleTemplateDownload}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className={styles.templateButton}
             aria-label="Download CSV template"
           >
             Download CSV Template
@@ -105,69 +106,75 @@ export default function BulkImportPage() {
         </div>
       </section>
 
-      <section className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-8" aria-labelledby="csv-format-guide">
-        <h3 id="csv-format-guide" className="font-semibold text-gray-900 mb-3">
+      <section className={styles.formatSection} aria-labelledby="csv-format-guide">
+        <h3 id="csv-format-guide" className={styles.formatTitle}>
           CSV Format Requirements
         </h3>
 
-        <div className="space-y-3 text-sm">
+        <div className={styles.formatBody}>
           <div>
-            <span className="font-medium text-gray-700">Required Columns:</span>
-            <ul className="list-disc list-inside ml-4 mt-1 text-gray-600">
+            <span className={styles.groupLabel}>Required Columns:</span>
+            <ul className={styles.columnList}>
               <li>
-                <code className="bg-gray-200 px-1 rounded">role_title</code> - Job title (max 255 chars)
+                <code className={styles.code}>role_title</code> - Job title (max 255 chars)
               </li>
               <li>
-                <code className="bg-gray-200 px-1 rounded">department</code> - Department name
+                <code className={styles.code}>department</code> - Department name
               </li>
               <li>
-                <code className="bg-gray-200 px-1 rounded">location</code> - Office location or Remote
+                <code className={styles.code}>location</code> - Office location or Remote
               </li>
               <li>
-                <code className="bg-gray-200 px-1 rounded">job_type</code> - full_time, part_time, contract, or internship
+                <code className={styles.code}>job_type</code> - full_time, part_time, contract, or internship
               </li>
               <li>
-                <code className="bg-gray-200 px-1 rounded">slots</code> - Number of positions (positive integer)
+                <code className={styles.code}>slots</code> - Number of positions (positive integer)
               </li>
               <li>
-                <code className="bg-gray-200 px-1 rounded">job_family</code> - Existing job family name
+                <code className={styles.code}>job_family</code> - Existing job family name
               </li>
             </ul>
           </div>
 
           <div>
-            <span className="font-medium text-gray-700">Optional Columns:</span>
-            <ul className="list-disc list-inside ml-4 mt-1 text-gray-600">
+            <span className={styles.groupLabel}>Optional Columns:</span>
+            <ul className={styles.columnList}>
               <li>
-                <code className="bg-gray-200 px-1 rounded">required_skills</code> - Comma-separated skill list
+                <code className={styles.code}>required_skills</code> - Comma-separated skill list
               </li>
               <li>
-                <code className="bg-gray-200 px-1 rounded">preferred_skills</code> - Comma-separated skill list
+                <code className={styles.code}>preferred_skills</code> - Comma-separated skill list
               </li>
               <li>
-                <code className="bg-gray-200 px-1 rounded">min_experience_years</code> - Minimum years of experience
+                <code className={styles.code}>min_experience_years</code> - Minimum years of experience
               </li>
               <li>
-                <code className="bg-gray-200 px-1 rounded">education_level</code> - Education requirement
+                <code className={styles.code}>education_level</code> - Education requirement
               </li>
               <li>
-                <code className="bg-gray-200 px-1 rounded">eligibility_criteria</code> - JSON object
+                <code className={styles.code}>eligibility_criteria</code> - JSON object
               </li>
             </ul>
           </div>
         </div>
       </section>
 
-      <CSVUploader
-        onUploadStart={handleStartUpload}
-        onUploadComplete={handleImportComplete}
-        isUploading={isUploading}
-      />
+      <section className={styles.uploadSection}>
+        <CSVUploader
+          onUploadStart={handleStartUpload}
+          onUploadComplete={handleImportComplete}
+          isUploading={isUploading}
+        />
+      </section>
 
-      {importResult ? <ImportResults result={importResult} /> : null}
+      {importResult ? (
+        <section className={styles.resultsSection}>
+          <ImportResults result={importResult} />
+        </section>
+      ) : null}
 
-      <div className="mt-8">
-        <Link href="/jobs" className="text-blue-600 hover:text-blue-800">
+      <div className={styles.backLinkWrap}>
+        <Link href="/jobs" className={styles.backLink}>
           Back to Jobs
         </Link>
       </div>
