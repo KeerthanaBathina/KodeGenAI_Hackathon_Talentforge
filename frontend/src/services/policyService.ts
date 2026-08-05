@@ -13,24 +13,46 @@ import type {
   ApprovalPolicy,
   JobFamily,
   ApiErrorResponse,
-  PolicyValidationError,
 } from '@/types/policy';
+import { buildApiUrl } from '@/lib/api/url';
 
 // ============================================================================
 // Error Handling
 // ============================================================================
 
+async function parseJsonSafely<T>(response: Response): Promise<T | null> {
+  try {
+    return (await response.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    const error = (await response.json()) as ApiErrorResponse;
-    const message = error.error?.message || 'An error occurred';
-    const details = error.error?.details || [];
+    const error = await parseJsonSafely<
+      ApiErrorResponse & {
+        message?: string;
+        error?: {
+          message?: string;
+          details?: string[];
+        };
+      }
+    >(response);
+    const message = error?.error?.message || error?.message || 'An error occurred';
+    const details = error?.error?.details || [];
 
     const err = new Error(message) as Error & { details?: string[] };
     err.details = details;
     throw err;
   }
-  return response.json() as Promise<T>;
+
+  const payload = await parseJsonSafely<T>(response);
+  if (payload === null) {
+    throw new Error('Invalid API response payload');
+  }
+
+  return payload;
 }
 
 // ============================================================================
@@ -38,7 +60,8 @@ async function handleResponse<T>(response: Response): Promise<T> {
 // ============================================================================
 
 async function getActiveScreeningThreshold(): Promise<ScreeningThreshold> {
-  const response = await fetch('/api/admin/screening-thresholds/active', {
+  const response = await fetch(buildApiUrl('/api/admin/screening-thresholds/active'), {
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
     },
@@ -49,7 +72,8 @@ async function getActiveScreeningThreshold(): Promise<ScreeningThreshold> {
 async function getScreeningThresholdHistory(
   limit: number = 50,
 ): Promise<ScreeningThreshold[]> {
-  const response = await fetch(`/api/admin/screening-thresholds/history?limit=${limit}`, {
+  const response = await fetch(buildApiUrl(`/api/admin/screening-thresholds/history?limit=${limit}`), {
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
     },
@@ -61,8 +85,9 @@ async function getScreeningThresholdHistory(
 async function createScreeningThreshold(
   data: CreateScreeningThresholdInput,
 ): Promise<ScreeningThreshold> {
-  const response = await fetch('/api/admin/screening-thresholds', {
+  const response = await fetch(buildApiUrl('/api/admin/screening-thresholds'), {
     method: 'POST',
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
     },
@@ -76,7 +101,8 @@ async function createScreeningThreshold(
 // ============================================================================
 
 async function getJobFamilies(): Promise<JobFamily[]> {
-  const response = await fetch('/api/job-families', {
+  const response = await fetch(buildApiUrl('/api/job-families'), {
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
     },
@@ -95,7 +121,8 @@ async function getScoringThresholds(
     ? `/api/admin/scoring-thresholds?jobFamilyId=${jobFamilyId}`
     : '/api/admin/scoring-thresholds';
 
-  const response = await fetch(url, {
+  const response = await fetch(buildApiUrl(url), {
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
     },
@@ -107,8 +134,9 @@ async function getEffectiveScoringThreshold(
   jobFamilyId: string,
 ): Promise<ScoringThreshold> {
   const response = await fetch(
-    `/api/admin/scoring-thresholds/${jobFamilyId}/effective`,
+    buildApiUrl(`/api/admin/scoring-thresholds/${jobFamilyId}/effective`),
     {
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -123,8 +151,9 @@ async function getScoringThresholdHistory(
 ): Promise<ScoringThreshold[]> {
   if (typeof jobFamilyIdOrLimit === 'string') {
     const response = await fetch(
-      `/api/admin/scoring-thresholds/${jobFamilyIdOrLimit}/history?limit=${limit}`,
+      buildApiUrl(`/api/admin/scoring-thresholds/${jobFamilyIdOrLimit}/history?limit=${limit}`),
       {
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -143,8 +172,9 @@ async function getScoringThresholdHistory(
   const histories = await Promise.all(
     jobFamilies.map(async (jobFamily) => {
       const response = await fetch(
-        `/api/admin/scoring-thresholds/${jobFamily.id}/history?limit=${effectiveLimit}`,
+        buildApiUrl(`/api/admin/scoring-thresholds/${jobFamily.id}/history?limit=${effectiveLimit}`),
         {
+          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
           },
@@ -165,8 +195,9 @@ async function getScoringThresholdHistory(
 async function createScoringThreshold(
   data: CreateScoringThresholdInput,
 ): Promise<ScoringThreshold> {
-  const response = await fetch('/api/admin/scoring-thresholds', {
+  const response = await fetch(buildApiUrl('/api/admin/scoring-thresholds'), {
     method: 'POST',
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
     },
@@ -180,7 +211,8 @@ async function createScoringThreshold(
 // ============================================================================
 
 async function getApprovalPolicies(): Promise<{ policies: ApprovalPolicy[]; total: number }> {
-  const response = await fetch('/api/admin/approval-policies', {
+  const response = await fetch(buildApiUrl('/api/admin/approval-policies'), {
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
     },
@@ -191,7 +223,8 @@ async function getApprovalPolicies(): Promise<{ policies: ApprovalPolicy[]; tota
 async function getApprovalPoliciesHistory(
   limit: number = 50,
 ): Promise<ApprovalPolicy[]> {
-  const response = await fetch(`/api/admin/approval-policies/history?limit=${limit}`, {
+  const response = await fetch(buildApiUrl(`/api/admin/approval-policies/history?limit=${limit}`), {
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
     },
@@ -203,8 +236,9 @@ async function getApprovalPoliciesHistory(
 async function createApprovalPolicy(
   data: CreateApprovalPolicyInput,
 ): Promise<ApprovalPolicy> {
-  const response = await fetch('/api/admin/approval-policies', {
+  const response = await fetch(buildApiUrl('/api/admin/approval-policies'), {
     method: 'POST',
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
     },
@@ -214,8 +248,9 @@ async function createApprovalPolicy(
 }
 
 async function deactivateApprovalPolicy(policyId: string): Promise<ApprovalPolicy> {
-  const response = await fetch(`/api/admin/approval-policies/${policyId}/deactivate`, {
+  const response = await fetch(buildApiUrl(`/api/admin/approval-policies/${policyId}/deactivate`), {
     method: 'PATCH',
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
     },

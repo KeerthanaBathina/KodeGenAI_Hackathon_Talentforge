@@ -65,9 +65,20 @@ export async function generatePresignedUrl(
     const fileExtension = fileName.split('.').pop();
     const storageKey = `resumes/${candidateId}/${timestamp}-${randomSuffix}.${fileExtension}`;
 
-    // Create pending Resume record
-    const resume = await prisma.resume.create({
-        data: {
+    // Create or replace pending Resume record so candidates can retry uploads.
+    const resume = await prisma.resume.upsert({
+        where: { applicationId },
+        update: {
+            storageKey,
+            fileName,
+            fileSize,
+            mimeType,
+            scanStatus: 'pending',
+            scanResult: null,
+            parsedData: null,
+            uploadedAt: new Date(),
+        },
+        create: {
             applicationId,
             storageKey,
             fileName,

@@ -4,6 +4,7 @@ import React from 'react';
 import { FormEvent, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { buildApiUrl } from '@/lib/api/url';
 import styles from '../auth-pages.module.css';
 
 const registrationSuccessMessage = 'Registration successful. Continue to complete your profile.';
@@ -14,23 +15,6 @@ function isPasswordStrong(password: string): boolean {
 
 function getPasswordStrength(password: string): 'weak' | 'strong' {
   return isPasswordStrong(password) ? 'strong' : 'weak';
-}
-
-function getApiUrl(pathname: string): string {
-  const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-  const isLocalDevHost =
-    typeof window !== 'undefined' &&
-    (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost');
-
-  if (isLocalDevHost) {
-    return `http://localhost:3001${pathname}`;
-  }
-
-  if (!base) {
-    return pathname;
-  }
-
-  return `${base}${pathname}`;
 }
 
 export default function RegisterPage() {
@@ -75,9 +59,10 @@ export default function RegisterPage() {
     setSubmitting(true);
 
     try {
-      const response = await fetch(getApiUrl('/api/auth/register'), {
+      const response = await fetch(buildApiUrl('/api/auth/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           email,
           password,

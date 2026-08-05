@@ -50,6 +50,9 @@ const envSchema = z.object({
   // Resume Upload & Scanning
   SCAN_WEBHOOK_SECRET: z.string().min(32, 'SCAN_WEBHOOK_SECRET must be at least 32 characters').default('dev-only-scan-webhook-secret-change-in-production'),
   WORKER_TOKEN: z.string().min(32, 'WORKER_TOKEN must be at least 32 characters').default('dev-only-worker-token-change-in-production'),
+  RESUME_PARSER_ENDPOINT: z.string().url('RESUME_PARSER_ENDPOINT must be a valid URL').optional(),
+  RESUME_PARSER_API_KEY: z.string().optional(),
+  RESUME_PARSER_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120000).default(30000),
   // Redis for BullMQ
   REDIS_HOST: z.string().default('localhost'),
   REDIS_PORT: z.string().default('6379'),

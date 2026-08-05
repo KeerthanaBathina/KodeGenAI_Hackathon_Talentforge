@@ -23,6 +23,7 @@ import {
     type ReviewQueueBadgeCountPayload,
     type QueueNewApplicationPayload,
 } from '@/lib/reviewQueueRealtime';
+import { buildApiUrl } from '@/lib/api/url';
 
 type QueueFilterState = Pick<
     ManualReviewFilters,
@@ -36,14 +37,6 @@ interface RequisitionOption {
 
 interface RequisitionFiltersResponse {
     departments?: string[];
-}
-
-function getApiUrl(pathname: string): string {
-    const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-    if (!base || (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')) {
-        return pathname;
-    }
-    return `${base}${pathname}`;
 }
 
 function parseFilterStateFromUrl(): QueueFilterState {
@@ -129,10 +122,10 @@ export default function ManualReviewQueuePage() {
         async function loadFilterOptions() {
             try {
                 const [filterOptionsResponse, requisitionsResponse] = await Promise.all([
-                    fetch(getApiUrl('/api/requisitions/filters'), {
+                    fetch(buildApiUrl('/api/requisitions/filters'), {
                         credentials: 'include',
                     }),
-                    fetch(getApiUrl('/api/requisitions?page=1&pageSize=100&status=open'), {
+                    fetch(buildApiUrl('/api/requisitions?page=1&pageSize=100&status=open'), {
                         credentials: 'include',
                     }),
                 ]);

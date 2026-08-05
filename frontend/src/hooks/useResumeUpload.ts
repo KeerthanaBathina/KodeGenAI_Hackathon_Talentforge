@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { buildApiUrl } from '@/lib/api/url';
 
 interface UploadState {
     status: 'idle' | 'validating' | 'requesting_url' | 'uploading' | 'scanning' | 'success' | 'error';
@@ -20,12 +21,32 @@ const ALLOWED_TYPES = [
 const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
-function getApiUrl(pathname: string): string {
-    const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-    if (!base || (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')) {
-        return pathname;
+async function triggerLocalResumeProcessing(resumeId: string): Promise<void> {
+    try {
+        const response = await fetch(buildApiUrl('/api/resumes/process-locally'), {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ resumeId }),
+        });
+
+        // Disabled in non-development or unavailable in older deployments.
+        if (response.status === 403 || response.status === 404) {
+            return;
+        }
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            throw new Error(
+                errorData?.error?.message || 'Unable to trigger local resume processing'
+            );
+        }
+    } catch (error) {
+        // Upload already succeeded; local processing fallback is best-effort.
+        console.warn('Local resume processing fallback failed', error);
     }
-    return `${base}${pathname}`;
 }
 
 function uploadWithProgress(
@@ -97,7 +118,7 @@ export function useResumeUpload({ applicationId, onSuccess, onError }: UseResume
                 // Request presigned URL
                 setUploadState({ status: 'requesting_url', progress: 10, error: null, resumeId: null });
 
-                const presignedResponse = await fetch(getApiUrl('/api/resumes/presigned-url'), {
+                const presignedResponse = await fetch(buildApiUrl('/api/resumes/presigned-url'), {
                     method: 'POST',
                     credentials: 'include',
                     headers: {
@@ -128,8 +149,7 @@ export function useResumeUpload({ applicationId, onSuccess, onError }: UseResume
                 // Scanning phase
                 setUploadState({ status: 'scanning', progress: 95, error: null, resumeId });
 
-                // Simulate scan completion (in real scenario, would poll or use websocket)
-                await new Promise((resolve) => setTimeout(resolve, 1000));
+                await triggerLocalResumeProcessing(resumeId);
 
                 setUploadState({ status: 'success', progress: 100, error: null, resumeId });
                 onSuccess?.(resumeId);

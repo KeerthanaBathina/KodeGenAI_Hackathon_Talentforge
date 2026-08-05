@@ -199,11 +199,9 @@ describe("adminUserService", () => {
         role: UserRole.candidate,
       };
 
-      const error = await expect(
-        adminUserService.createUser(createInput)
-      ).rejects.toThrow();
-
-      expect(error.status).toBe(409);
+      await expect(adminUserService.createUser(createInput)).rejects.toMatchObject({
+        status: 409,
+      });
     });
 
     it("throws error on 400 validation error", async () => {
@@ -243,7 +241,7 @@ describe("adminUserService", () => {
         expect.stringContaining("/api/admin/users/user-1/role"),
         expect.objectContaining({
           method: "PATCH",
-          body: JSON.stringify({ newRole: UserRole.recruiter }),
+          body: JSON.stringify({ role: UserRole.recruiter }),
         })
       );
     });
@@ -258,11 +256,11 @@ describe("adminUserService", () => {
         }),
       } as any);
 
-      const error = await expect(
+      await expect(
         adminUserService.updateUserRole("user-1", { newRole: UserRole.recruiter })
-      ).rejects.toThrow();
-
-      expect(error.status).toBe(403);
+      ).rejects.toMatchObject({
+        status: 403,
+      });
     });
   });
 
@@ -297,11 +295,9 @@ describe("adminUserService", () => {
         }),
       } as any);
 
-      const error = await expect(
-        adminUserService.deactivateUser("user-1")
-      ).rejects.toThrow();
-
-      expect(error.status).toBe(403);
+      await expect(adminUserService.deactivateUser("user-1")).rejects.toMatchObject({
+        status: 403,
+      });
     });
   });
 

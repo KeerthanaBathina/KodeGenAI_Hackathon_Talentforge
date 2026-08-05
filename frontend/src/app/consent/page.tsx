@@ -1,18 +1,26 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { buildApiUrl } from '@/lib/api/url';
+import CandidateTopNav from '@/components/CandidateTopNav';
 
-function getApiUrl(pathname: string): string {
-    const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-    if (!base || (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')) {
-        return pathname;
+function resolveReturnPath(value: string | null): string {
+    if (!value) {
+        return '/profile';
     }
-    return `${base}${pathname}`;
+
+    if (value.startsWith('/') && !value.startsWith('//')) {
+        return value;
+    }
+
+    return '/profile';
 }
 
 export default function ConsentPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const returnPath = resolveReturnPath(searchParams.get('returnTo'));
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [hasConsent, setHasConsent] = useState(false);
@@ -22,7 +30,7 @@ export default function ConsentPage() {
     useEffect(() => {
         async function checkConsent() {
             try {
-                const response = await fetch(getApiUrl('/api/consent'), {
+                const response = await fetch(buildApiUrl('/api/consent'), {
                     credentials: 'include',
                 });
 
@@ -48,7 +56,7 @@ export default function ConsentPage() {
         setError(null);
 
         try {
-            const response = await fetch(getApiUrl('/api/consent/accept'), {
+            const response = await fetch(buildApiUrl('/api/consent/accept'), {
                 method: 'POST',
                 credentials: 'include',
             });
@@ -61,7 +69,7 @@ export default function ConsentPage() {
             setHasConsent(true);
             setConsentData(data);
 
-            setTimeout(() => router.push('/profile'), 2000);
+            setTimeout(() => router.push(returnPath), 2000);
         } catch (err) {
             console.error('Error accepting consent:', err);
             setError('Unable to record consent. Please try again.');
@@ -71,13 +79,21 @@ export default function ConsentPage() {
     }
 
     if (loading) {
-        return <div style={{ padding: '2rem', textAlign: 'center', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f9fafb' }}>Loading...</div>;
+        return (
+            <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+                <CandidateTopNav active="profile" />
+                <div style={{ padding: '2rem', textAlign: 'center', minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    Loading...
+                </div>
+            </div>
+        );
     }
 
     if (hasConsent) {
         return (
-            <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', padding: '2rem' }}>
-                <div style={{ maxWidth: '600px', margin: '0 auto', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '2rem' }}>
+            <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+                <CandidateTopNav active="profile" />
+                <div style={{ maxWidth: '600px', margin: '0 auto', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '2rem', marginTop: '2rem' }}>
                     <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
                         <div style={{ width: '64px', height: '64px', margin: '0 auto 1rem', backgroundColor: '#d1fae5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <svg style={{ width: '32px', height: '32px', color: '#10b981' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -94,10 +110,10 @@ export default function ConsentPage() {
                     </div>
 
                     <button
-                        onClick={() => router.push('/profile')}
+                        onClick={() => router.push(returnPath)}
                         style={{ width: '100%', padding: '0.75rem', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '6px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer' }}
                     >
-                        Continue to Profile
+                        Continue
                     </button>
                 </div>
             </div>
@@ -105,8 +121,9 @@ export default function ConsentPage() {
     }
 
     return (
-        <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', padding: '2rem' }}>
-            <div style={{ maxWidth: '800px', margin: '0 auto', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '2rem' }}>
+        <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+            <CandidateTopNav active="profile" />
+            <div style={{ maxWidth: '800px', margin: '0 auto', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '2rem', marginTop: '2rem' }}>
                 <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '1rem' }}>Privacy Policy</h1>
 
                 {/* Policy Content */}
@@ -145,7 +162,7 @@ export default function ConsentPage() {
 
                 <div style={{ display: 'flex', gap: '1rem' }}>
                     <button
-                        onClick={() => router.push('/profile')}
+                        onClick={() => router.push(returnPath)}
                         disabled={submitting}
                         style={{ flex: 1, padding: '0.75rem', backgroundColor: 'white', color: '#374151', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '1rem', fontWeight: '600', cursor: submitting ? 'not-allowed' : 'pointer' }}
                     >

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
 import { AuditLogFilters } from '@/components/admin/AuditLogFilters';
 import { AuditLogTable } from '@/components/admin/AuditLogTable';
 import {
@@ -286,30 +287,26 @@ export default function AuditLogPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl space-y-6">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Audit Log Viewer</h1>
-            <p className="mt-2 text-sm text-gray-600">
-              Review platform activity with compliance-aligned filters and export evidence-ready CSV snapshots.
-            </p>
-          </div>
-          <div className="flex flex-col items-end gap-2">
-            <button
-              type="button"
-              onClick={handleExport}
-              disabled={exporting}
-              className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {exporting ? 'Exporting CSV...' : 'Export CSV'}
-            </button>
-            <span className="text-xs text-gray-500">Exports use current filters and fixed page size of 50 rows.</span>
-          </div>
-        </header>
-
+    <AdminPageShell
+      title="Audit Log Viewer"
+      description="Immutable log of system and user actions with export-ready compliance evidence."
+      actions={
+        <div className="flex flex-col items-end gap-2">
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={exporting}
+            className="h-9 rounded-md border border-[var(--admin-color-border)] bg-[var(--admin-color-surface-0)] px-4 text-sm font-semibold text-[var(--admin-color-ink-secondary)] transition hover:bg-[var(--admin-color-surface-1)] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {exporting ? 'Exporting CSV...' : 'Export CSV'}
+          </button>
+          <span className="text-xs text-[var(--admin-color-ink-tertiary)]">Exports use current filters and fixed page size of 50 rows.</span>
+        </div>
+      }
+    >
+      <div className="space-y-6">
         {exportError ? (
-          <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
+          <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
             {exportError}
           </div>
         ) : null}
@@ -335,6 +332,6 @@ export default function AuditLogPage() {
           onPageChange={handlePageChange}
         />
       </div>
-    </main>
+    </AdminPageShell>
   );
 }

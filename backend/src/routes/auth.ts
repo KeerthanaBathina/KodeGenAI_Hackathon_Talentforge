@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Response } from 'express';
 import { z } from 'zod';
 import { createHash } from 'crypto';
 import {
@@ -29,6 +29,7 @@ import { passwordResetRateLimitMiddleware } from '../middleware/passwordResetRat
 import { auditEvent } from '../services/auditService';
 import { buildAuditContextFromRequest } from '../services/auditContextService';
 import { AUDIT_EVENT_TYPES } from '../constants/auditEventTypes';
+import { env } from '../config/env';
 import logger from '../utils/logger';
 
 const registerSchema = z.object({
@@ -54,6 +55,58 @@ const loginSchema = z.object({
 });
 
 const router = Router();
+
+const ROLE_REDIRECT_MAP: Record<string, string> = {
+  candidate: '/candidate/dashboard',
+  hr_reviewer: '/hr/dashboard',
+  hr_manager: '/hr/dashboard',
+  admin: '/admin/health',
+};
+
+const EMAIL_REDIRECT_MAP: Record<string, string> = {
+  'hr-reviewer@dev.local': '/hr/dashboard',
+  'hr-manager@dev.local': '/hr/dashboard',
+  'admin@dev.local': '/admin/health',
+};
+
+function resolvePostLoginRedirect(role?: string, email?: string): string {
+  const normalizedEmail = email?.trim().toLowerCase();
+  if (normalizedEmail && EMAIL_REDIRECT_MAP[normalizedEmail]) {
+    return EMAIL_REDIRECT_MAP[normalizedEmail];
+  }
+
+  if (role && ROLE_REDIRECT_MAP[role]) {
+    return ROLE_REDIRECT_MAP[role];
+  }
+
+  return '/candidate/dashboard';
+}
+
+function buildFrontendUrl(pathname: string, params?: Record<string, string | undefined>): string {
+  const url = new URL(pathname, env.FRONTEND_URL);
+  if (params) {
+    Object.entries(params).forEach(([key, value]) => {
+      if (value) {
+        url.searchParams.set(key, value);
+      }
+    });
+  }
+
+  return url.toString();
+}
+
+function redirectToOAuthError(
+  res: Response,
+  provider: 'google' | 'github',
+  code: string
+): void {
+  res.redirect(
+    buildFrontendUrl('/login', {
+      oauthError: code,
+      oauthProvider: provider,
+    })
+  );
+}
 
 router.post('/register', async (req, res) => {
   const parsed = registerSchema.safeParse(req.body);
@@ -287,25 +340,7 @@ router.post('/login', async (req, res) => {
 
     res.cookie('auth_token', token, options);
 
-    // Determine redirect URL based on role
-    const redirectMap: Record<string, string> = {
-      candidate: '/jobs',
-      hr_reviewer: '/hr/dashboard',
-      hr_manager: '/hr/dashboard',
-      admin: '/admin/health',
-    };
-
-    const emailRedirectMap: Record<string, string> = {
-      'hr-reviewer@dev.local': '/hr/dashboard',
-      'hr-manager@dev.local': '/hr/dashboard',
-      'admin@dev.local': '/admin/health',
-    };
-
-    const normalizedEmail = result.user.email?.trim().toLowerCase();
-    const redirectTo =
-      (normalizedEmail ? emailRedirectMap[normalizedEmail] : undefined)
-      || redirectMap[result.user.role]
-      || '/jobs';
+    const redirectTo = resolvePostLoginRedirect(result.user.role, result.user.email);
 
     res.status(200).json({
       success: true,
@@ -412,18 +447,23 @@ router.get('/oauth/google', (req, res) => {
     const authUrl = getGoogleAuthUrl(state);
     res.redirect(authUrl);
   } catch (error) {
+    if (error instanceof OAuthError && error.code === 'PROVIDER_NOT_CONFIGURED') {
+      logger.warn({ error }, 'Google OAuth is not configured');
+      redirectToOAuthError(res, 'google', 'provider_not_configured');
+      return;
+    }
+
     logger.error({ error }, 'auth: Google OAuth initiation failed');
-    res.status(500).json({ message: 'Unable to initiate Google OAuth' });
+    redirectToOAuthError(res, 'google', 'oauth_init_failed');
   }
 });
 
 // OAuth: Google callback
 router.get('/oauth/google/callback', async (req, res) => {
-  const code = req.query.code as string;
-  const state = req.query.state as string | undefined;
+  const code = typeof req.query.code === 'string' ? req.query.code : undefined;
 
   if (!code) {
-    res.status(400).json({ message: 'Authorization code is required' });
+    redirectToOAuthError(res, 'google', 'missing_code');
     return;
   }
 
@@ -441,36 +481,35 @@ router.get('/oauth/google/callback', async (req, res) => {
     // Generate JWT and set cookie
     const { token, options } = JwtService.createAuthCookie({
       sub: result.user.id,
+      email: result.user.email,
       role: result.user.role,
       candidateId: result.user.candidateId,
     });
 
     res.cookie('auth_token', token, options);
 
-    // Redirect to appropriate dashboard
-    const redirectMap: Record<string, string> = {
-      candidate: '/jobs',
-      hr_reviewer: '/hr/dashboard',
-      hr_manager: '/hr/dashboard',
-      admin: '/admin/health',
-    };
-
-    const redirectTo = redirectMap[result.user.role] || '/jobs';
-    res.redirect(redirectTo);
+    const redirectTo = resolvePostLoginRedirect(result.user.role, result.user.email);
+    res.redirect(buildFrontendUrl(redirectTo));
   } catch (error) {
     if (error instanceof OAuthError) {
       logger.error({ error, code: error.code }, 'Google OAuth callback failed');
-      res.status(400).json({
-        error: {
-          code: error.code,
-          message: error.message,
-        },
-      });
+      const errorCodeMap: Record<string, string> = {
+        INVALID_CODE: 'invalid_code',
+        EMAIL_REQUIRED: 'email_required',
+        ACCOUNT_UNAVAILABLE: 'account_unavailable',
+        PROVIDER_NOT_CONFIGURED: 'provider_not_configured',
+      };
+
+      redirectToOAuthError(
+        res,
+        'google',
+        errorCodeMap[error.code] ?? 'oauth_failed'
+      );
       return;
     }
 
     logger.error({ error }, 'auth: Google OAuth callback failed');
-    res.status(500).json({ message: 'Unable to process OAuth callback' });
+    redirectToOAuthError(res, 'google', 'oauth_failed');
   }
 });
 
@@ -481,18 +520,23 @@ router.get('/oauth/github', (req, res) => {
     const authUrl = getGitHubAuthUrl(state);
     res.redirect(authUrl);
   } catch (error) {
+    if (error instanceof OAuthError && error.code === 'PROVIDER_NOT_CONFIGURED') {
+      logger.warn({ error }, 'GitHub OAuth is not configured');
+      redirectToOAuthError(res, 'github', 'provider_not_configured');
+      return;
+    }
+
     logger.error({ error }, 'auth: GitHub OAuth initiation failed');
-    res.status(500).json({ message: 'Unable to initiate GitHub OAuth' });
+    redirectToOAuthError(res, 'github', 'oauth_init_failed');
   }
 });
 
 // OAuth: GitHub callback
 router.get('/oauth/github/callback', async (req, res) => {
-  const code = req.query.code as string;
-  const state = req.query.state as string | undefined;
+  const code = typeof req.query.code === 'string' ? req.query.code : undefined;
 
   if (!code) {
-    res.status(400).json({ message: 'Authorization code is required' });
+    redirectToOAuthError(res, 'github', 'missing_code');
     return;
   }
 
@@ -510,36 +554,35 @@ router.get('/oauth/github/callback', async (req, res) => {
     // Generate JWT and set cookie
     const { token, options } = JwtService.createAuthCookie({
       sub: result.user.id,
+      email: result.user.email,
       role: result.user.role,
       candidateId: result.user.candidateId,
     });
 
     res.cookie('auth_token', token, options);
 
-    // Redirect to appropriate dashboard
-    const redirectMap: Record<string, string> = {
-      candidate: '/jobs',
-      hr_reviewer: '/hr/dashboard',
-      hr_manager: '/hr/dashboard',
-      admin: '/admin/health',
-    };
-
-    const redirectTo = redirectMap[result.user.role] || '/jobs';
-    res.redirect(redirectTo);
+    const redirectTo = resolvePostLoginRedirect(result.user.role, result.user.email);
+    res.redirect(buildFrontendUrl(redirectTo));
   } catch (error) {
     if (error instanceof OAuthError) {
       logger.error({ error, code: error.code }, 'GitHub OAuth callback failed');
-      res.status(400).json({
-        error: {
-          code: error.code,
-          message: error.message,
-        },
-      });
+      const errorCodeMap: Record<string, string> = {
+        INVALID_CODE: 'invalid_code',
+        EMAIL_REQUIRED: 'email_required',
+        ACCOUNT_UNAVAILABLE: 'account_unavailable',
+        PROVIDER_NOT_CONFIGURED: 'provider_not_configured',
+      };
+
+      redirectToOAuthError(
+        res,
+        'github',
+        errorCodeMap[error.code] ?? 'oauth_failed'
+      );
       return;
     }
 
     logger.error({ error }, 'auth: GitHub OAuth callback failed');
-    res.status(500).json({ message: 'Unable to process OAuth callback' });
+    redirectToOAuthError(res, 'github', 'oauth_failed');
   }
 });
 

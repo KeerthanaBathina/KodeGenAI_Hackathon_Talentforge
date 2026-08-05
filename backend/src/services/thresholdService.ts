@@ -25,6 +25,17 @@ export interface AuditRequestContext {
   userAgent?: string | null;
 }
 
+const SCREENING_THRESHOLD_SELECT = {
+  id: true,
+  shortlistThreshold: true,
+  borderlineMin: true,
+  borderlineMax: true,
+  rejectThreshold: true,
+  version: true,
+  effectiveFrom: true,
+  createdAt: true,
+} as const;
+
 // In-memory cache for active thresholds
 let cachedThresholds: ScreeningThresholds | null = null;
 let cacheTimestamp: number = 0;
@@ -106,6 +117,7 @@ export async function getEffectiveThreshold(
     orderBy: {
       effectiveFrom: 'desc',
     },
+    select: SCREENING_THRESHOLD_SELECT,
   });
 
   if (!thresholds) {
@@ -171,6 +183,7 @@ export async function createScreeningThresholdVersion(
   // Get latest version for comparison
   const latestVersion = await prisma.screeningThreshold.findFirst({
     orderBy: { version: 'desc' },
+    select: SCREENING_THRESHOLD_SELECT,
   });
 
   const newVersion = (latestVersion?.version || 0) + 1;
@@ -181,6 +194,7 @@ export async function createScreeningThresholdVersion(
       ...data,
       version: newVersion,
     },
+    select: SCREENING_THRESHOLD_SELECT,
   });
 
   // Log audit event with before/after values
@@ -257,6 +271,7 @@ export async function getThresholdHistory(
   return (await prisma.screeningThreshold.findMany({
     orderBy: [{ effectiveFrom: 'desc' }, { createdAt: 'desc' }],
     take: limit,
+    select: SCREENING_THRESHOLD_SELECT,
   })) as Array<ScreeningThresholds & { changedBy?: string }>;
 }
 

@@ -34,16 +34,16 @@ export function AuditLogFilters({
 
   return (
     <section
-      className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+      className="rounded-2xl border border-[var(--admin-color-border)] bg-[var(--admin-color-surface-0)] p-4 shadow-[var(--admin-shadow-sm)]"
       aria-labelledby="audit-log-filters-heading"
     >
-      <div className="mb-4 flex items-center justify-between gap-4">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 id="audit-log-filters-heading" className="text-lg font-semibold text-gray-900">
-            Audit Filters
+          <h2 id="audit-log-filters-heading" className="admin-heading text-lg font-semibold text-[var(--admin-color-ink-primary)]">
+            Audit Log Filters
           </h2>
-          <p className="text-sm text-gray-600">
-            Refine the event stream by actor, event type, entity, and date range.
+          <p className="text-sm text-[var(--admin-color-ink-secondary)]">
+            Refine immutable events by actor, event type, entity, and date range.
           </p>
         </div>
         <div className="flex gap-2">
@@ -51,7 +51,7 @@ export function AuditLogFilters({
             type="button"
             onClick={onClear}
             disabled={disabled}
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-9 rounded-md border border-[var(--admin-color-border)] px-3 text-sm font-medium text-[var(--admin-color-ink-secondary)] hover:bg-[var(--admin-color-surface-1)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             Clear Filters
           </button>
@@ -59,16 +59,16 @@ export function AuditLogFilters({
             type="button"
             onClick={onApply}
             disabled={disabled}
-            className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-9 rounded-md bg-[var(--admin-color-brand-primary)] px-3 text-sm font-semibold text-white hover:bg-[var(--admin-color-brand-primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             Apply Filters
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
         <div>
-          <label htmlFor="audit-filter-actor-email" className="mb-1 block text-sm font-medium text-gray-700">
+          <label htmlFor="audit-filter-actor-email" className="mb-1 block text-xs font-semibold uppercase tracking-[0.06em] text-[var(--admin-color-ink-tertiary)]">
             Actor Email
           </label>
           <input
@@ -78,12 +78,12 @@ export function AuditLogFilters({
             value={value.actorEmail}
             onChange={(event) => updateField('actorEmail', event.target.value)}
             placeholder="auditor@example.com"
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+            className="h-9 w-full rounded-md border border-[var(--admin-color-border)] px-2.5 text-sm text-[var(--admin-color-ink-primary)] placeholder:text-[var(--admin-color-ink-tertiary)] focus:border-[var(--admin-color-brand-primary)] focus:outline-none"
           />
         </div>
 
         <div>
-          <label htmlFor="audit-filter-entity-type" className="mb-1 block text-sm font-medium text-gray-700">
+          <label htmlFor="audit-filter-entity-type" className="mb-1 block text-xs font-semibold uppercase tracking-[0.06em] text-[var(--admin-color-ink-tertiary)]">
             Entity Type
           </label>
           <select
@@ -91,7 +91,7 @@ export function AuditLogFilters({
             data-testid="audit-filter-entity-type"
             value={value.entityType}
             onChange={(event) => updateField('entityType', event.target.value)}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+            className="h-9 w-full rounded-md border border-[var(--admin-color-border)] px-2.5 text-sm text-[var(--admin-color-ink-primary)] focus:border-[var(--admin-color-brand-primary)] focus:outline-none"
           >
             <option value="">All entities</option>
             {AUDIT_ENTITY_TYPE_OPTIONS.map((entityType) => (
@@ -103,7 +103,7 @@ export function AuditLogFilters({
         </div>
 
         <div>
-          <label htmlFor="audit-filter-entity-id" className="mb-1 block text-sm font-medium text-gray-700">
+          <label htmlFor="audit-filter-entity-id" className="mb-1 block text-xs font-semibold uppercase tracking-[0.06em] text-[var(--admin-color-ink-tertiary)]">
             Entity ID
           </label>
           <input
@@ -113,12 +113,12 @@ export function AuditLogFilters({
             value={value.entityId}
             onChange={(event) => updateField('entityId', event.target.value)}
             placeholder="UUID or domain identifier"
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+            className="h-9 w-full rounded-md border border-[var(--admin-color-border)] px-2.5 text-sm text-[var(--admin-color-ink-primary)] placeholder:text-[var(--admin-color-ink-tertiary)] focus:border-[var(--admin-color-brand-primary)] focus:outline-none"
           />
         </div>
 
         <div>
-          <label htmlFor="audit-filter-from" className="mb-1 block text-sm font-medium text-gray-700">
+          <label htmlFor="audit-filter-from" className="mb-1 block text-xs font-semibold uppercase tracking-[0.06em] text-[var(--admin-color-ink-tertiary)]">
             From Date
           </label>
           <input
@@ -127,12 +127,12 @@ export function AuditLogFilters({
             type="date"
             value={value.from}
             onChange={(event) => updateField('from', event.target.value)}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+            className="h-9 w-full rounded-md border border-[var(--admin-color-border)] px-2.5 text-sm text-[var(--admin-color-ink-primary)] focus:border-[var(--admin-color-brand-primary)] focus:outline-none"
           />
         </div>
 
         <div>
-          <label htmlFor="audit-filter-to" className="mb-1 block text-sm font-medium text-gray-700">
+          <label htmlFor="audit-filter-to" className="mb-1 block text-xs font-semibold uppercase tracking-[0.06em] text-[var(--admin-color-ink-tertiary)]">
             To Date
           </label>
           <input
@@ -141,12 +141,12 @@ export function AuditLogFilters({
             type="date"
             value={value.to}
             onChange={(event) => updateField('to', event.target.value)}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+            className="h-9 w-full rounded-md border border-[var(--admin-color-border)] px-2.5 text-sm text-[var(--admin-color-ink-primary)] focus:border-[var(--admin-color-brand-primary)] focus:outline-none"
           />
         </div>
 
         <div>
-          <label htmlFor="audit-filter-event-types" className="mb-1 block text-sm font-medium text-gray-700">
+          <label htmlFor="audit-filter-event-types" className="mb-1 block text-xs font-semibold uppercase tracking-[0.06em] text-[var(--admin-color-ink-tertiary)]">
             Event Types
           </label>
           <select
@@ -158,7 +158,7 @@ export function AuditLogFilters({
               const selected = Array.from(event.target.selectedOptions).map((option) => option.value);
               updateField('eventTypes', selected);
             }}
-            className="h-36 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+            className="h-20 w-full rounded-md border border-[var(--admin-color-border)] px-2.5 py-1.5 text-sm text-[var(--admin-color-ink-primary)] focus:border-[var(--admin-color-brand-primary)] focus:outline-none"
           >
             {AUDIT_EVENT_TYPE_OPTIONS.map((eventType) => (
               <option key={eventType} value={eventType}>
@@ -166,7 +166,7 @@ export function AuditLogFilters({
               </option>
             ))}
           </select>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-[var(--admin-color-ink-tertiary)]">
             Hold Ctrl (Windows) or Command (Mac) to select multiple event types.
           </p>
         </div>

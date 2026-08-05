@@ -1,5 +1,6 @@
+import React from "react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { UserListTable } from "@/components/admin/UserListTable";
 import * as adminUserService from "@/services/adminUserService";
 import { ToastProvider } from "@/contexts/ToastContext";
@@ -11,11 +12,15 @@ vi.mock("@/services/adminUserService");
 
 // Mock toast context
 const mockShowToast = vi.fn();
-vi.mock("@/contexts/ToastContext", () => ({
-  useToast: () => ({
-    showToast: mockShowToast,
-  }),
-}));
+vi.mock("@/contexts/ToastContext", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/contexts/ToastContext")>();
+  return {
+    ...actual,
+    useToast: () => ({
+      addToast: mockShowToast,
+    }),
+  };
+});
 
 const mockUsers: User[] = [
   {
@@ -179,9 +184,9 @@ describe("UserListTable", () => {
     );
 
     await waitFor(() => {
-      const editButtons = screen.getAllByText("Edit Role");
-      const johnEditButton = editButtons[0]; // John Doe (current user)
-      expect(johnEditButton).toBeDisabled();
+      const johnRow = screen.getByText("John Doe").closest("tr");
+      expect(johnRow).not.toBeNull();
+      expect(within(johnRow!).getByText("Edit Role")).toBeDisabled();
     });
   });
 
@@ -193,9 +198,9 @@ describe("UserListTable", () => {
     );
 
     await waitFor(() => {
-      const deactivateButtons = screen.getAllByText("Deactivate");
-      const johnDeactivateButton = deactivateButtons[0]; // John Doe
-      expect(johnDeactivateButton).toBeDisabled();
+      const johnRow = screen.getByText("John Doe").closest("tr");
+      expect(johnRow).not.toBeNull();
+      expect(within(johnRow!).getByText("Deactivate")).toBeDisabled();
     });
   });
 

@@ -19,14 +19,28 @@ import prisma from '../db/prisma';
 
 const router = express.Router();
 
+const ACTIVE_APPLICATION_STATUSES = [
+    'submitted',
+    'screening',
+    'pending_review',
+    'shortlisted',
+    'interviewing',
+    'offer_pending',
+    'offered',
+] as const;
+
+// Accept PostgreSQL UUID textual format without enforcing specific RFC version bits.
+const UUID_COMPATIBLE_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const RequisitionIdSchema = z.string().regex(UUID_COMPATIBLE_REGEX);
+
 // ==================== Draft Routes ====================
 
 // Zod schemas for validation
 const DraftDataStep1Schema = z.object({
     fullName: z.string().optional(),
-    email: z.string().email().optional(),
+    email: z.string().optional(),
     phone: z.string().optional(),
-    linkedinUrl: z.string().url().optional(),
+    linkedinUrl: z.string().optional(),
 });
 
 const DraftDataStep2Schema = z.object({
@@ -43,13 +57,47 @@ const DraftDataSchema = z.object({
     step1_personal: DraftDataStep1Schema.optional(),
     step2_experience: DraftDataStep2Schema.optional(),
     step3_coverLetter: DraftDataStep3Schema.optional(),
+    resumeSetupOnly: z.boolean().optional(),
     currentStep: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
 });
 
 const SaveDraftBodySchema = z.object({
-    requisitionId: z.string().uuid(),
+    requisitionId: RequisitionIdSchema,
     draftData: DraftDataSchema,
 });
+
+const CandidateApplicationsQuerySchema = z.object({
+    scope: z.enum(['all', 'active']).optional().default('all'),
+    limit: z.coerce.number().int().min(1).max(100).optional().default(50),
+});
+
+type ResumeParsePopulationStatus = 'pending_consent' | 'pending_profile_sync' | 'applied';
+
+function isJsonRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function readResumeParsePopulationStatus(scanResult: unknown): ResumeParsePopulationStatus | null {
+    if (!isJsonRecord(scanResult)) {
+        return null;
+    }
+
+    const status = scanResult.parsePopulationStatus;
+    if (status === 'pending_consent' || status === 'pending_profile_sync' || status === 'applied') {
+        return status;
+    }
+
+    return null;
+}
+
+function readResumeParseMergeSummary(scanResult: unknown): Record<string, unknown> | null {
+    if (!isJsonRecord(scanResult)) {
+        return null;
+    }
+
+    const summary = scanResult.parseMergeSummary;
+    return isJsonRecord(summary) ? summary : null;
+}
 
 /**
  * POST /api/applications/drafts
@@ -116,7 +164,7 @@ router.get('/drafts/:requisitionId', authenticate, async (req, res) => {
     try {
         const { requisitionId } = req.params;
 
-        if (!z.string().uuid().safeParse(requisitionId).success) {
+        if (!RequisitionIdSchema.safeParse(requisitionId).success) {
             return res.status(400).json({
                 error: {
                     code: 'INVALID_REQUISITION_ID',
@@ -169,7 +217,7 @@ router.post('/drafts/:requisitionId/submit', authenticate, async (req, res) => {
     try {
         const { requisitionId } = req.params;
 
-        if (!z.string().uuid().safeParse(requisitionId).success) {
+        if (!RequisitionIdSchema.safeParse(requisitionId).success) {
             return res.status(400).json({
                 error: {
                     code: 'INVALID_REQUISITION_ID',
@@ -243,6 +291,17 @@ router.get('/by-requisition/:requisitionId', authenticate, async (req, res) => {
             orderBy: {
                 createdAt: 'desc',
             },
+            include: {
+                resume: {
+                    select: {
+                        id: true,
+                        scanStatus: true,
+                        uploadedAt: true,
+                        parsedData: true,
+                        scanResult: true,
+                    },
+                },
+            },
         });
 
         if (!application) {
@@ -254,7 +313,21 @@ router.get('/by-requisition/:requisitionId', authenticate, async (req, res) => {
             });
         }
 
-        return res.status(200).json(application);
+        const responsePayload = {
+            ...application,
+            resume: application.resume
+                ? {
+                      id: application.resume.id,
+                      scanStatus: application.resume.scanStatus,
+                      uploadedAt: application.resume.uploadedAt,
+                      parsedData: application.resume.parsedData,
+                      parsePopulationStatus: readResumeParsePopulationStatus(application.resume.scanResult),
+                      parseMergeSummary: readResumeParseMergeSummary(application.resume.scanResult),
+                  }
+                : null,
+        };
+
+        return res.status(200).json(responsePayload);
     } catch (error) {
         logger.error('Error fetching application by requisition', {
             error: error instanceof Error ? error.message : String(error),
@@ -266,6 +339,100 @@ router.get('/by-requisition/:requisitionId', authenticate, async (req, res) => {
             error: {
                 code: 'INTERNAL_SERVER_ERROR',
                 message: 'An error occurred while fetching the application',
+            },
+        });
+    }
+});
+
+/**
+ * GET /api/applications/mine
+ * List authenticated candidate's applications (all or active only)
+ */
+router.get('/mine', authenticate, async (req, res) => {
+    try {
+        const validation = CandidateApplicationsQuerySchema.safeParse(req.query);
+
+        if (!validation.success) {
+            return res.status(400).json({
+                error: {
+                    code: 'INVALID_QUERY_PARAMS',
+                    message: 'Invalid query parameters',
+                    details: validation.error.errors,
+                },
+            });
+        }
+
+        const { scope, limit } = validation.data;
+        const candidateId = req.user!.id;
+
+        const applications = await prisma.application.findMany({
+            where: {
+                candidateId,
+                ...(scope === 'active'
+                    ? {
+                          status: { in: [...ACTIVE_APPLICATION_STATUSES] },
+                          draftSavedAt: null,
+                      }
+                    : {
+                          OR: [
+                              {
+                                  status: 'draft',
+                                  NOT: {
+                                      draftData: {
+                                          path: ['resumeSetupOnly'],
+                                          equals: true,
+                                      },
+                                  },
+                              },
+                              { draftSavedAt: null },
+                          ],
+                      }),
+            },
+            orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+            take: limit,
+            select: {
+                id: true,
+                candidateId: true,
+                requisitionId: true,
+                status: true,
+                path: true,
+                pathOverridden: true,
+                draftSavedAt: true,
+                submittedAt: true,
+                createdAt: true,
+                updatedAt: true,
+                requisition: {
+                    select: {
+                        id: true,
+                        title: true,
+                        department: true,
+                        location: true,
+                        jobType: true,
+                        slots: true,
+                        filledSlots: true,
+                        minExperienceYears: true,
+                    },
+                },
+            },
+        });
+
+        return res.status(200).json({
+            data: applications,
+            meta: {
+                scope,
+                count: applications.length,
+            },
+        });
+    } catch (error) {
+        logger.error('Error listing candidate applications', {
+            error: error instanceof Error ? error.message : String(error),
+            candidateId: req.user?.id,
+        });
+
+        return res.status(500).json({
+            error: {
+                code: 'INTERNAL_SERVER_ERROR',
+                message: 'An error occurred while listing applications',
             },
         });
     }

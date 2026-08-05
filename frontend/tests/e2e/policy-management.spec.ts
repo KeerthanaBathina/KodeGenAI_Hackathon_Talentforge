@@ -118,7 +118,7 @@ test.describe("Policy Management - End to End", () => {
       expect(width).toContain("20%");
     });
 
-    it("should show current version with badge", async ({ page }) => {
+    test("should show current version with badge", async ({ page }) => {
       await page.goto("/admin/policies");
       await page.click('button[role="tab"]:has-text("History")');
 

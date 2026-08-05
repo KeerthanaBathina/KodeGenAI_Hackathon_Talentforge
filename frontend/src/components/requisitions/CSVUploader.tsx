@@ -3,21 +3,13 @@
 import React, { useRef, useState } from 'react';
 import { useToast } from '@/contexts/ToastContext';
 import { getAuthToken } from '@/lib/auth';
+import { buildApiUrl } from '@/lib/api/url';
 import type { ImportResultData } from './types';
 
 interface CSVUploaderProps {
   onUploadStart: () => void;
   onUploadComplete: (result: ImportResultData) => void;
   isUploading: boolean;
-}
-
-function getApiUrl(pathname: string): string {
-  const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-  if (!base || (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')) {
-    return pathname;
-  }
-
-  return `${base}${pathname}`;
 }
 
 function emptyImportResult(message: string): ImportResultData {
@@ -114,7 +106,7 @@ export function CSVUploader({ onUploadStart, onUploadComplete, isUploading }: CS
       formData.append('file', selectedFile);
 
       const token = getAuthToken();
-      const response = await fetch(getApiUrl('/api/requisitions/bulk-import'), {
+      const response = await fetch(buildApiUrl('/api/requisitions/bulk-import'), {
         method: 'POST',
         credentials: 'include',
         headers: token

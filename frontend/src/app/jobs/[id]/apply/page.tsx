@@ -1,8 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { useAutoSave } from '@/hooks/useAutoSave';
+import { buildApiUrl } from '@/lib/api/url';
+import CandidateTopNav from '@/components/CandidateTopNav';
+import { ResumeUpload } from '@/components/ResumeUpload';
 
 interface FormData {
     step1_personal: {
@@ -25,12 +29,97 @@ interface FormErrors {
     [key: string]: string;
 }
 
-function getApiUrl(pathname: string): string {
-    const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-    if (!base || (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')) {
-        return pathname;
-    }
-    return `${base}${pathname}`;
+type ResumeParsePopulationStatus = 'pending_consent' | 'pending_profile_sync' | 'applied';
+
+interface ResumeParseMergeSummary {
+    source?: string;
+    appliedAt?: string;
+    createdProfile?: boolean;
+    populatedFields?: string[];
+    addedSkillsCount?: number;
+    totalSkills?: number;
+    importedEducationEntries?: number;
+    importedWorkHistoryEntries?: number;
+    importedExperienceYears?: boolean;
+    importedFullName?: boolean;
+}
+
+interface ExistingApplicationResponse {
+    id: string;
+    status: string;
+    draftData?: {
+        step1_personal?: FormData['step1_personal'];
+        step2_experience?: FormData['step2_experience'];
+        step3_coverLetter?: FormData['step3_coverLetter'];
+        currentStep?: number;
+    } | null;
+    resume?: {
+        id: string;
+        scanStatus: 'pending' | 'clean' | 'infected';
+        parsedData?: {
+            skills?: string[];
+        } | null;
+        parsePopulationStatus?: ResumeParsePopulationStatus | null;
+        parseMergeSummary?: ResumeParseMergeSummary | null;
+    } | null;
+}
+
+interface RequisitionMatchContext {
+    id: string;
+    title: string;
+    requiredSkills: string[];
+    preferredSkills: string[];
+}
+
+interface SkillMatchSummary {
+    matchedRequired: string[];
+    matchedPreferred: string[];
+    requiredCoveragePercent: number;
+    preferredCoveragePercent: number;
+    overallScorePercent: number;
+}
+
+function normalizeSkillToken(skill: string): string {
+    return skill.trim().toLowerCase();
+}
+
+function buildSkillMatchSummary(
+    parsedSkills: string[],
+    requiredSkills: string[],
+    preferredSkills: string[]
+): SkillMatchSummary {
+    const parsedSkillSet = new Set(
+        parsedSkills
+            .filter((skill) => typeof skill === 'string' && skill.trim().length > 0)
+            .map((skill) => normalizeSkillToken(skill))
+    );
+
+    const normalizedRequired = requiredSkills.filter((skill) => skill.trim().length > 0);
+    const normalizedPreferred = preferredSkills.filter((skill) => skill.trim().length > 0);
+
+    const matchedRequired = normalizedRequired.filter((skill) =>
+        parsedSkillSet.has(normalizeSkillToken(skill))
+    );
+    const matchedPreferred = normalizedPreferred.filter((skill) =>
+        parsedSkillSet.has(normalizeSkillToken(skill))
+    );
+
+    const requiredCoverage = normalizedRequired.length
+        ? matchedRequired.length / normalizedRequired.length
+        : 1;
+    const preferredCoverage = normalizedPreferred.length
+        ? matchedPreferred.length / normalizedPreferred.length
+        : 0;
+
+    const weightedScore = Math.round((requiredCoverage * 0.8 + preferredCoverage * 0.2) * 100);
+
+    return {
+        matchedRequired,
+        matchedPreferred,
+        requiredCoveragePercent: Math.round(requiredCoverage * 100),
+        preferredCoveragePercent: Math.round(preferredCoverage * 100),
+        overallScorePercent: weightedScore,
+    };
 }
 
 export default function ApplicationFormPage() {
@@ -59,14 +148,151 @@ export default function ApplicationFormPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [applicationStatus, setApplicationStatus] = useState<'draft' | 'submitted'>('draft');
+    const [applicationId, setApplicationId] = useState<string | null>(null);
+    const [hasUploadedResume, setHasUploadedResume] = useState(false);
+    const [resumeScanStatus, setResumeScanStatus] = useState<'none' | 'pending' | 'clean' | 'infected'>('none');
+    const [isResumeParsed, setIsResumeParsed] = useState(false);
+    const [resumePopulationStatus, setResumePopulationStatus] = useState<
+        ResumeParsePopulationStatus | 'none'
+    >('none');
+    const [resumeMergeSummary, setResumeMergeSummary] = useState<ResumeParseMergeSummary | null>(
+        null
+    );
+    const [parsedResumeSkills, setParsedResumeSkills] = useState<string[]>([]);
+    const [parsedResumeSkillsCount, setParsedResumeSkillsCount] = useState(0);
+    const [initializingResumeUpload, setInitializingResumeUpload] = useState(false);
+    const [requisitionMatchContext, setRequisitionMatchContext] = useState<RequisitionMatchContext | null>(null);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+    function applyResumeState(application: ExistingApplicationResponse | null) {
+        const resume = application?.resume;
+
+        if (!resume?.id) {
+            setHasUploadedResume(false);
+            setResumeScanStatus('none');
+            setIsResumeParsed(false);
+            setResumePopulationStatus('none');
+            setResumeMergeSummary(null);
+            setParsedResumeSkills([]);
+            setParsedResumeSkillsCount(0);
+            return;
+        }
+
+        const parsedSkills = Array.isArray(resume.parsedData?.skills)
+            ? resume.parsedData.skills.filter((skill) => typeof skill === 'string' && skill.trim().length > 0)
+            : [];
+
+        setHasUploadedResume(true);
+        setResumeScanStatus(resume.scanStatus ?? 'pending');
+        setIsResumeParsed(Boolean(resume.parsedData));
+        setResumePopulationStatus(resume.parsePopulationStatus ?? 'none');
+        setResumeMergeSummary(resume.parseMergeSummary ?? null);
+        setParsedResumeSkills(parsedSkills);
+        setParsedResumeSkillsCount(parsedSkills.length);
+    }
+
+    function getResumeProcessingMessage(): string {
+        if (resumeScanStatus === 'infected') {
+            return 'The uploaded resume failed security scanning. Please upload a clean file.';
+        }
+
+        if (resumeScanStatus === 'pending') {
+            return 'Resume uploaded. Security scan and parsing are in progress.';
+        }
+
+        if (resumeScanStatus !== 'clean') {
+            return 'Upload your resume to enable AI skill extraction before submission.';
+        }
+
+        if (!isResumeParsed) {
+            return 'Resume passed security scanning. AI skill extraction is still in progress.';
+        }
+
+        if (resumePopulationStatus === 'pending_consent') {
+            return 'Resume parsing is complete, but skill matching is paused until privacy consent is accepted.';
+        }
+
+        if (resumePopulationStatus === 'pending_profile_sync') {
+            return 'Resume parsing is complete. Applying extracted profile updates now.';
+        }
+
+        if (parsedResumeSkillsCount > 0) {
+            return `Resume parsed successfully. Extracted ${parsedResumeSkillsCount} skills for job matching.`;
+        }
+
+        return 'Resume parsed successfully. No skills were detected, please review profile skills before submitting.';
+    }
+
+    function buildDraftPayload() {
+        return {
+            requisitionId,
+            draftData: {
+                step1_personal: formData.step1_personal,
+                step2_experience: formData.step2_experience,
+                step3_coverLetter: formData.step3_coverLetter,
+                currentStep,
+            },
+        };
+    }
+
+    async function ensureDraftApplicationId(): Promise<string> {
+        if (applicationId) {
+            return applicationId;
+        }
+
+        const response = await fetch(buildApiUrl('/api/applications/drafts'), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify(buildDraftPayload()),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            throw new Error(errorData?.error?.message || 'Unable to initialize draft for resume upload');
+        }
+
+        const payload = await response.json();
+        if (!payload?.id || typeof payload.id !== 'string') {
+            throw new Error('Unable to initialize draft for resume upload');
+        }
+
+        setApplicationId(payload.id);
+        return payload.id;
+    }
 
     // Load profile and draft on mount
     useEffect(() => {
         async function loadData() {
             try {
+                const requisitionResponse = await fetch(buildApiUrl(`/api/requisitions/${requisitionId}`), {
+                    credentials: 'include',
+                });
+
+                if (requisitionResponse.ok) {
+                    const requisition = await requisitionResponse.json();
+                    setRequisitionMatchContext({
+                        id: requisition.id,
+                        title: requisition.title,
+                        requiredSkills: Array.isArray(requisition.requiredSkills)
+                            ? requisition.requiredSkills.filter(
+                                  (skill: unknown): skill is string =>
+                                      typeof skill === 'string' && skill.trim().length > 0
+                              )
+                            : [],
+                        preferredSkills: Array.isArray(requisition.preferredSkills)
+                            ? requisition.preferredSkills.filter(
+                                  (skill: unknown): skill is string =>
+                                      typeof skill === 'string' && skill.trim().length > 0
+                              )
+                            : [],
+                    });
+                }
+
                 // Load profile data
-                const profileResponse = await fetch(getApiUrl('/api/profile'), {
+                const profileResponse = await fetch(buildApiUrl('/api/profile'), {
                     credentials: 'include',
                 });
 
@@ -87,25 +313,37 @@ export default function ApplicationFormPage() {
                     }));
                 }
 
-                // Load draft if exists
-                const draftResponse = await fetch(getApiUrl(`/api/applications/drafts/${requisitionId}`), {
+                // Load latest application state for this requisition (draft/resume)
+                const applicationResponse = await fetch(buildApiUrl(`/api/applications/by-requisition/${requisitionId}`), {
                     credentials: 'include',
                 });
 
-                if (draftResponse.status === 401) {
+                if (applicationResponse.status === 401) {
                     router.replace('/register?next=/profile');
                     return;
                 }
 
-                if (draftResponse.ok) {
-                    const draft = await draftResponse.json();
-                    if (draft.draftData) {
-                        setFormData({
-                            step1_personal: draft.draftData.step1_personal || formData.step1_personal,
-                            step2_experience: draft.draftData.step2_experience || formData.step2_experience,
-                            step3_coverLetter: draft.draftData.step3_coverLetter || formData.step3_coverLetter,
-                        });
-                        setCurrentStep(draft.draftData.currentStep || 1);
+                if (applicationResponse.ok) {
+                    const existingApplication: ExistingApplicationResponse = await applicationResponse.json();
+                    setApplicationId(existingApplication.id);
+                    applyResumeState(existingApplication);
+
+                    if (existingApplication.status !== 'draft') {
+                        router.replace(`/applications/track/${existingApplication.id}`);
+                        return;
+                    }
+
+                    if (existingApplication.draftData) {
+                        setFormData((previous) => ({
+                            step1_personal: existingApplication.draftData?.step1_personal || previous.step1_personal,
+                            step2_experience: existingApplication.draftData?.step2_experience || previous.step2_experience,
+                            step3_coverLetter: existingApplication.draftData?.step3_coverLetter || previous.step3_coverLetter,
+                        }));
+
+                        if (typeof existingApplication.draftData.currentStep === 'number') {
+                            const safeStep = Math.min(4, Math.max(1, existingApplication.draftData.currentStep));
+                            setCurrentStep(safeStep);
+                        }
                     }
                 }
             } catch (error) {
@@ -117,6 +355,61 @@ export default function ApplicationFormPage() {
 
         loadData();
     }, [requisitionId]);
+
+    useEffect(() => {
+        if (!hasUploadedResume || !applicationId) {
+            return;
+        }
+
+        if (resumeScanStatus === 'infected') {
+            return;
+        }
+
+        if (
+            resumeScanStatus === 'clean' &&
+            isResumeParsed &&
+            (resumePopulationStatus === 'applied' || resumePopulationStatus === 'pending_consent')
+        ) {
+            return;
+        }
+
+        let cancelled = false;
+
+        const refreshResumeState = async () => {
+            try {
+                const response = await fetch(
+                    buildApiUrl(`/api/applications/by-requisition/${requisitionId}`),
+                    { credentials: 'include' }
+                );
+
+                if (!response.ok || cancelled) {
+                    return;
+                }
+
+                const existingApplication: ExistingApplicationResponse = await response.json();
+                if (!cancelled) {
+                    applyResumeState(existingApplication);
+                }
+            } catch {
+                // Silent polling failure - user can continue manually.
+            }
+        };
+
+        refreshResumeState();
+        const intervalId = window.setInterval(refreshResumeState, 4000);
+
+        return () => {
+            cancelled = true;
+            window.clearInterval(intervalId);
+        };
+    }, [
+        applicationId,
+        hasUploadedResume,
+        isResumeParsed,
+        requisitionId,
+        resumePopulationStatus,
+        resumeScanStatus,
+    ]);
 
     // Auto-save hook integration
     const { isSaving, lastSavedAt } = useAutoSave({
@@ -269,7 +562,63 @@ export default function ApplicationFormPage() {
         setIsSubmitting(true);
 
         try {
-            const response = await fetch(getApiUrl(`/api/applications/drafts/${requisitionId}/submit`), {
+            const saveDraftResponse = await fetch(buildApiUrl('/api/applications/drafts'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify(buildDraftPayload()),
+            });
+
+            if (!saveDraftResponse.ok) {
+                const saveErrorData = await saveDraftResponse.json().catch(() => null);
+                throw new Error(saveErrorData?.error?.message || 'Unable to save draft before submission');
+            }
+
+            const saveDraftPayload = await saveDraftResponse.json().catch(() => null);
+            if (saveDraftPayload?.id && typeof saveDraftPayload.id === 'string') {
+                setApplicationId(saveDraftPayload.id);
+            }
+
+            let hasResumeForSubmission = hasUploadedResume;
+            const existingApplicationResponse = await fetch(
+                buildApiUrl(`/api/applications/by-requisition/${requisitionId}`),
+                { credentials: 'include' }
+            );
+
+            if (existingApplicationResponse.ok) {
+                const existingApplication: ExistingApplicationResponse = await existingApplicationResponse.json();
+                applyResumeState(existingApplication);
+
+                hasResumeForSubmission = Boolean(existingApplication.resume?.id);
+
+                if (existingApplication.resume?.scanStatus === 'infected') {
+                    throw new Error('Uploaded resume failed security scan. Please upload a clean resume and try again.');
+                }
+
+                if (existingApplication.resume?.scanStatus === 'pending') {
+                    throw new Error('Resume security scan is still in progress. Please wait before submitting.');
+                }
+
+                if (existingApplication.resume?.scanStatus === 'clean' && !existingApplication.resume?.parsedData) {
+                    throw new Error('Resume parsing is still in progress. Please wait for AI skill extraction to complete.');
+                }
+
+                if (existingApplication.resume?.parsePopulationStatus === 'pending_consent') {
+                    throw new Error('Please accept privacy consent before submitting so resume insights can be applied.');
+                }
+
+                if (existingApplication.resume?.parsePopulationStatus === 'pending_profile_sync') {
+                    throw new Error('Resume insights are still being applied to your profile. Please wait a few seconds and submit again.');
+                }
+            }
+
+            if (!hasResumeForSubmission) {
+                throw new Error('Please upload your resume before submitting the application.');
+            }
+
+            const response = await fetch(buildApiUrl(`/api/applications/drafts/${requisitionId}/submit`), {
                 method: 'POST',
                 credentials: 'include',
             });
@@ -314,14 +663,34 @@ export default function ApplicationFormPage() {
 
     if (isLoading) {
         return (
-            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <p>Loading application form...</p>
+            <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+                <CandidateTopNav active="jobs" />
+                <div style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <p>Loading application form...</p>
+                </div>
             </div>
         );
     }
 
+    const resumeReadyForSubmission =
+        hasUploadedResume &&
+        resumeScanStatus === 'clean' &&
+        isResumeParsed &&
+        resumePopulationStatus !== 'pending_consent' &&
+        resumePopulationStatus !== 'pending_profile_sync';
+    const skillMatchSummary = requisitionMatchContext
+        ? buildSkillMatchSummary(
+              parsedResumeSkills,
+              requisitionMatchContext.requiredSkills,
+              requisitionMatchContext.preferredSkills
+          )
+        : null;
+
     return (
-        <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', padding: '2rem' }}>
+        <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+            <CandidateTopNav active="jobs" />
+
+            <div style={{ padding: '2rem' }}>
             {/* Toast Notifications */}
             {toast && (
                 <div
@@ -407,7 +776,7 @@ export default function ApplicationFormPage() {
                         <span>Personal Info</span>
                         <span>Experience</span>
                         <span>Cover Letter</span>
-                        <span>Review</span>
+                        <span>Review & Resume</span>
                     </div>
                 </div>
 
@@ -676,6 +1045,144 @@ export default function ApplicationFormPage() {
                                     {formData.step3_coverLetter.coverLetter}
                                 </div>
                             </div>
+
+                            <div style={{ marginBottom: '2rem' }}>
+                                <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+                                    Resume Upload
+                                </h3>
+                                <p style={{ color: '#6b7280', fontSize: '0.875rem', marginBottom: '1rem' }}>
+                                    Uploading your resume enables automated skill extraction and improves job matching quality.
+                                </p>
+
+                                {!applicationId ? (
+                                    <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1rem' }}>
+                                        <p style={{ color: '#475569', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
+                                            Save your draft once to create an application ID before uploading a resume.
+                                        </p>
+                                        <button
+                                            type="button"
+                                            disabled={initializingResumeUpload}
+                                            onClick={async () => {
+                                                setInitializingResumeUpload(true);
+                                                try {
+                                                    await ensureDraftApplicationId();
+                                                    setToast({
+                                                        message: 'Draft initialized. You can now upload your resume.',
+                                                        type: 'success',
+                                                    });
+                                                } catch (error) {
+                                                    setToast({
+                                                        message: error instanceof Error ? error.message : 'Unable to initialize draft',
+                                                        type: 'error',
+                                                    });
+                                                } finally {
+                                                    setInitializingResumeUpload(false);
+                                                }
+                                            }}
+                                            style={{
+                                                padding: '0.625rem 1rem',
+                                                backgroundColor: initializingResumeUpload ? '#94a3b8' : '#3b82f6',
+                                                color: '#ffffff',
+                                                border: 'none',
+                                                borderRadius: '6px',
+                                                fontWeight: '600',
+                                                cursor: initializingResumeUpload ? 'not-allowed' : 'pointer',
+                                            }}
+                                        >
+                                            {initializingResumeUpload ? 'Preparing...' : 'Save Draft and Continue'}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <ResumeUpload
+                                            applicationId={applicationId}
+                                            existingResumeStatus={resumeScanStatus}
+                                            existingResumeParsed={isResumeParsed}
+                                            onSuccess={() => {
+                                                setHasUploadedResume(true);
+                                                setResumeScanStatus('pending');
+                                                setIsResumeParsed(false);
+                                                setResumePopulationStatus('none');
+                                                setResumeMergeSummary(null);
+                                                setParsedResumeSkills([]);
+                                                setParsedResumeSkillsCount(0);
+                                                setToast({
+                                                    message: 'Resume uploaded. Security scan and parsing are now running.',
+                                                    type: 'success',
+                                                });
+                                            }}
+                                            onError={(error) => {
+                                                setToast({ message: error, type: 'error' });
+                                            }}
+                                        />
+
+                                        {hasUploadedResume && (
+                                            <>
+                                                <p style={{ color: '#475569', fontSize: '0.875rem', marginTop: '0.75rem' }}>
+                                                    {getResumeProcessingMessage()}
+                                                </p>
+
+                                                {resumePopulationStatus === 'pending_consent' && (
+                                                    <div style={{ marginTop: '0.5rem' }}>
+                                                        <Link
+                                                            href={`/consent?returnTo=/jobs/${requisitionId}/apply`}
+                                                            style={{
+                                                                display: 'inline-block',
+                                                                padding: '0.5rem 0.75rem',
+                                                                borderRadius: '6px',
+                                                                backgroundColor: '#ea580c',
+                                                                color: '#ffffff',
+                                                                fontWeight: 600,
+                                                                textDecoration: 'none',
+                                                                fontSize: '0.8125rem',
+                                                            }}
+                                                        >
+                                                            Accept Privacy Consent
+                                                        </Link>
+                                                    </div>
+                                                )}
+
+                                                {resumeScanStatus === 'clean' &&
+                                                    isResumeParsed &&
+                                                    resumePopulationStatus !== 'pending_consent' &&
+                                                    skillMatchSummary && (
+                                                    <div
+                                                        style={{
+                                                            marginTop: '0.875rem',
+                                                            backgroundColor: '#f8fafc',
+                                                            border: '1px solid #e2e8f0',
+                                                            borderRadius: '8px',
+                                                            padding: '0.875rem',
+                                                        }}
+                                                    >
+                                                        <p style={{ margin: 0, color: '#0f172a', fontWeight: 600, fontSize: '0.875rem' }}>
+                                                            AI Skill Match for {requisitionMatchContext?.title ?? 'this job'}: {skillMatchSummary.overallScorePercent}%
+                                                        </p>
+                                                        <p style={{ margin: '0.375rem 0 0', color: '#475569', fontSize: '0.8125rem' }}>
+                                                            Required skills matched: {skillMatchSummary.matchedRequired.length}/
+                                                            {requisitionMatchContext?.requiredSkills.length ?? 0} ({skillMatchSummary.requiredCoveragePercent}%)
+                                                        </p>
+                                                        {(requisitionMatchContext?.preferredSkills.length ?? 0) > 0 && (
+                                                            <p style={{ margin: '0.25rem 0 0', color: '#475569', fontSize: '0.8125rem' }}>
+                                                                Preferred skills matched: {skillMatchSummary.matchedPreferred.length}/
+                                                                {requisitionMatchContext?.preferredSkills.length ?? 0} ({skillMatchSummary.preferredCoveragePercent}%)
+                                                            </p>
+                                                        )}
+
+                                                        {resumeMergeSummary && (
+                                                            <p style={{ margin: '0.25rem 0 0', color: '#334155', fontSize: '0.8125rem' }}>
+                                                                Profile sync updated {resumeMergeSummary.addedSkillsCount ?? 0} skills,{' '}
+                                                                {resumeMergeSummary.importedEducationEntries ?? 0} education entries, and{' '}
+                                                                {resumeMergeSummary.importedWorkHistoryEntries ?? 0} work entries.
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                    </>
+                                )}
+                            </div>
                         </div>
                     )}
 
@@ -715,22 +1222,43 @@ export default function ApplicationFormPage() {
                         ) : (
                             <button
                                 onClick={handleSubmit}
-                                disabled={isSubmitting || applicationStatus === 'submitted'}
+                                disabled={isSubmitting || applicationStatus === 'submitted' || !resumeReadyForSubmission}
                                 style={{
                                     padding: '0.75rem 1.5rem',
-                                    backgroundColor: isSubmitting || applicationStatus === 'submitted' ? '#93c5fd' : '#3b82f6',
+                                    backgroundColor:
+                                        isSubmitting || applicationStatus === 'submitted' || !resumeReadyForSubmission
+                                            ? '#93c5fd'
+                                            : '#3b82f6',
                                     color: 'white',
                                     border: 'none',
                                     borderRadius: '6px',
-                                    cursor: isSubmitting || applicationStatus === 'submitted' ? 'not-allowed' : 'pointer',
+                                    cursor:
+                                        isSubmitting || applicationStatus === 'submitted' || !resumeReadyForSubmission
+                                            ? 'not-allowed'
+                                            : 'pointer',
                                     fontWeight: '500',
                                 }}
                             >
-                                {isSubmitting ? 'Submitting...' : applicationStatus === 'submitted' ? 'Submitted' : 'Submit Application'}
+                                {isSubmitting
+                                    ? 'Submitting...'
+                                    : applicationStatus === 'submitted'
+                                        ? 'Submitted'
+                                        : !hasUploadedResume
+                                            ? 'Upload Resume to Submit'
+                                            : resumePopulationStatus === 'pending_consent'
+                                                ? 'Accept Privacy Consent To Continue'
+                                            : resumePopulationStatus === 'pending_profile_sync'
+                                                ? 'Applying Resume Insights'
+                                            : resumeScanStatus === 'pending'
+                                                ? 'Waiting For Security Scan'
+                                                : !isResumeParsed
+                                                    ? 'Waiting For AI Skill Extraction'
+                                            : 'Submit Application'}
                             </button>
                         )}
                     </div>
                 </div>
+            </div>
             </div>
         </div>
     );

@@ -1,7 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, FormEvent } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { buildApiUrl } from '@/lib/api/url';
+import CandidateTopNav from '@/components/CandidateTopNav';
+import { ResumeUpload } from '@/components/ResumeUpload';
 
 interface EducationEntry {
     institution: string;
@@ -21,26 +25,52 @@ interface WorkExperience {
     isCurrent: boolean;
 }
 
+interface CompletionStatus {
+    completedSections: string[];
+    percentage: number;
+    missingFields: string[];
+}
+
+interface OpenRequisitionOption {
+    id: string;
+    title: string;
+    department: string;
+    location: string;
+}
+
+type ResumeParsePopulationStatus = 'pending_consent' | 'pending_profile_sync' | 'applied';
+
+interface ResumeParseMergeSummary {
+    source?: string;
+    appliedAt?: string;
+    createdProfile?: boolean;
+    populatedFields?: string[];
+    addedSkillsCount?: number;
+    totalSkills?: number;
+    importedEducationEntries?: number;
+    importedWorkHistoryEntries?: number;
+    importedExperienceYears?: boolean;
+    importedFullName?: boolean;
+}
+
+interface ResumeStateSnapshot {
+    id: string;
+    scanStatus: 'pending' | 'clean' | 'infected';
+    parsedData?: {
+        skills?: string[];
+    } | null;
+    parsePopulationStatus?: ResumeParsePopulationStatus | null;
+    parseMergeSummary?: ResumeParseMergeSummary | null;
+}
+
+interface CandidateApplicationSnapshot {
+    id: string;
+    resume?: ResumeStateSnapshot | null;
+}
+
 function normalizeOptionalDate(value?: string): string | null {
     const normalized = value?.trim();
     return normalized ? normalized : null;
-}
-
-function getApiUrl(pathname: string): string {
-    const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-    const isLocalDevHost =
-        typeof window !== 'undefined' &&
-        (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost');
-
-    if (isLocalDevHost) {
-        return `http://localhost:3001${pathname}`;
-    }
-
-    if (!base) {
-        return pathname;
-    }
-
-    return `${base}${pathname}`;
 }
 
 function getInternalRedirectByRole(role: string | null): string | null {
@@ -85,6 +115,7 @@ export default function ProfilePage() {
 
     const [profileExists, setProfileExists] = useState(false);
     const [completionPercentage, setCompletionPercentage] = useState(0);
+    const [completionStatus, setCompletionStatus] = useState<CompletionStatus | null>(null);
 
     // Form state
     const [fullName, setFullName] = useState('');
@@ -93,6 +124,20 @@ export default function ProfilePage() {
     const [skillInput, setSkillInput] = useState('');
     const [education, setEducation] = useState<EducationEntry[]>([]);
     const [workHistory, setWorkHistory] = useState<WorkExperience[]>([]);
+    const [openRequisitions, setOpenRequisitions] = useState<OpenRequisitionOption[]>([]);
+    const [selectedResumeRequisitionId, setSelectedResumeRequisitionId] = useState('');
+    const [resumeUploadApplicationId, setResumeUploadApplicationId] = useState<string | null>(null);
+    const [initializingResumeUpload, setInitializingResumeUpload] = useState(false);
+    const [resumeContextError, setResumeContextError] = useState<string | null>(null);
+    const [resumeScanStatus, setResumeScanStatus] = useState<'none' | 'pending' | 'clean' | 'infected'>('none');
+    const [resumeParsedSkillsCount, setResumeParsedSkillsCount] = useState(0);
+    const [isResumeParsed, setIsResumeParsed] = useState(false);
+    const [resumePopulationStatus, setResumePopulationStatus] = useState<
+        ResumeParsePopulationStatus | 'none'
+    >('none');
+    const [resumeMergeSummary, setResumeMergeSummary] = useState<ResumeParseMergeSummary | null>(
+        null
+    );
 
     function buildAuthHeaders(): Record<string, string> {
         if (typeof window === 'undefined') {
@@ -106,6 +151,143 @@ export default function ProfilePage() {
 
         const token = localStorage.getItem('auth_token');
         return token ? { Authorization: `Bearer ${token}` } : {};
+    }
+
+    function applyResumeStateSnapshot(application: CandidateApplicationSnapshot | null): void {
+        setResumeUploadApplicationId(application?.id ?? null);
+
+        const resume = application?.resume;
+
+        if (!resume?.id) {
+            setResumeScanStatus('none');
+            setIsResumeParsed(false);
+            setResumeParsedSkillsCount(0);
+            setResumePopulationStatus('none');
+            setResumeMergeSummary(null);
+            return;
+        }
+
+        const parsedSkills = Array.isArray(resume.parsedData?.skills)
+            ? resume.parsedData.skills.filter(
+                  (skill): skill is string => typeof skill === 'string' && skill.trim().length > 0
+              )
+            : [];
+
+        setResumeScanStatus(resume.scanStatus ?? 'pending');
+        setIsResumeParsed(Boolean(resume.parsedData));
+        setResumeParsedSkillsCount(parsedSkills.length);
+        setResumePopulationStatus(resume.parsePopulationStatus ?? 'none');
+        setResumeMergeSummary(resume.parseMergeSummary ?? null);
+    }
+
+    function getResumeSyncStatusMessage(): string {
+        if (resumeScanStatus === 'infected') {
+            return 'Resume failed security scan. Upload a clean file to continue.';
+        }
+
+        if (resumeScanStatus === 'pending') {
+            return 'Resume uploaded. Security scan and AI extraction are in progress.';
+        }
+
+        if (resumeScanStatus !== 'clean') {
+            return 'Upload your resume to start security scan and AI extraction.';
+        }
+
+        if (!isResumeParsed) {
+            return 'Resume passed security scan. AI extraction is still in progress.';
+        }
+
+        if (resumePopulationStatus === 'pending_consent') {
+            return 'Resume parsing is complete, but profile population is paused until privacy consent is accepted.';
+        }
+
+        if (resumePopulationStatus === 'pending_profile_sync') {
+            return 'Resume parsing is complete. Applying extracted skills and profile details now.';
+        }
+
+        if (resumeParsedSkillsCount > 0) {
+            return `Resume parsed successfully. ${resumeParsedSkillsCount} skills were extracted and synced to your profile.`;
+        }
+
+        return 'Resume parsed successfully, but no skills were detected. You can add skills manually below.';
+    }
+
+    async function syncResumeStateForRequisition(requisitionId: string): Promise<boolean> {
+        const response = await fetch(buildApiUrl(`/api/applications/by-requisition/${requisitionId}`), {
+            credentials: 'include',
+            headers: buildAuthHeaders(),
+        });
+
+        if (response.status === 404) {
+            applyResumeStateSnapshot(null);
+            return false;
+        }
+
+        if (!response.ok) {
+            throw new Error('Unable to refresh resume status');
+        }
+
+        const application: CandidateApplicationSnapshot = await response.json();
+        applyResumeStateSnapshot(application);
+        return true;
+    }
+
+    async function initializeResumeDraftForRequisition(requisitionId: string): Promise<void> {
+        if (!requisitionId) {
+            throw new Error('Unable to prepare resume upload because no open requisition is available.');
+        }
+
+        const response = await fetch(buildApiUrl('/api/applications/drafts'), {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                ...buildAuthHeaders(),
+            },
+            body: JSON.stringify({
+                requisitionId,
+                draftData: {
+                    step1_personal: {
+                        fullName,
+                    },
+                    step2_experience: {
+                        yearsExperience: experienceYears,
+                    },
+                    step3_coverLetter: {
+                        coverLetter: '',
+                    },
+                    resumeSetupOnly: true,
+                    currentStep: 4,
+                },
+            }),
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.json().catch(() => null);
+            throw new Error(errorBody?.error?.message || 'Unable to initialize resume upload draft');
+        }
+
+        const payload = await response.json();
+        if (!payload?.id || typeof payload.id !== 'string') {
+            throw new Error('Resume upload draft did not return an application ID');
+        }
+
+        setResumeUploadApplicationId(payload.id);
+        await syncResumeStateForRequisition(requisitionId);
+    }
+
+    async function ensureResumeUploadContext(requisitionId: string): Promise<void> {
+        setResumeContextError(null);
+        setInitializingResumeUpload(true);
+        try {
+            await initializeResumeDraftForRequisition(requisitionId);
+        } catch (err) {
+            setResumeContextError(
+                err instanceof Error ? err.message : 'Unable to prepare resume upload at the moment.'
+            );
+        } finally {
+            setInitializingResumeUpload(false);
+        }
     }
 
     // Load existing profile
@@ -127,10 +309,35 @@ export default function ProfilePage() {
             }
 
             try {
-                const response = await fetch(getApiUrl('/api/profile'), {
-                    credentials: 'include',
-                    headers: buildAuthHeaders(),
-                });
+                const [response, completionResponse] = await Promise.all([
+                    fetch(buildApiUrl('/api/profile'), {
+                        credentials: 'include',
+                        headers: buildAuthHeaders(),
+                    }),
+                    fetch(buildApiUrl('/api/profile/completion'), {
+                        credentials: 'include',
+                        headers: buildAuthHeaders(),
+                    }),
+                ]);
+
+                if (completionResponse.ok) {
+                    const completionData = await completionResponse.json();
+                    const normalizedCompletion: CompletionStatus = {
+                        completedSections: Array.isArray(completionData?.completedSections)
+                            ? completionData.completedSections
+                            : [],
+                        percentage:
+                            typeof completionData?.percentage === 'number'
+                                ? completionData.percentage
+                                : 0,
+                        missingFields: Array.isArray(completionData?.missingFields)
+                            ? completionData.missingFields
+                            : [],
+                    };
+
+                    setCompletionStatus(normalizedCompletion);
+                    setCompletionPercentage(normalizedCompletion.percentage);
+                }
 
                 if (response.status === 404) {
                     setProfileExists(false);
@@ -149,7 +356,59 @@ export default function ProfilePage() {
                 setSkills(data.skills || []);
                 setEducation(Array.isArray(data.education) ? data.education : []);
                 setWorkHistory(Array.isArray(data.workHistory) ? data.workHistory : []);
-                setCompletionPercentage(data.profileCompletionPercentage || 0);
+                const initialCompletion =
+                    typeof data?.completionStatus?.percentage === 'number'
+                        ? data.completionStatus.percentage
+                        : typeof data?.profileCompletionPercentage === 'number'
+                            ? data.profileCompletionPercentage
+                            : 0;
+                setCompletionPercentage(initialCompletion);
+
+                const requisitionsResponse = await fetch(
+                    buildApiUrl('/api/requisitions?page=1&pageSize=20&status=open'),
+                    {
+                        credentials: 'include',
+                        headers: buildAuthHeaders(),
+                    }
+                );
+
+                if (requisitionsResponse.ok) {
+                    const requisitionsPayload = await requisitionsResponse.json();
+                    const requisitions: OpenRequisitionOption[] = [];
+
+                    if (Array.isArray(requisitionsPayload?.data)) {
+                        for (const item of requisitionsPayload.data as unknown[]) {
+                            if (typeof item !== 'object' || item === null) {
+                                continue;
+                            }
+
+                            const candidate = item as Partial<OpenRequisitionOption>;
+                            if (
+                                typeof candidate.id !== 'string' ||
+                                typeof candidate.title !== 'string' ||
+                                typeof candidate.department !== 'string' ||
+                                typeof candidate.location !== 'string'
+                            ) {
+                                continue;
+                            }
+
+                            requisitions.push({
+                                id: candidate.id,
+                                title: candidate.title,
+                                department: candidate.department,
+                                location: candidate.location,
+                            });
+                        }
+                    }
+
+                    setOpenRequisitions(requisitions);
+
+                    const defaultRequisitionId = requisitions[0]?.id;
+                    if (defaultRequisitionId) {
+                        setSelectedResumeRequisitionId(defaultRequisitionId);
+                        await syncResumeStateForRequisition(defaultRequisitionId);
+                    }
+                }
             } catch (err) {
                 console.error('Error loading profile:', err);
                 setError('Unable to load profile data');
@@ -161,27 +420,92 @@ export default function ProfilePage() {
         loadProfile();
     }, [router]);
 
+    useEffect(() => {
+        if (!selectedResumeRequisitionId) {
+            return;
+        }
+
+        let cancelled = false;
+
+        const syncOrInitialize = async () => {
+            try {
+                await syncResumeStateForRequisition(selectedResumeRequisitionId);
+
+                if (cancelled) {
+                    return;
+                }
+            } catch {
+                // Keep profile usable even if resume status refresh fails.
+            }
+        };
+
+        syncOrInitialize();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedResumeRequisitionId]);
+
+    useEffect(() => {
+        if (!selectedResumeRequisitionId || !resumeUploadApplicationId) {
+            return;
+        }
+
+        if (resumeScanStatus === 'infected') {
+            return;
+        }
+
+        if (
+            resumeScanStatus === 'clean' &&
+            isResumeParsed &&
+            (resumePopulationStatus === 'applied' || resumePopulationStatus === 'pending_consent')
+        ) {
+            return;
+        }
+
+        const intervalId = window.setInterval(() => {
+            syncResumeStateForRequisition(selectedResumeRequisitionId).catch(() => {
+                // Polling is best-effort.
+            });
+        }, 4000);
+
+        return () => {
+            window.clearInterval(intervalId);
+        };
+    }, [
+        isResumeParsed,
+        resumePopulationStatus,
+        resumeScanStatus,
+        resumeUploadApplicationId,
+        selectedResumeRequisitionId,
+    ]);
+
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         setError(null);
         setSuccess(false);
+
+        const resumePopulationInProgress =
+            resumeScanStatus === 'pending' ||
+            (resumeScanStatus === 'clean' &&
+                (!isResumeParsed || resumePopulationStatus === 'pending_profile_sync'));
 
         if (!fullName || fullName.trim().length === 0) {
             setError('Full name is required');
             return;
         }
 
-        if (skills.length < 3) {
+        if (!resumePopulationInProgress && skills.length < 3) {
             setError('Please add at least 3 skills');
             return;
         }
 
-        if (education.length === 0) {
+        if (!resumePopulationInProgress && education.length === 0) {
             setError('Please add at least one education entry');
             return;
         }
 
-        if (workHistory.length === 0) {
+        if (!resumePopulationInProgress && workHistory.length === 0) {
             setError('Please add at least one work experience entry');
             return;
         }
@@ -208,7 +532,7 @@ export default function ProfilePage() {
             }));
 
             const method = profileExists ? 'PUT' : 'POST';
-            const response = await fetch(getApiUrl('/api/profile'), {
+            const response = await fetch(buildApiUrl('/api/profile'), {
                 method,
                 headers: {
                     'Content-Type': 'application/json',
@@ -253,7 +577,24 @@ export default function ProfilePage() {
             }
 
             setProfileExists(true);
-            setCompletionPercentage(data?.profileCompletionPercentage || data?.completionStatus?.percentage || 0);
+            const updatedCompletion =
+                typeof data?.completionStatus?.percentage === 'number'
+                    ? data.completionStatus.percentage
+                    : typeof data?.profileCompletionPercentage === 'number'
+                        ? data.profileCompletionPercentage
+                        : 0;
+            setCompletionPercentage(updatedCompletion);
+
+            if (Array.isArray(data?.completionStatus?.missingFields)) {
+                setCompletionStatus({
+                    completedSections: Array.isArray(data.completionStatus.completedSections)
+                        ? data.completionStatus.completedSections
+                        : [],
+                    percentage: updatedCompletion,
+                    missingFields: data.completionStatus.missingFields,
+                });
+            }
+
             setSuccess(true);
 
             setTimeout(() => {
@@ -329,22 +670,34 @@ export default function ProfilePage() {
 
     if (loading) {
         return (
-            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f9fafb' }}>
-                <p>Loading profile...</p>
+            <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+                <CandidateTopNav active="profile" />
+                <div style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <p>Loading profile...</p>
+                </div>
             </div>
         );
     }
 
+    const hasPrivacyConsentTodo = (completionStatus?.missingFields ?? []).some((field) =>
+        field.toLowerCase().includes('privacy consent')
+    );
+
     return (
-        <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', padding: '2rem' }}>
-            <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+            <CandidateTopNav active="profile" />
+
+            <div style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem' }}>
                 <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '2rem' }}>
                     <div style={{ marginBottom: '2rem' }}>
                         <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
                             {profileExists ? 'Edit Profile' : 'Create Profile'}
                         </h1>
                         <p style={{ color: '#6b7280' }}>
-                            Complete your profile to apply for jobs. Current completion: <strong>{completionPercentage}%</strong>
+                            {completionPercentage >= 100
+                                ? 'Your profile is complete and ready for applications.'
+                                : 'Complete your profile to apply for jobs.'}{' '}
+                            Current completion: <strong>{completionPercentage}%</strong>
                         </p>
                     </div>
 
@@ -360,6 +713,29 @@ export default function ProfilePage() {
                         />
                     </div>
 
+                    {hasPrivacyConsentTodo && (
+                        <div style={{ marginBottom: '2rem', backgroundColor: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '8px', padding: '0.875rem' }}>
+                            <p style={{ margin: '0 0 0.5rem 0', color: '#9a3412', fontSize: '0.875rem' }}>
+                                Profile completion is measured in 5 sections at 20% each. Privacy consent is required to reach 100% and proceed cleanly through applications.
+                            </p>
+                            <Link
+                                href="/consent?returnTo=/profile"
+                                style={{
+                                    display: 'inline-block',
+                                    padding: '0.5rem 0.875rem',
+                                    borderRadius: '6px',
+                                    backgroundColor: '#f97316',
+                                    color: '#ffffff',
+                                    fontWeight: '600',
+                                    textDecoration: 'none',
+                                    fontSize: '0.8125rem',
+                                }}
+                            >
+                                Accept Privacy Consent
+                            </Link>
+                        </div>
+                    )}
+
                     {success && (
                         <div style={{ backgroundColor: '#d1fae5', border: '1px solid #a7f3d0', borderRadius: '6px', padding: '0.75rem', marginBottom: '1rem', color: '#065f46' }}>
                             Profile saved successfully!
@@ -371,6 +747,145 @@ export default function ProfilePage() {
                             {error}
                         </div>
                     )}
+
+                    <section style={{ marginBottom: '2rem', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1rem' }}>
+                        <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '0.5rem', color: '#0f172a' }}>
+                            Resume Parsing Before Applying
+                        </h2>
+                        <p style={{ margin: '0 0 0.875rem 0', color: '#475569', fontSize: '0.875rem' }}>
+                            Upload your resume once to pre-populate skills and experience in your profile. Job matching will run automatically during application review.
+                        </p>
+
+                        {openRequisitions.length === 0 ? (
+                            <p style={{ margin: 0, color: '#64748b', fontSize: '0.875rem' }}>
+                                No open jobs are available right now for resume pre-processing.
+                            </p>
+                        ) : (
+                            <>
+                                {!resumeUploadApplicationId ? (
+                                    <div
+                                        role="status"
+                                        aria-live="polite"
+                                        style={{
+                                            padding: '0.75rem',
+                                            borderRadius: '6px',
+                                            border: '1px dashed #cbd5e1',
+                                            backgroundColor: '#ffffff',
+                                        }}
+                                    >
+                                        <p style={{ margin: 0, color: '#334155', fontSize: '0.875rem' }}>
+                                            {initializingResumeUpload
+                                                ? 'Preparing resume upload in the background...'
+                                                : 'Set up resume upload when you are ready.'}
+                                        </p>
+
+                                        <button
+                                            type="button"
+                                            disabled={initializingResumeUpload || !selectedResumeRequisitionId}
+                                            onClick={() => {
+                                                if (!selectedResumeRequisitionId) {
+                                                    return;
+                                                }
+                                                void ensureResumeUploadContext(selectedResumeRequisitionId);
+                                            }}
+                                            style={{
+                                                marginTop: '0.5rem',
+                                                padding: '0.5rem 0.75rem',
+                                                backgroundColor: '#2563eb',
+                                                color: '#ffffff',
+                                                border: 'none',
+                                                borderRadius: '6px',
+                                                cursor:
+                                                    initializingResumeUpload || !selectedResumeRequisitionId
+                                                        ? 'not-allowed'
+                                                        : 'pointer',
+                                                fontWeight: 600,
+                                            }}
+                                        >
+                                            {initializingResumeUpload
+                                                ? 'Preparing Resume Upload...'
+                                                : 'Prepare Resume Upload'}
+                                        </button>
+
+                                        {resumeContextError && (
+                                            <>
+                                                <p style={{ margin: '0.5rem 0 0', color: '#b91c1c', fontSize: '0.8125rem' }}>
+                                                    {resumeContextError}
+                                                </p>
+                                            </>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <>
+                                        <ResumeUpload
+                                            applicationId={resumeUploadApplicationId}
+                                            existingResumeStatus={resumeScanStatus}
+                                            existingResumeParsed={isResumeParsed}
+                                            onSuccess={() => {
+                                                setResumeScanStatus('pending');
+                                                setIsResumeParsed(false);
+                                                setResumeParsedSkillsCount(0);
+                                                setResumePopulationStatus('none');
+                                                setResumeMergeSummary(null);
+                                            }}
+                                            onError={(uploadError) => setError(uploadError)}
+                                        />
+
+                                        <p style={{ margin: '0.75rem 0 0', color: '#475569', fontSize: '0.875rem' }}>
+                                            {getResumeSyncStatusMessage()}
+                                        </p>
+
+                                        {resumePopulationStatus === 'pending_consent' && (
+                                            <div style={{ marginTop: '0.5rem' }}>
+                                                <Link
+                                                    href="/consent?returnTo=/profile"
+                                                    style={{
+                                                        display: 'inline-block',
+                                                        padding: '0.5rem 0.75rem',
+                                                        borderRadius: '6px',
+                                                        backgroundColor: '#ea580c',
+                                                        color: '#ffffff',
+                                                        fontWeight: 600,
+                                                        textDecoration: 'none',
+                                                        fontSize: '0.8125rem',
+                                                    }}
+                                                >
+                                                    Accept Consent To Apply Resume Insights
+                                                </Link>
+                                            </div>
+                                        )}
+
+                                        {resumeScanStatus === 'clean' && isResumeParsed && (
+                                            <p style={{ margin: '0.375rem 0 0', color: '#1d4ed8', fontSize: '0.8125rem' }}>
+                                                Next: review the profile fields below and save changes before applying.
+                                            </p>
+                                        )}
+
+                                        {resumePopulationStatus === 'applied' && resumeMergeSummary && (
+                                            <div
+                                                style={{
+                                                    marginTop: '0.625rem',
+                                                    padding: '0.625rem 0.75rem',
+                                                    borderRadius: '6px',
+                                                    backgroundColor: '#eff6ff',
+                                                    border: '1px solid #bfdbfe',
+                                                }}
+                                            >
+                                                <p style={{ margin: 0, color: '#1e3a8a', fontSize: '0.8125rem', fontWeight: 600 }}>
+                                                    Profile sync summary
+                                                </p>
+                                                <p style={{ margin: '0.25rem 0 0', color: '#1e40af', fontSize: '0.8125rem' }}>
+                                                    Added skills: {resumeMergeSummary.addedSkillsCount ?? 0}. Imported education entries:{' '}
+                                                    {resumeMergeSummary.importedEducationEntries ?? 0}. Imported work entries:{' '}
+                                                    {resumeMergeSummary.importedWorkHistoryEntries ?? 0}.
+                                                </p>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </>
+                        )}
+                    </section>
 
                     <form onSubmit={handleSubmit}>
                         {/* Basic Info Section */}

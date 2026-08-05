@@ -26,8 +26,25 @@ ADD COLUMN IF NOT EXISTS "threshold_version" INTEGER,
 ADD COLUMN IF NOT EXISTS "screened_at" TIMESTAMPTZ DEFAULT NOW();
 
 -- Rename factorsJson to factors for consistency
-ALTER TABLE "screenings" 
-RENAME COLUMN "factors_json" TO "factors";
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'screenings'
+      AND column_name = 'factors_json'
+  ) AND NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'screenings'
+      AND column_name = 'factors'
+  ) THEN
+    ALTER TABLE "screenings" RENAME COLUMN "factors_json" TO "factors";
+  END IF;
+END
+$$;
 
 COMMENT ON COLUMN "screenings"."recommendation" IS 'Screening recommendation: shortlist, manual_review, or reject';
 COMMENT ON COLUMN "screenings"."threshold_version" IS 'Version of threshold configuration used for this screening';
@@ -90,7 +107,7 @@ ON "screenings"("screened_at" DESC);
 
 CREATE INDEX IF NOT EXISTS "idx_applications_screening_status" 
 ON "applications"("status") 
-WHERE "status" IN ('screening', 'pending_review', 'shortlisted', 'screening_rejected');
+WHERE "status" IN ('screening', 'pending_review', 'shortlisted', 'rejected');
 
 -- Step 8: Enable Row-Level Security for screening_thresholds
 ALTER TABLE "screening_thresholds" ENABLE ROW LEVEL SECURITY;

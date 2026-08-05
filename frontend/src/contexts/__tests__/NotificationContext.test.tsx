@@ -15,6 +15,13 @@ import type { Socket } from 'socket.io-client';
 // Mock the useSocketClient hook
 vi.mock('../../hooks/useSocketClient');
 
+// Mock ToastContext to avoid provider coupling in NotificationProvider tests
+vi.mock('../ToastContext', () => ({
+  useToast: () => ({
+    addToast: vi.fn(),
+  }),
+}));
+
 // Mock fetch API
 global.fetch = vi.fn();
 
@@ -289,7 +296,7 @@ describe('NotificationContext', () => {
       });
 
       expect(global.fetch).toHaveBeenCalledWith(
-        'http://localhost:5000/api/notifications',
+        expect.stringContaining('/api/notifications'),
         expect.objectContaining({
           headers: {
             'Authorization': 'Bearer test-token'
@@ -384,7 +391,7 @@ describe('NotificationContext', () => {
       });
 
       expect(global.fetch).toHaveBeenCalledWith(
-        'http://localhost:5000/api/notifications/notif-1/read',
+        expect.stringContaining('/api/notifications/notif-1/read'),
         expect.objectContaining({
           method: 'POST',
           headers: {
@@ -524,7 +531,7 @@ describe('NotificationContext', () => {
       });
 
       expect(global.fetch).toHaveBeenCalledWith(
-        'http://localhost:5000/api/notifications/read-all',
+        expect.stringContaining('/api/notifications/read-all'),
         expect.objectContaining({
           method: 'POST',
           headers: {

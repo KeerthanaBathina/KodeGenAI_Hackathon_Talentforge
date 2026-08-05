@@ -15,9 +15,11 @@ import {
   createScreeningThresholdVersion,
   getEffectiveThreshold,
   getThresholdHistory,
+} from '../../services/thresholdService';
+import {
   InvalidThresholdRangeError,
   PolicyNotFoundError,
-} from '../../services/thresholdService';
+} from '../../services/errors/PolicyErrors';
 import { buildAuditContextFromRequest } from '../../services/auditContextService';
 import logger from '../../utils/logger';
 

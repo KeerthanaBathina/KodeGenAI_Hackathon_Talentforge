@@ -96,7 +96,7 @@ export default function TokenInserter({
             <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="inline-flex h-8 items-center rounded-md border border-[var(--admin-color-border)] bg-white px-3 text-sm font-medium text-[var(--admin-color-ink-secondary)] hover:bg-[var(--admin-color-surface-1)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--admin-color-brand-primary)]"
                 aria-haspopup="true"
                 aria-expanded={isOpen}
             >
@@ -126,9 +126,9 @@ export default function TokenInserter({
                     />
 
                     {/* Dropdown */}
-                    <div className="absolute left-0 mt-2 w-80 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20">
+                    <div className="absolute left-0 z-20 mt-2 w-80 rounded-md border border-[var(--admin-color-border)] bg-white shadow-lg">
                         <div
-                            className="py-1 max-h-96 overflow-y-auto"
+                            className="max-h-96 overflow-y-auto py-1"
                             role="menu"
                             aria-orientation="vertical"
                             aria-labelledby="token-menu"
@@ -139,21 +139,21 @@ export default function TokenInserter({
                                         key={tokenInfo.token}
                                         type="button"
                                         onClick={() => handleInsert(tokenInfo.token)}
-                                        className="w-full text-left px-4 py-3 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors"
+                                        className="w-full px-4 py-3 text-left transition-colors hover:bg-[var(--admin-color-surface-1)] focus:bg-[var(--admin-color-surface-1)] focus:outline-none"
                                         role="menuitem"
                                     >
                                         <div className="flex flex-col">
-                                            <span className="text-sm font-mono font-medium text-blue-600">
+                                            <span className="admin-mono text-sm font-medium text-[var(--admin-color-brand-primary)]">
                                                 {'{{' + tokenInfo.token + '}}'}
                                             </span>
-                                            <span className="text-xs text-gray-500 mt-1">
+                                            <span className="mt-1 text-xs text-[var(--admin-color-ink-secondary)]">
                                                 {tokenInfo.description}
                                             </span>
                                         </div>
                                     </button>
                                 ))
                             ) : (
-                                <div className="px-4 py-3 text-sm text-gray-500">
+                                <div className="px-4 py-3 text-sm text-[var(--admin-color-ink-secondary)]">
                                     No tokens available for this template type
                                 </div>
                             )}

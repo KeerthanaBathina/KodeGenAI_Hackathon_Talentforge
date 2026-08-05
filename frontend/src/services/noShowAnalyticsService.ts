@@ -1,4 +1,5 @@
 import { getAuthToken } from '@/lib/auth';
+import { buildApiUrl } from '@/lib/api/url';
 
 export interface NoShowTrendData {
   date: string;
@@ -14,15 +15,6 @@ export interface NoShowAnalyticsData {
   trend30d: NoShowTrendData[];
   lastRefreshedAt: string | null;
   generatedAt: string;
-}
-
-function getApiUrl(pathname: string): string {
-  const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-  if (!base || (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')) {
-    return pathname;
-  }
-
-  return `${base}${pathname}`;
 }
 
 async function handleResponse<T>(response: Response): Promise<T> {
@@ -55,7 +47,7 @@ function authHeaders(): HeadersInit | undefined {
 
 export async function fetchNoShowAnalytics(requisitionId?: string): Promise<NoShowAnalyticsData> {
   const query = requisitionId ? `?requisitionId=${encodeURIComponent(requisitionId)}` : '';
-  const response = await fetch(getApiUrl(`/api/analytics/no-show${query}`), {
+  const response = await fetch(buildApiUrl(`/api/analytics/no-show${query}`), {
     method: 'GET',
     credentials: 'include',
     headers: authHeaders()

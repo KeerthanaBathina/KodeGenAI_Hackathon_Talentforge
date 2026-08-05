@@ -1,4 +1,5 @@
 import { getAuthToken } from '@/lib/auth';
+import { buildApiUrl } from '@/lib/api/url';
 
 export interface PipelineAnalyticsData {
   totalApplications: number;
@@ -12,15 +13,6 @@ export interface PipelineAnalyticsData {
 export interface RequisitionOption {
   id: string;
   title: string;
-}
-
-function getApiUrl(pathname: string): string {
-  const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-  if (!base || (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')) {
-    return pathname;
-  }
-
-  return `${base}${pathname}`;
 }
 
 async function handleResponse<T>(response: Response): Promise<T> {
@@ -53,7 +45,7 @@ function authHeaders(): HeadersInit | undefined {
 
 export async function fetchPipelineAnalytics(requisitionId?: string): Promise<PipelineAnalyticsData> {
   const query = requisitionId ? `?requisitionId=${encodeURIComponent(requisitionId)}` : '';
-  const response = await fetch(getApiUrl(`/api/analytics/pipeline${query}`), {
+  const response = await fetch(buildApiUrl(`/api/analytics/pipeline${query}`), {
     method: 'GET',
     credentials: 'include',
     headers: authHeaders()
@@ -63,7 +55,7 @@ export async function fetchPipelineAnalytics(requisitionId?: string): Promise<Pi
 }
 
 export async function fetchOpenRequisitions(): Promise<RequisitionOption[]> {
-  const response = await fetch(getApiUrl('/api/requisitions?page=1&pageSize=100&status=open'), {
+  const response = await fetch(buildApiUrl('/api/requisitions?page=1&pageSize=100&status=open'), {
     method: 'GET',
     credentials: 'include',
     headers: authHeaders()

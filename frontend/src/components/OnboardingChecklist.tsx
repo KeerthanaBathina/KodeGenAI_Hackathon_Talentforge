@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { buildApiUrl } from '@/lib/api/url';
 
 interface ChecklistItem {
     id: string;
@@ -16,14 +17,6 @@ interface CompletionStatus {
     missingFields: string[];
 }
 
-function getApiUrl(pathname: string): string {
-    const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-    if (!base || (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')) {
-        return pathname;
-    }
-    return `${base}${pathname}`;
-}
-
 export default function OnboardingChecklist() {
     const [loading, setLoading] = useState(true);
     const [completion, setCompletion] = useState<CompletionStatus>({
@@ -35,7 +28,7 @@ export default function OnboardingChecklist() {
     useEffect(() => {
         async function fetchCompletion() {
             try {
-                const response = await fetch(getApiUrl('/api/profile/completion'), {
+                const response = await fetch(buildApiUrl('/api/profile/completion'), {
                     credentials: 'include',
                 });
 

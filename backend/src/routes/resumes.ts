@@ -11,6 +11,10 @@ import { buildAuditContextFromRequest } from '../services/auditContextService';
 import { AUDIT_EVENT_TYPES } from '../constants/auditEventTypes';
 import prisma from '../db/prisma';
 import logger from '../utils/logger';
+import {
+    isLocalResumeProcessingEnabled,
+    processResumeLocally,
+} from '../services/localResumeProcessingService';
 
 const router = express.Router();
 
@@ -22,6 +26,10 @@ const GenerateUploadUrlSchema = z.object({
         'application/pdf',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     ]),
+});
+
+const ProcessLocallySchema = z.object({
+    resumeId: z.string().uuid(),
 });
 
 /**
@@ -158,6 +166,82 @@ router.post('/presigned-url', authenticate, async (req, res) => {
             error: {
                 code: 'INTERNAL_SERVER_ERROR',
                 message: 'Failed to generate upload URL',
+            },
+        });
+    }
+});
+
+/**
+ * POST /api/resumes/process-locally
+ * Candidate-triggered local parse fallback for development environments.
+ */
+router.post('/process-locally', authenticate, async (req, res) => {
+    if (!isLocalResumeProcessingEnabled()) {
+        return res.status(403).json({
+            error: {
+                code: 'LOCAL_PROCESSING_DISABLED',
+                message: 'Local resume processing is disabled',
+            },
+        });
+    }
+
+    const validation = ProcessLocallySchema.safeParse(req.body);
+    if (!validation.success) {
+        return res.status(400).json({
+            error: {
+                code: 'INVALID_REQUEST',
+                message: 'Invalid request payload',
+                details: validation.error.errors,
+            },
+        });
+    }
+
+    const candidateId = req.user?.candidateId ?? req.user?.id;
+    if (!candidateId) {
+        return res.status(403).json({
+            error: {
+                code: 'UNAUTHORIZED',
+                message: 'Candidate access required',
+            },
+        });
+    }
+
+    const { resumeId } = validation.data;
+    const resume = await prisma.resume.findFirst({
+        where: {
+            id: resumeId,
+            application: {
+                candidateId,
+            },
+        },
+        select: {
+            id: true,
+        },
+    });
+
+    if (!resume) {
+        return res.status(404).json({
+            error: {
+                code: 'RESUME_NOT_FOUND',
+                message: 'Resume not found',
+            },
+        });
+    }
+
+    try {
+        const result = await processResumeLocally(resumeId);
+        return res.status(200).json(result);
+    } catch (error) {
+        logger.error('Local resume processing failed', {
+            resumeId,
+            candidateId,
+            error: error instanceof Error ? error.message : String(error),
+        });
+
+        return res.status(500).json({
+            error: {
+                code: 'LOCAL_PROCESSING_FAILED',
+                message: 'Unable to process resume locally',
             },
         });
     }

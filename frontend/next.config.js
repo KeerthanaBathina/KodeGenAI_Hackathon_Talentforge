@@ -14,7 +14,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob:",
       "font-src 'self'",
-      "connect-src 'self' http://localhost:* http://127.0.0.1:* https://*.supabase.co https://*.railway.app",
+      "connect-src 'self' http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* wss://localhost:* wss://127.0.0.1:* https://*.supabase.co https://*.railway.app",
       "frame-ancestors 'none'"
     ].join('; ')
   }

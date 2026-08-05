@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import CandidateTopNav from '@/components/CandidateTopNav';
 import FilterControls from '@/components/FilterControls';
 import RequisitionCard from '@/components/RequisitionCard';
 import Pagination from '@/components/Pagination';
 import EmptyState from '@/components/EmptyState';
+import { buildApiUrl } from '@/lib/api/url';
 
 interface Requisition {
     id: string;
@@ -36,16 +38,6 @@ interface Filters {
     jobType: string | null;
     experienceLevel: number | null;
     keyword: string;
-}
-
-function getApiUrl(pathname: string, params?: URLSearchParams): string {
-    const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-    if (!base || (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')) {
-        const url = pathname;
-        return params ? `${url}?${params.toString()}` : url;
-    }
-    const url = `${base}${pathname}`;
-    return params ? `${url}?${params.toString()}` : url;
 }
 
 export default function JobsPage() {
@@ -84,7 +76,10 @@ export default function JobsPage() {
             if (filters.keyword) params.set('keyword', filters.keyword);
 
             try {
-                const response = await fetch(getApiUrl('/api/requisitions', params), {
+                const requestUrl = new URL(buildApiUrl('/api/requisitions'), window.location.origin);
+                requestUrl.search = params.toString();
+
+                const response = await fetch(requestUrl.toString(), {
                     credentials: 'include',
                 });
 
@@ -155,9 +150,10 @@ export default function JobsPage() {
         filters.keyword;
 
     return (
-        <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', padding: '2rem' }}>
-            <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-                {/* Header */}
+        <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+            <CandidateTopNav active="jobs" />
+
+            <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem' }}>
                 <div style={{ marginBottom: '2rem' }}>
                     <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
                         Open Positions

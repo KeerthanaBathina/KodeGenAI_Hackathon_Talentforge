@@ -1,105 +1,236 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { processParseResult, ParseResultError } from '../parseResultService';
-import prisma from '../../db/prisma';
-import { auditEvent } from '../auditService';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../db/prisma');
-vi.mock('../auditService');
+const prismaMocks = vi.hoisted(() => ({
+    resumeFindUnique: vi.fn(),
+    resumeUpdate: vi.fn(),
+    profileFindUnique: vi.fn(),
+    profileUpdate: vi.fn(),
+    profileCreate: vi.fn(),
+    privacyConsentFindFirst: vi.fn(),
+    applicationFindUnique: vi.fn(),
+}));
+
+const serviceMocks = vi.hoisted(() => ({
+    auditEvent: vi.fn(),
+    calculateProfileCompletion: vi.fn(),
+    enqueueScreening: vi.fn(),
+}));
+
+vi.mock('../../db/prisma', () => ({
+    default: {
+        resume: {
+            findUnique: prismaMocks.resumeFindUnique,
+            update: prismaMocks.resumeUpdate,
+        },
+        profile: {
+            findUnique: prismaMocks.profileFindUnique,
+            update: prismaMocks.profileUpdate,
+            create: prismaMocks.profileCreate,
+        },
+        privacyConsent: {
+            findFirst: prismaMocks.privacyConsentFindFirst,
+        },
+        application: {
+            findUnique: prismaMocks.applicationFindUnique,
+        },
+    },
+}));
+
+vi.mock('../auditService', () => ({
+    auditEvent: serviceMocks.auditEvent,
+}));
+
+vi.mock('../profileService', () => ({
+    calculateProfileCompletion: serviceMocks.calculateProfileCompletion,
+}));
+
+vi.mock('../../queues/screeningQueue', () => ({
+    enqueueScreening: serviceMocks.enqueueScreening,
+}));
+
+vi.mock('../../utils/logger', () => ({
+    default: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+    },
+}));
+
+import { ParseResultError, processParseResult } from '../parseResultService';
+
+function createParsedPayload() {
+    return {
+        name: 'John Doe',
+        email: 'john@example.com',
+        phone: '555-1234',
+        skills: ['Python', 'React', 'PostgreSQL'],
+        experience_years: 5,
+        employers: [{ name: 'Acme Corp', title: 'Senior Engineer' }],
+        education: [
+            { degree: 'Bachelor', field: 'Computer Science', institution: 'MIT' },
+        ],
+        extracted_at: new Date().toISOString(),
+    };
+}
+
+function createResumeFixture() {
+    return {
+        id: 'resume-1',
+        applicationId: 'application-1',
+        scanResult: {
+            parsingStatus: 'queued',
+        },
+        application: {
+            id: 'application-1',
+            candidateId: 'candidate-1',
+            candidate: {
+                email: 'candidate@example.com',
+            },
+        },
+    };
+}
 
 describe('ParseResultService', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        serviceMocks.calculateProfileCompletion.mockResolvedValue({
+            completedSections: ['basic_info'],
+            percentage: 20,
+            missingFields: ['Skills'],
+        });
+        prismaMocks.resumeUpdate.mockResolvedValue({ id: 'resume-1' });
+        prismaMocks.profileUpdate.mockResolvedValue({ id: 'profile-1' });
+        prismaMocks.profileCreate.mockResolvedValue({ id: 'profile-1' });
+        prismaMocks.applicationFindUnique.mockResolvedValue({ status: 'submitted' });
+        serviceMocks.auditEvent.mockResolvedValue(undefined);
+        serviceMocks.enqueueScreening.mockResolvedValue(null);
     });
 
     describe('processParseResult', () => {
-        it('should store parsed data on success', async () => {
-            const mockResume = {
-                id: 'resume-1',
-                application: {
-                    candidateId: 'candidate-1',
-                    candidate: {},
-                },
-            };
-
-            vi.mocked(prisma.resume.findUnique).mockResolvedValue(mockResume as any);
-            vi.mocked(prisma.resume.update).mockResolvedValue({} as any);
-            vi.mocked(auditEvent).mockResolvedValue(undefined);
+        it('stages parsed data and defers profile population when consent is missing', async () => {
+            prismaMocks.resumeFindUnique.mockResolvedValue(createResumeFixture());
+            prismaMocks.privacyConsentFindFirst.mockResolvedValue(null);
 
             await processParseResult({
                 resumeId: 'resume-1',
                 status: 'success',
-                parsedData: {
-                    name: 'John Doe',
-                    email: 'john@example.com',
-                    phone: '555-1234',
-                    skills: ['Python', 'React', 'PostgreSQL'],
-                    experience_years: 5,
-                    employers: [
-                        { name: 'Acme Corp', title: 'Senior Engineer' },
-                    ],
-                    education: [
-                        { degree: 'Bachelor', field: 'Computer Science', institution: 'MIT' },
-                    ],
-                    extracted_at: new Date().toISOString(),
-                },
+                parsedData: createParsedPayload(),
             });
 
-            expect(prisma.resume.update).toHaveBeenCalledWith({
+            expect(prismaMocks.resumeUpdate).toHaveBeenCalledWith({
                 where: { id: 'resume-1' },
                 data: expect.objectContaining({
                     parsedData: expect.any(Object),
+                    scanResult: expect.objectContaining({
+                        parsingStatus: 'completed',
+                        parsePopulationStatus: 'pending_consent',
+                    }),
                 }),
             });
+            expect(prismaMocks.profileFindUnique).not.toHaveBeenCalled();
+            expect(prismaMocks.profileUpdate).not.toHaveBeenCalled();
+            expect(prismaMocks.profileCreate).not.toHaveBeenCalled();
+            expect(serviceMocks.enqueueScreening).not.toHaveBeenCalled();
+            expect(serviceMocks.auditEvent).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    action: 'resume.parsed',
+                    metadata: expect.objectContaining({
+                        profilePopulationDeferred: true,
+                        profilePopulated: false,
+                    }),
+                })
+            );
         });
 
-        it('should log audit event with correct metadata', async () => {
-            const mockResume = {
-                id: 'resume-1',
-                application: {
-                    candidateId: 'candidate-1',
-                },
-            };
-
-            vi.mocked(prisma.resume.findUnique).mockResolvedValue(mockResume as any);
-            vi.mocked(prisma.resume.update).mockResolvedValue({} as any);
-            vi.mocked(auditEvent).mockResolvedValue(undefined);
+        it('applies profile sync immediately when active consent exists', async () => {
+            prismaMocks.resumeFindUnique.mockResolvedValue(createResumeFixture());
+            prismaMocks.privacyConsentFindFirst.mockResolvedValue({ id: 'consent-1' });
+            prismaMocks.profileFindUnique.mockResolvedValue({
+                id: 'profile-1',
+                fullName: 'candidate@example.com',
+                experienceYears: 0,
+                education: [],
+                workHistory: [],
+                skills: ['React'],
+                rawParseJson: {},
+            });
 
             await processParseResult({
                 resumeId: 'resume-1',
                 status: 'success',
-                parsedData: {
-                    name: 'Jane Smith',
-                    email: 'jane@example.com',
-                    phone: '',
-                    skills: ['TypeScript', 'Node.js'],
-                    experience_years: 3,
-                    employers: [],
-                    education: [],
-                    extracted_at: new Date().toISOString(),
-                },
+                parsedData: createParsedPayload(),
             });
 
-            expect(auditEvent).toHaveBeenCalledWith({
-                entityType: 'resume',
-                entityId: 'resume-1',
-                action: 'resume.parsed',
-                actorId: 'system',
-                metadata: expect.objectContaining({
-                    skillsCount: 2,
-                    experienceYears: 3,
-                }),
-            });
+            expect(prismaMocks.profileUpdate).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: { id: 'profile-1' },
+                    data: expect.objectContaining({
+                        skills: expect.arrayContaining(['React', 'Python', 'PostgreSQL']),
+                        rawParseJson: expect.objectContaining({
+                            latestResumeId: 'resume-1',
+                        }),
+                    }),
+                })
+            );
+            expect(prismaMocks.resumeUpdate).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: { id: 'resume-1' },
+                    data: expect.objectContaining({
+                        scanResult: expect.objectContaining({
+                            parsePopulationStatus: 'applied',
+                        }),
+                    }),
+                })
+            );
+            expect(serviceMocks.auditEvent).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    action: 'profile.resume_skills_synced',
+                })
+            );
+            expect(serviceMocks.auditEvent).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    action: 'resume.parsed',
+                    metadata: expect.objectContaining({
+                        profilePopulationDeferred: false,
+                        profilePopulated: true,
+                    }),
+                })
+            );
         });
 
-        it('should update status on parse failure', async () => {
-            const mockResume = {
-                id: 'resume-1',
-                application: { candidateId: 'candidate-1' },
-                scanResult: {},
-            };
+        it('does not enqueue screening when the application is still a draft', async () => {
+            prismaMocks.resumeFindUnique.mockResolvedValue(createResumeFixture());
+            prismaMocks.privacyConsentFindFirst.mockResolvedValue({ id: 'consent-1' });
+            prismaMocks.profileFindUnique.mockResolvedValue({
+                id: 'profile-1',
+                fullName: 'candidate@example.com',
+                experienceYears: 0,
+                education: [],
+                workHistory: [],
+                skills: ['React'],
+                rawParseJson: {},
+            });
+            prismaMocks.applicationFindUnique.mockResolvedValue({ status: 'draft' });
 
-            vi.mocked(prisma.resume.findUnique).mockResolvedValue(mockResume as any);
-            vi.mocked(prisma.resume.update).mockResolvedValue({} as any);
+            await processParseResult({
+                resumeId: 'resume-1',
+                status: 'success',
+                parsedData: createParsedPayload(),
+            });
+
+            await new Promise<void>((resolve) => {
+                setImmediate(() => resolve());
+            });
+
+            expect(serviceMocks.enqueueScreening).not.toHaveBeenCalled();
+        });
+
+        it('updates parse failure details when parsing fails', async () => {
+            prismaMocks.resumeFindUnique.mockResolvedValue({
+                ...createResumeFixture(),
+                scanResult: {},
+            });
 
             await processParseResult({
                 resumeId: 'resume-1',
@@ -107,63 +238,27 @@ describe('ParseResultService', () => {
                 error: 'Timeout parsing PDF',
             });
 
-            expect(prisma.resume.update).toHaveBeenCalledWith({
+            expect(prismaMocks.resumeUpdate).toHaveBeenCalledWith({
                 where: { id: 'resume-1' },
                 data: expect.objectContaining({
                     scanResult: expect.objectContaining({
+                        parsingStatus: 'failed',
                         parseError: 'Timeout parsing PDF',
                     }),
                 }),
             });
         });
 
-        it('should throw ParseResultError when resume not found', async () => {
-            vi.mocked(prisma.resume.findUnique).mockResolvedValue(null);
+        it('throws ParseResultError when resume does not exist', async () => {
+            prismaMocks.resumeFindUnique.mockResolvedValue(null);
 
             await expect(
                 processParseResult({
-                    resumeId: 'nonexistent',
+                    resumeId: 'missing-resume',
                     status: 'success',
-                    parsedData: {
-                        name: 'Test',
-                        email: '',
-                        phone: '',
-                        skills: [],
-                        experience_years: 0,
-                        employers: [],
-                        education: [],
-                        extracted_at: new Date().toISOString(),
-                    },
+                    parsedData: createParsedPayload(),
                 })
-            ).rejects.toThrow(ParseResultError);
-        });
-
-        it('should handle empty skills array', async () => {
-            const mockResume = {
-                id: 'resume-1',
-                application: { candidateId: 'candidate-1' },
-            };
-
-            vi.mocked(prisma.resume.findUnique).mockResolvedValue(mockResume as any);
-            vi.mocked(prisma.resume.update).mockResolvedValue({} as any);
-            vi.mocked(auditEvent).mockResolvedValue(undefined);
-
-            await processParseResult({
-                resumeId: 'resume-1',
-                status: 'success',
-                parsedData: {
-                    name: 'Test User',
-                    email: 'test@example.com',
-                    phone: '',
-                    skills: [],
-                    experience_years: 0,
-                    employers: [],
-                    education: [],
-                    extracted_at: new Date().toISOString(),
-                },
-            });
-
-            expect(prisma.resume.update).toHaveBeenCalled();
+            ).rejects.toBeInstanceOf(ParseResultError);
         });
     });
 });

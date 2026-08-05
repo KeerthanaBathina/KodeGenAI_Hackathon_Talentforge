@@ -33,12 +33,12 @@ describe('applicationStatusService', () => {
     });
 
     describe('getActiveApplication', () => {
-        it('should return active draft application', async () => {
+        it('should return active submitted application', async () => {
             const mockApplication = {
                 id: '123e4567-e89b-12d3-a456-426614174002',
                 candidateId: mockCandidateId,
                 requisitionId: mockRequisitionId,
-                status: 'draft',
+                status: 'submitted',
                 createdAt: new Date(),
                 updatedAt: new Date(),
             };
@@ -57,7 +57,6 @@ describe('applicationStatusService', () => {
                     requisitionId: mockRequisitionId,
                     status: {
                         in: [
-                            'draft',
                             'submitted',
                             'screening',
                             'pending_review',
@@ -67,6 +66,7 @@ describe('applicationStatusService', () => {
                             'offered',
                         ],
                     },
+                    draftSavedAt: null,
                 },
                 orderBy: {
                     createdAt: 'desc',

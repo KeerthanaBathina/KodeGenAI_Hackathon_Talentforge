@@ -9,6 +9,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { buildApiUrl } from '@/lib/api/url';
 
 interface TokenDocumentationPanelProps {
     templateType: string;
@@ -83,14 +84,6 @@ const TOKEN_DEFINITIONS: Record<string, TokenInfo[]> = {
     ],
 };
 
-function getApiUrl(pathname: string): string {
-    const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-    if (!base || (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')) {
-        return pathname;
-    }
-    return `${base}${pathname}`;
-}
-
 export default function TokenDocumentationPanel({
     templateType,
     missingTokens = [],
@@ -111,7 +104,7 @@ export default function TokenDocumentationPanel({
             setIsLoading(true);
             try {
                 const response = await fetch(
-                    getApiUrl(`/api/templates/sample-data/${templateType}`),
+                    buildApiUrl(`/api/templates/sample-data/${templateType}`),
                     {
                         credentials: 'include',
                     }
@@ -148,9 +141,9 @@ export default function TokenDocumentationPanel({
     };
 
     return (
-        <div className="bg-white rounded-lg shadow h-full flex flex-col">
+        <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-[var(--admin-color-border)] bg-[var(--admin-color-surface-0)] shadow-[var(--admin-shadow-sm)]">
             {/* Header */}
-            <div className="border-b border-gray-200 px-4 py-3">
+            <div className="border-b border-[var(--admin-color-border)] bg-[var(--admin-color-surface-1)] px-4 py-3">
                 <button
                     type="button"
                     onClick={() => setIsCollapsed(!isCollapsed)}
@@ -158,15 +151,15 @@ export default function TokenDocumentationPanel({
                     aria-expanded={!isCollapsed}
                 >
                     <div>
-                        <h3 className="text-lg font-medium text-gray-900">
+                        <h3 className="admin-heading text-lg font-semibold text-[var(--admin-color-ink-primary)]">
                             Available Tokens
                         </h3>
-                        <p className="text-sm text-gray-500 mt-1">
+                        <p className="mt-1 text-sm text-[var(--admin-color-ink-secondary)]">
                             {tokens.length} token{tokens.length === 1 ? '' : 's'} for this template
                         </p>
                     </div>
                     <svg
-                        className={`h-5 w-5 text-gray-400 transition-transform ${
+                        className={`h-5 w-5 text-[var(--admin-color-ink-tertiary)] transition-transform ${
                             isCollapsed ? '-rotate-90' : ''
                         }`}
                         fill="none"
@@ -194,7 +187,7 @@ export default function TokenDocumentationPanel({
                                 placeholder="Search tokens..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                className="block h-9 w-full rounded-md border border-[var(--admin-color-border)] px-3 text-sm text-[var(--admin-color-ink-primary)] placeholder:text-[var(--admin-color-ink-tertiary)] focus:border-[var(--admin-color-brand-primary)] focus:outline-none"
                                 aria-label="Search tokens"
                             />
                         </div>
@@ -202,10 +195,10 @@ export default function TokenDocumentationPanel({
 
                     {/* Missing Tokens Warning */}
                     {missingTokens.length > 0 && (
-                        <div className="mx-4 mt-3 bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                        <div className="mx-4 mt-3 rounded-md border border-amber-200 bg-amber-50 p-3">
                             <div className="flex">
                                 <svg
-                                    className="h-5 w-5 text-yellow-400 flex-shrink-0"
+                                    className="h-5 w-5 flex-shrink-0 text-amber-400"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
@@ -218,10 +211,10 @@ export default function TokenDocumentationPanel({
                                     />
                                 </svg>
                                 <div className="ml-3 flex-1">
-                                    <h4 className="text-sm font-medium text-yellow-800">
+                                    <h4 className="text-sm font-medium text-amber-800">
                                         Missing Tokens
                                     </h4>
-                                    <p className="mt-1 text-xs text-yellow-700">
+                                    <p className="mt-1 text-xs text-amber-700">
                                         {missingTokens.map((token) => `{{${token}}}`).join(', ')}
                                     </p>
                                 </div>
@@ -230,9 +223,9 @@ export default function TokenDocumentationPanel({
                     )}
 
                     {/* Token List */}
-                    <div className="flex-1 overflow-auto p-4 space-y-3">
+                    <div className="flex-1 space-y-3 overflow-auto p-4">
                         {isLoading ? (
-                            <div className="text-center py-8 text-sm text-gray-500">
+                            <div className="py-8 text-center text-sm text-[var(--admin-color-ink-secondary)]">
                                 Loading sample data...
                             </div>
                         ) : filteredTokens.length > 0 ? (
@@ -245,20 +238,20 @@ export default function TokenDocumentationPanel({
                                         key={tokenInfo.token}
                                         className={`border rounded-lg p-3 ${
                                             isMissing
-                                                ? 'border-yellow-300 bg-yellow-50'
-                                                : 'border-gray-200 bg-white'
+                                                ? 'border-amber-300 bg-amber-50'
+                                                : 'border-[var(--admin-color-border)] bg-white'
                                         }`}
                                     >
                                         <div className="flex items-start justify-between">
                                             <div className="flex-1 min-w-0">
-                                                <code className="text-sm font-mono font-medium text-blue-600 break-all">
+                                                <code className="admin-mono break-all text-sm font-medium text-[var(--admin-color-brand-primary)]">
                                                     {`{{${tokenInfo.token}}}`}
                                                 </code>
-                                                <p className="text-xs text-gray-600 mt-1">
+                                                <p className="mt-1 text-xs text-[var(--admin-color-ink-secondary)]">
                                                     {tokenInfo.description}
                                                 </p>
                                                 {sampleValue && (
-                                                    <p className="text-xs text-gray-500 mt-1">
+                                                    <p className="mt-1 text-xs text-[var(--admin-color-ink-tertiary)]">
                                                         <span className="font-medium">Example:</span> {sampleValue}
                                                     </p>
                                                 )}
@@ -266,7 +259,7 @@ export default function TokenDocumentationPanel({
                                             <button
                                                 type="button"
                                                 onClick={() => handleCopyToken(tokenInfo.token)}
-                                                className="ml-2 flex-shrink-0 inline-flex items-center px-2 py-1 border border-gray-300 rounded text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                                className="ml-2 inline-flex flex-shrink-0 items-center rounded border border-[var(--admin-color-border)] bg-white px-2 py-1 text-xs font-medium text-[var(--admin-color-ink-secondary)] hover:bg-[var(--admin-color-surface-1)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--admin-color-brand-primary)]"
                                                 aria-label={`Copy ${tokenInfo.token} token`}
                                             >
                                                 {copiedToken === tokenInfo.token ? (
@@ -310,7 +303,7 @@ export default function TokenDocumentationPanel({
                                 );
                             })
                         ) : (
-                            <div className="text-center py-8 text-sm text-gray-500">
+                            <div className="py-8 text-center text-sm text-[var(--admin-color-ink-secondary)]">
                                 {searchQuery ? 'No tokens match your search' : 'No tokens available'}
                             </div>
                         )}

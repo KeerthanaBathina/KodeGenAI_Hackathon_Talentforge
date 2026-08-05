@@ -1,0 +1,45 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - alert [ref=e2]
+  - main [ref=e3]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: TF
+      - text: TalentForge
+    - generic [ref=e8]:
+      - heading "Welcome back" [level=1] [ref=e9]
+      - paragraph [ref=e10]: Sign in to your account to continue
+      - alert [ref=e11]:
+        - generic [ref=e12]: "!"
+        - generic [ref=e13]: Unable to connect to server. Please try again.
+      - generic [ref=e14]:
+        - generic [ref=e15]:
+          - generic [ref=e16]: Email or Username
+          - textbox "Email or Username" [ref=e18]: admin@example.com
+        - generic [ref=e19]:
+          - generic [ref=e20]: Password
+          - generic [ref=e21]:
+            - textbox "Password" [ref=e22]: password123
+            - button "Show password" [ref=e23] [cursor=pointer]: Show
+        - generic [ref=e24]:
+          - generic [ref=e25] [cursor=pointer]:
+            - checkbox "Keep me logged in for 30 days" [ref=e26]
+            - text: Keep me logged in for 30 days
+          - link "Forgot password?" [ref=e27] [cursor=pointer]:
+            - /url: /forgot-password
+        - button "Log in" [ref=e28] [cursor=pointer]
+      - generic [ref=e31]: Or continue with
+      - generic [ref=e33]:
+        - button "G Continue with Google" [ref=e34] [cursor=pointer]:
+          - generic [ref=e35] [cursor=pointer]: G
+          - text: Continue with Google
+        - button "GH Continue with GitHub" [ref=e36] [cursor=pointer]:
+          - generic [ref=e37] [cursor=pointer]: GH
+          - text: Continue with GitHub
+      - paragraph [ref=e38]:
+        - text: Do not have an account?
+        - link "Sign up" [ref=e39] [cursor=pointer]:
+          - /url: /register
+    - generic [ref=e40]: 2026 TalentForge . Privacy Policy . Terms of Service
+```

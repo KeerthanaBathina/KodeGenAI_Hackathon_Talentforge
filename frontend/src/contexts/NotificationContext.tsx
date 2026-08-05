@@ -3,6 +3,7 @@ import { Notification } from '../types/notification';
 import { useSocketClient } from '../hooks/useSocketClient';
 import { shouldShowToast, getToastType } from '../types/toast';
 import { useToast } from './ToastContext';
+import { buildApiUrl } from '@/lib/api/url';
 
 /**
  * Notification Context Value
@@ -66,6 +67,7 @@ export function NotificationProvider({ children, authToken }: NotificationProvid
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [isNotificationsApiAvailable, setIsNotificationsApiAvailable] = useState(true);
   
   const socket = useSocketClient(authToken);
   const { addToast } = useToast();
@@ -118,16 +120,25 @@ export function NotificationProvider({ children, authToken }: NotificationProvid
     
     setIsLoading(true);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiUrl}/api/notifications`, {
+      const response = await fetch(buildApiUrl('/api/notifications'), {
+        credentials: 'include',
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
       });
+
+      if (response.status === 404) {
+        setIsNotificationsApiAvailable(false);
+        setNotifications([]);
+        setUnreadCount(0);
+        return;
+      }
       
       if (!response.ok) {
         throw new Error(`Failed to load notifications: ${response.status}`);
       }
+
+      setIsNotificationsApiAvailable(true);
       
       const data = await response.json();
       setNotifications(data.notifications || []);
@@ -164,15 +175,24 @@ export function NotificationProvider({ children, authToken }: NotificationProvid
       prev.map(n => n.id === notificationId ? { ...n, readAt: new Date().toISOString() } : n)
     );
     setUnreadCount(prev => Math.max(0, prev - 1));
+
+    if (!isNotificationsApiAvailable) {
+      return;
+    }
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiUrl}/api/notifications/${notificationId}/read`, {
+      const response = await fetch(buildApiUrl(`/api/notifications/${notificationId}/read`), {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
       });
+
+      if (response.status === 404) {
+        setIsNotificationsApiAvailable(false);
+        return;
+      }
       
       if (!response.ok) {
         throw new Error(`Failed to mark as read: ${response.status}`);
@@ -209,15 +229,24 @@ export function NotificationProvider({ children, authToken }: NotificationProvid
     const now = new Date().toISOString();
     setNotifications(prev => prev.map(n => ({ ...n, readAt: n.readAt || now })));
     setUnreadCount(0);
+
+    if (!isNotificationsApiAvailable) {
+      return;
+    }
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiUrl}/api/notifications/read-all`, {
+      const response = await fetch(buildApiUrl('/api/notifications/read-all'), {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
       });
+
+      if (response.status === 404) {
+        setIsNotificationsApiAvailable(false);
+        return;
+      }
       
       if (!response.ok) {
         throw new Error(`Failed to mark all as read: ${response.status}`);

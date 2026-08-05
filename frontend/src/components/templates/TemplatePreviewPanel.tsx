@@ -80,13 +80,13 @@ export default function TemplatePreviewPanel({
     }, [bodyHtml, previewMode]);
 
     return (
-        <div className="bg-white rounded-lg shadow h-full flex flex-col">
+        <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-[var(--admin-color-border)] bg-[var(--admin-color-surface-0)] shadow-[var(--admin-shadow-sm)]">
             {/* Header with tabs */}
-            <div className="border-b border-gray-200 px-4 py-3">
+            <div className="border-b border-[var(--admin-color-border)] bg-[var(--admin-color-surface-1)] px-4 py-3">
                 <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-lg font-medium text-gray-900">Preview</h3>
+                    <h3 className="admin-heading text-lg font-semibold text-[var(--admin-color-ink-primary)]">Preview</h3>
                     {isLoading && (
-                        <div className="flex items-center text-sm text-gray-500">
+                        <div className="flex items-center text-sm text-[var(--admin-color-ink-secondary)]">
                             <svg
                                 className="animate-spin h-4 w-4 mr-2"
                                 fill="none"
@@ -113,11 +113,11 @@ export default function TemplatePreviewPanel({
 
                 {/* Subject line preview */}
                 <div className="mb-3">
-                    <label className="block text-xs font-medium text-gray-500 mb-1">
+                    <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.06em] text-[var(--admin-color-ink-tertiary)]">
                         Subject
                     </label>
-                    <div className="text-sm text-gray-900 font-medium">
-                        {subject || <span className="text-gray-400 italic">No subject</span>}
+                    <div className="text-sm font-semibold text-[var(--admin-color-ink-primary)]">
+                        {subject || <span className="italic text-[var(--admin-color-ink-tertiary)]">No subject</span>}
                     </div>
                 </div>
 
@@ -126,10 +126,10 @@ export default function TemplatePreviewPanel({
                     <button
                         type="button"
                         onClick={() => setPreviewMode('html')}
-                        className={`px-3 py-1.5 text-sm font-medium rounded-md ${
+                        className={`rounded-md px-3 py-1.5 text-sm font-medium ${
                             previewMode === 'html'
-                                ? 'bg-blue-100 text-blue-700'
-                                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                                ? 'bg-[var(--admin-color-brand-primary)] text-white'
+                                : 'text-[var(--admin-color-ink-secondary)] hover:bg-[var(--admin-color-surface-2)] hover:text-[var(--admin-color-ink-primary)]'
                         }`}
                         aria-pressed={previewMode === 'html'}
                     >
@@ -138,10 +138,10 @@ export default function TemplatePreviewPanel({
                     <button
                         type="button"
                         onClick={() => setPreviewMode('text')}
-                        className={`px-3 py-1.5 text-sm font-medium rounded-md ${
+                        className={`rounded-md px-3 py-1.5 text-sm font-medium ${
                             previewMode === 'text'
-                                ? 'bg-blue-100 text-blue-700'
-                                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                                ? 'bg-[var(--admin-color-brand-primary)] text-white'
+                                : 'text-[var(--admin-color-ink-secondary)] hover:bg-[var(--admin-color-surface-2)] hover:text-[var(--admin-color-ink-primary)]'
                         }`}
                         aria-pressed={previewMode === 'text'}
                     >
@@ -151,9 +151,9 @@ export default function TemplatePreviewPanel({
             </div>
 
             {/* Preview content */}
-            <div className="flex-1 overflow-auto p-4 bg-gray-50">
+            <div className="flex-1 overflow-auto bg-[var(--admin-color-surface-1)] p-4">
                 {error ? (
-                    <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                    <div className="rounded-md border border-red-200 bg-red-50 p-4">
                         <div className="flex">
                             <svg
                                 className="h-5 w-5 text-red-400"
@@ -179,7 +179,7 @@ export default function TemplatePreviewPanel({
                         </div>
                     </div>
                 ) : previewMode === 'html' ? (
-                    <div className="bg-white rounded border border-gray-200 shadow-sm">
+                    <div className="overflow-hidden rounded-md border border-[var(--admin-color-border)] bg-white shadow-sm">
                         <iframe
                             ref={iframeRef}
                             title="HTML Preview"
@@ -189,9 +189,9 @@ export default function TemplatePreviewPanel({
                         />
                     </div>
                 ) : (
-                    <div className="bg-white rounded border border-gray-200 shadow-sm p-4">
-                        <pre className="whitespace-pre-wrap font-mono text-sm text-gray-900 overflow-auto">
-                            {bodyText || <span className="text-gray-400 italic">No plain text content</span>}
+                    <div className="rounded-md border border-[var(--admin-color-border)] bg-white p-4 shadow-sm">
+                        <pre className="admin-mono overflow-auto whitespace-pre-wrap text-sm text-[var(--admin-color-ink-primary)]">
+                            {bodyText || <span className="italic text-[var(--admin-color-ink-tertiary)]">No plain text content</span>}
                         </pre>
                     </div>
                 )}

@@ -4,14 +4,7 @@ import React from 'react';
 import { FormEvent, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-
-function getApiUrl(pathname: string): string {
-    const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-    if (!base || (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')) {
-        return pathname;
-    }
-    return `${base}${pathname}`;
-}
+import { buildApiUrl } from '@/lib/api/url';
 
 export default function ResetPasswordPage() {
     const router = useRouter();
@@ -37,7 +30,7 @@ export default function ResetPasswordPage() {
 
         async function validateToken() {
             try {
-                const response = await fetch(getApiUrl(`/api/auth/validate-reset-token/${token}`));
+                const response = await fetch(buildApiUrl(`/api/auth/validate-reset-token/${token}`));
                 const body = await response.json();
 
                 if (response.ok && body.valid) {
@@ -89,7 +82,7 @@ export default function ResetPasswordPage() {
         setSubmitting(true);
 
         try {
-            const response = await fetch(getApiUrl('/api/auth/reset-password'), {
+            const response = await fetch(buildApiUrl('/api/auth/reset-password'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token, newPassword: password }),

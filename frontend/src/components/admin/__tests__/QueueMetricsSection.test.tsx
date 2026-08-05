@@ -50,7 +50,7 @@ describe('QueueMetricsSection', () => {
     expect(screen.getByText(/500/)).toBeInTheDocument(); // completed
   });
 
-  it('should show warning indicator for failed jobs', () => {
+  it('should show issue indicator for failed jobs', () => {
     const queues = [
       {
         queueName: 'screening',
@@ -64,10 +64,10 @@ describe('QueueMetricsSection', () => {
 
     render(<QueueMetricsSection queues={queues} />);
 
-    expect(screen.getByText('⚠')).toBeInTheDocument();
+    expect(screen.getByText('Issue')).toBeInTheDocument();
   });
 
-  it('should show warning indicator for high waiting count', () => {
+  it('should show issue indicator for high waiting count', () => {
     const queues = [
       {
         queueName: 'resume-parse',
@@ -81,7 +81,7 @@ describe('QueueMetricsSection', () => {
 
     render(<QueueMetricsSection queues={queues} />);
 
-    expect(screen.getByText('⚠')).toBeInTheDocument();
+    expect(screen.getByText('Issue')).toBeInTheDocument();
   });
 
   it('should render multiple queues', () => {

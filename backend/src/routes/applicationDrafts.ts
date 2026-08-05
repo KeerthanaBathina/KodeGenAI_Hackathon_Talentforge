@@ -34,6 +34,7 @@ const DraftDataSchema = z.object({
     step1_personal: DraftDataStep1Schema.optional(),
     step2_experience: DraftDataStep2Schema.optional(),
     step3_coverLetter: DraftDataStep3Schema.optional(),
+    resumeSetupOnly: z.boolean().optional(),
     currentStep: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
 });
 

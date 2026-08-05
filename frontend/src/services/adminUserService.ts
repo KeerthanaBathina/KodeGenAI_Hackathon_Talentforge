@@ -11,15 +11,20 @@ import type {
   UserFilters,
   ApiErrorResponse,
 } from "@/types/user";
+import { resolveApiBaseUrl } from "@/lib/api/url";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+const API_BASE_URL = resolveApiBaseUrl();
 
 /**
  * Parse API error response and provide user-friendly message
  */
 function getErrorMessage(error: unknown): string {
-  if (error instanceof Response) {
-    switch (error.status) {
+  if (error instanceof Response || (typeof error === "object" && error !== null && "status" in error)) {
+    const status = error instanceof Response
+      ? error.status
+      : Number((error as { status?: unknown }).status);
+
+    switch (status) {
       case 403:
         return "You don't have permission to perform this action";
       case 409:
@@ -49,16 +54,47 @@ async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const errorResponse = (await response.json().catch(() => ({}))) as Partial<
       ApiErrorResponse
-    >;
+    > & {
+      error?: {
+        code?: string;
+        message?: string;
+      };
+    };
     const error = new Error(
-      errorResponse.message || getErrorMessage(response)
+      errorResponse.message || errorResponse.error?.message || getErrorMessage(response)
     ) as Error & { status?: number; code?: string };
     error.status = response.status;
-    error.code = errorResponse.code;
+    error.code = errorResponse.code || errorResponse.error?.code;
     throw error;
   }
 
   return response.json() as Promise<T>;
+}
+
+function unwrapUserList(payload: unknown): User[] {
+  if (Array.isArray(payload)) {
+    return payload as User[];
+  }
+
+  if (payload && typeof payload === "object") {
+    const data = payload as { users?: unknown };
+    if (Array.isArray(data.users)) {
+      return data.users as User[];
+    }
+  }
+
+  return [];
+}
+
+function unwrapUser(payload: unknown): User {
+  if (payload && typeof payload === "object") {
+    const data = payload as { user?: unknown };
+    if (data.user && typeof data.user === "object") {
+      return data.user as User;
+    }
+  }
+
+  return payload as User;
 }
 
 export const adminUserService = {
@@ -87,7 +123,8 @@ export const adminUserService = {
       },
     });
 
-    return handleResponse<User[]>(response);
+    const payload = await handleResponse<unknown>(response);
+    return unwrapUserList(payload);
   },
 
   /**
@@ -103,7 +140,8 @@ export const adminUserService = {
       },
     });
 
-    return handleResponse<User>(response);
+    const payload = await handleResponse<unknown>(response);
+    return unwrapUser(payload);
   },
 
   /**
@@ -138,11 +176,12 @@ export const adminUserService = {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(input),
+        body: JSON.stringify({ role: input.newRole }),
       }
     );
 
-    return handleResponse<User>(response);
+    const payload = await handleResponse<unknown>(response);
+    return unwrapUser(payload);
   },
 
   /**
@@ -161,7 +200,8 @@ export const adminUserService = {
       }
     );
 
-    return handleResponse<User>(response);
+    const payload = await handleResponse<unknown>(response);
+    return unwrapUser(payload);
   },
 
   /**
@@ -180,6 +220,7 @@ export const adminUserService = {
       }
     );
 
-    return handleResponse<User>(response);
+    const payload = await handleResponse<unknown>(response);
+    return unwrapUser(payload);
   },
 };

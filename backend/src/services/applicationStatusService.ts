@@ -96,7 +96,8 @@ export async function checkApplicationEligibility(
 }
 
 /**
- * Get active (non-terminal) application for candidate + requisition
+ * Get active submitted/in-progress application for candidate + requisition
+ * Drafts are intentionally excluded because they are handled separately by draft APIs.
  */
 export async function getActiveApplication(
     params: GetEligibilityParams
@@ -104,7 +105,6 @@ export async function getActiveApplication(
     const { candidateId, requisitionId } = params;
 
     const activeStatuses = [
-        'draft',
         'submitted',
         'screening',
         'pending_review',
@@ -119,6 +119,7 @@ export async function getActiveApplication(
             candidateId,
             requisitionId,
             status: { in: activeStatuses },
+            draftSavedAt: null,
         },
         orderBy: {
             createdAt: 'desc',

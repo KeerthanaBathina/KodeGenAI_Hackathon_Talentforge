@@ -1,16 +1,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
-
-function getApiUrl(pathname: string): string {
-    const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-    if (!base || (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')) {
-        return pathname;
-    }
-    return `${base}${pathname}`;
-}
+import { buildApiUrl } from '@/lib/api/url';
+import CandidateTopNav from '@/components/CandidateTopNav';
 
 interface Application {
     id: string;
@@ -24,7 +18,6 @@ interface Requisition {
 }
 
 export default function ApplicationSuccessPage() {
-    const router = useRouter();
     const params = useParams();
     const requisitionId = params.id as string;
     const [jobTitle, setJobTitle] = useState<string>('');
@@ -35,7 +28,7 @@ export default function ApplicationSuccessPage() {
         async function loadApplicationData() {
             try {
                 // Load requisition details
-                const reqResponse = await fetch(getApiUrl(`/api/requisitions/${requisitionId}`), {
+                const reqResponse = await fetch(buildApiUrl(`/api/requisitions/${requisitionId}`), {
                     credentials: 'include',
                 });
 
@@ -46,7 +39,7 @@ export default function ApplicationSuccessPage() {
 
                 // Load submitted application to get application ID
                 const appResponse = await fetch(
-                    getApiUrl(`/api/applications/by-requisition/${requisitionId}`),
+                    buildApiUrl(`/api/applications/by-requisition/${requisitionId}`),
                     {
                         credentials: 'include',
                     }
@@ -68,8 +61,11 @@ export default function ApplicationSuccessPage() {
 
     if (isLoading) {
         return (
-            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <p>Loading...</p>
+            <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+                <CandidateTopNav active="applications" />
+                <div style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <p>Loading...</p>
+                </div>
             </div>
         );
     }
@@ -77,7 +73,10 @@ export default function ApplicationSuccessPage() {
     const referenceId = applicationId.toUpperCase().slice(0, 8);
 
     return (
-        <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+        <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+            <CandidateTopNav active="applications" />
+
+            <div style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
             <div style={{ maxWidth: '600px', textAlign: 'center', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '3rem' }}>
                 {/* Success Icon */}
                 <div
@@ -140,7 +139,7 @@ export default function ApplicationSuccessPage() {
 
                 {/* Email Confirmation Notice */}
                 <p style={{ fontSize: '1rem', color: '#6b7280', marginBottom: '2rem' }}>
-                    📧 A confirmation email has been sent to your inbox with tracking details.
+                    A confirmation email has been sent to your inbox with tracking details.
                 </p>
 
                 {/* Action Buttons */}
@@ -178,6 +177,7 @@ export default function ApplicationSuccessPage() {
                         Browse More Jobs
                     </Link>
                 </div>
+            </div>
             </div>
         </div>
     );

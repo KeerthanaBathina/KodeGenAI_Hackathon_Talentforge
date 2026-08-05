@@ -214,8 +214,21 @@ export async function getEmailDeliveryMetrics(): Promise<EmailDeliveryMetrics> {
         id: true,
         status: true,
         createdAt: true,
-        recipientEmail: true,
-        templateType: true,
+        applicationId: true,
+        application: {
+          select: {
+            candidate: {
+              select: {
+                email: true,
+              },
+            },
+          },
+        },
+        template: {
+          select: {
+            type: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
       take: 100,
@@ -231,8 +244,8 @@ export async function getEmailDeliveryMetrics(): Promise<EmailDeliveryMetrics> {
       successRate,
       failedEmails: failedEmails.map((email) => ({
         id: email.id,
-        to: email.recipientEmail,
-        templateType: email.templateType || 'unknown',
+        to: email.application?.candidate?.email ?? `application:${email.applicationId}`,
+        templateType: email.template?.type ?? 'unknown',
         status: email.status,
         createdAt: email.createdAt,
       })),

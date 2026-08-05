@@ -9,12 +9,13 @@
  */
 
 import axios from 'axios';
+import bcrypt from 'bcrypt';
+import crypto from 'node:crypto';
+import { CandidateStatus, type UserRole } from '@prisma/client';
 import { env } from '../config/env';
 import prisma from '../db/prisma';
-import { JwtService } from './jwtService';
 import { auditService } from './auditService';
 import logger from '../utils/logger';
-import type { UserRole } from '@prisma/client';
 
 // ============================================================================
 // Types
@@ -43,11 +44,70 @@ export interface OAuthResult {
 export class OAuthError extends Error {
     constructor(
         message: string,
-        public code: 'INVALID_CODE' | 'PROFILE_FETCH_FAILED' | 'EMAIL_REQUIRED' | 'ACCOUNT_CREATION_FAILED'
+        public code:
+            | 'INVALID_CODE'
+            | 'PROFILE_FETCH_FAILED'
+            | 'EMAIL_REQUIRED'
+            | 'ACCOUNT_CREATION_FAILED'
+            | 'PROVIDER_NOT_CONFIGURED'
+            | 'ACCOUNT_UNAVAILABLE'
     ) {
         super(message);
         this.name = 'OAuthError';
     }
+}
+
+type OAuthProvider = 'google' | 'github';
+
+const OAUTH_PLACEHOLDER_PASSWORD_ROUNDS = 10;
+
+function ensureProviderConfigured(provider: OAuthProvider): void {
+    if (provider === 'google') {
+        if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET || !env.GOOGLE_REDIRECT_URI) {
+            throw new OAuthError('Google OAuth is not configured', 'PROVIDER_NOT_CONFIGURED');
+        }
+        return;
+    }
+
+    if (!env.GITHUB_CLIENT_ID || !env.GITHUB_CLIENT_SECRET || !env.GITHUB_REDIRECT_URI) {
+        throw new OAuthError('GitHub OAuth is not configured', 'PROVIDER_NOT_CONFIGURED');
+    }
+}
+
+function generateCandidatePublicId(): string {
+    const token = crypto.randomBytes(6).toString('hex').toUpperCase();
+    return `CAND-${token}`;
+}
+
+function parseName(name: string | undefined, fallbackEmail: string): {
+    fullName: string;
+    firstName?: string;
+    lastName?: string;
+} {
+    const normalized = name?.trim();
+    if (!normalized) {
+        const emailPrefix = fallbackEmail.split('@')[0] ?? 'Candidate';
+        return {
+            fullName: emailPrefix,
+            firstName: emailPrefix,
+        };
+    }
+
+    const parts = normalized.split(/\s+/).filter(Boolean);
+    const firstName = parts[0];
+    const lastName = parts.length > 1 ? parts.slice(1).join(' ') : undefined;
+
+    return {
+        fullName: normalized,
+        firstName,
+        lastName,
+    };
+}
+
+async function generatePlaceholderPasswordHash(provider: OAuthProvider, providerId: string): Promise<string> {
+    const randomSuffix = crypto.randomBytes(12).toString('hex');
+    const pseudoPassword = `oauth:${provider}:${providerId}:${randomSuffix}`;
+    return bcrypt.hash(pseudoPassword, OAUTH_PLACEHOLDER_PASSWORD_ROUNDS);
 }
 
 // ============================================================================
@@ -62,6 +122,8 @@ export async function exchangeGoogleCode(
     ipAddress?: string,
     userAgent?: string
 ): Promise<OAuthResult> {
+    ensureProviderConfigured('google');
+
     try {
         // Exchange authorization code for access token
         const tokenResponse = await axios.post('https://oauth2.googleapis.com/token', {
@@ -120,6 +182,8 @@ export async function exchangeGitHubCode(
     ipAddress?: string,
     userAgent?: string
 ): Promise<OAuthResult> {
+    ensureProviderConfigured('github');
+
     try {
         // Exchange authorization code for access token
         const tokenResponse = await axios.post(
@@ -196,38 +260,89 @@ async function findOrCreateOAuthAccount(
     ipAddress?: string,
     userAgent?: string
 ): Promise<OAuthResult> {
-    const email = profile.email.toLowerCase();
+    const email = profile.email.trim().toLowerCase();
+    const displayName = parseName(profile.name, email);
 
-    // Check if account already exists
     let candidate = await prisma.candidate.findUnique({
         where: { email },
-        include: { credentials: true },
+        select: {
+            id: true,
+            email: true,
+            status: true,
+            candidatePublicId: true,
+            firstName: true,
+            lastName: true,
+            credential: {
+                select: {
+                    candidateId: true,
+                },
+            },
+            profile: {
+                select: {
+                    id: true,
+                },
+            },
+        },
     });
 
     const isNewAccount = !candidate;
 
     if (!candidate) {
-        // Create new candidate account with active status (OAuth users are pre-verified)
         try {
-            candidate = await prisma.candidate.create({
-                data: {
-                    email,
-                    fullName: profile.name || email.split('@')[0],
-                    phoneNumber: null,
-                    status: 'active', // OAuth users bypass OTP verification
-                    emailVerifiedAt: new Date(),
-                    credentials: {
-                        create: {
-                            passwordHash: null, // No password for OAuth-only accounts
-                        },
+            const passwordHash = await generatePlaceholderPasswordHash(profile.provider, profile.providerId);
+
+            candidate = await prisma.$transaction(async (tx) => {
+                const created = await tx.candidate.create({
+                    data: {
+                        email,
+                        status: CandidateStatus.active,
+                        candidatePublicId: generateCandidatePublicId(),
+                        firstName: displayName.firstName,
+                        lastName: displayName.lastName,
+                        lastSuccessfulLoginAt: new Date(),
+                        failedLoginAttempts: 0,
+                        lockedUntil: null,
                     },
-                },
-                include: { credentials: true },
+                    select: {
+                        id: true,
+                        email: true,
+                        status: true,
+                        candidatePublicId: true,
+                        firstName: true,
+                        lastName: true,
+                    },
+                });
+
+                await tx.candidateCredential.create({
+                    data: {
+                        candidateId: created.id,
+                        passwordHash,
+                    },
+                });
+
+                await tx.profile.create({
+                    data: {
+                        candidateId: created.id,
+                        fullName: displayName.fullName,
+                        experienceYears: 0,
+                        skills: [],
+                        education: [],
+                        workHistory: [],
+                        profileCompletionPercentage: 0,
+                        lastCompletedSection: null,
+                        rawParseJson: {},
+                    },
+                });
+
+                return {
+                    ...created,
+                    credential: { candidateId: created.id },
+                    profile: { id: created.id },
+                };
             });
 
             logger.info({ email, provider: profile.provider }, 'New OAuth account created');
 
-            // Audit: account created via OAuth
             await auditService.logEvent({
                 eventType: 'oauth_account_created',
                 actorId: candidate.id,
@@ -246,19 +361,78 @@ async function findOrCreateOAuthAccount(
             throw new OAuthError('Failed to create account', 'ACCOUNT_CREATION_FAILED');
         }
     } else {
-        // Existing account - link OAuth provider if not already linked
+        if (candidate.status === CandidateStatus.anonymized) {
+            throw new OAuthError('Account is unavailable', 'ACCOUNT_UNAVAILABLE');
+        }
+
+        const needsCredential = !candidate.credential;
+        const needsProfile = !candidate.profile;
+
+        try {
+            const passwordHash = needsCredential
+                ? await generatePlaceholderPasswordHash(profile.provider, profile.providerId)
+                : null;
+
+            candidate = await prisma.$transaction(async (tx) => {
+                const updated = await tx.candidate.update({
+                    where: { id: candidate!.id },
+                    data: {
+                        status: CandidateStatus.active,
+                        candidatePublicId: candidate!.candidatePublicId ?? generateCandidatePublicId(),
+                        firstName: candidate!.firstName ?? displayName.firstName,
+                        lastName: candidate!.lastName ?? displayName.lastName,
+                        failedLoginAttempts: 0,
+                        lockedUntil: null,
+                        lastSuccessfulLoginAt: new Date(),
+                    },
+                    select: {
+                        id: true,
+                        email: true,
+                        status: true,
+                        candidatePublicId: true,
+                        firstName: true,
+                        lastName: true,
+                    },
+                });
+
+                if (needsCredential && passwordHash) {
+                    await tx.candidateCredential.create({
+                        data: {
+                            candidateId: updated.id,
+                            passwordHash,
+                        },
+                    });
+                }
+
+                if (needsProfile) {
+                    await tx.profile.create({
+                        data: {
+                            candidateId: updated.id,
+                            fullName: displayName.fullName,
+                            experienceYears: 0,
+                            skills: [],
+                            education: [],
+                            workHistory: [],
+                            profileCompletionPercentage: 0,
+                            lastCompletedSection: null,
+                            rawParseJson: {},
+                        },
+                    });
+                }
+
+                return {
+                    ...updated,
+                    credential: needsCredential ? { candidateId: updated.id } : candidate!.credential,
+                    profile: needsProfile ? { id: updated.id } : candidate!.profile,
+                };
+            });
+        } catch (error) {
+            logger.error({ error, email, provider: profile.provider }, 'OAuth account update failed');
+            throw new OAuthError('Failed to update account', 'ACCOUNT_CREATION_FAILED');
+        }
+
         logger.info({ email, provider: profile.provider, isNewAccount: false }, 'OAuth login for existing account');
 
-        // Update last successful login
-        await prisma.candidate.update({
-            where: { id: candidate.id },
-            data: {
-                lastSuccessfulLoginAt: new Date(),
-                failedLoginAttempts: 0, // Reset on successful OAuth login
-            },
-        });
-
-        // Audit: OAuth login
         await auditService.logEvent({
             eventType: 'oauth_login_success',
             actorId: candidate.id,
@@ -294,6 +468,8 @@ async function findOrCreateOAuthAccount(
  * Generate Google OAuth authorization URL
  */
 export function getGoogleAuthUrl(state?: string): string {
+    ensureProviderConfigured('google');
+
     const params = new URLSearchParams({
         client_id: env.GOOGLE_CLIENT_ID!,
         redirect_uri: env.GOOGLE_REDIRECT_URI!,
@@ -310,6 +486,8 @@ export function getGoogleAuthUrl(state?: string): string {
  * Generate GitHub OAuth authorization URL
  */
 export function getGitHubAuthUrl(state?: string): string {
+    ensureProviderConfigured('github');
+
     const params = new URLSearchParams({
         client_id: env.GITHUB_CLIENT_ID!,
         redirect_uri: env.GITHUB_REDIRECT_URI!,

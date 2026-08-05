@@ -4,25 +4,9 @@ import React from 'react';
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CountdownTimer } from '../../components/CountdownTimer';
+import { buildApiUrl } from '@/lib/api/url';
 
 const genericMessage = 'If this email is new to us, you will receive a verification code';
-
-function getApiUrl(pathname: string): string {
-  const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-  const isLocalDevHost =
-    typeof window !== 'undefined' &&
-    (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost');
-
-  if (isLocalDevHost) {
-    return `http://localhost:3001${pathname}`;
-  }
-
-  if (!base) {
-    return pathname;
-  }
-
-  return `${base}${pathname}`;
-}
 
 export default function VerifyOtpPage() {
   const router = useRouter();
@@ -70,7 +54,7 @@ export default function VerifyOtpPage() {
     setSubmitting(true);
 
     try {
-      const response = await fetch(getApiUrl('/api/auth/verify-otp'), {
+      const response = await fetch(buildApiUrl('/api/auth/verify-otp'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -111,7 +95,7 @@ export default function VerifyOtpPage() {
     setRateLimitError(null);
 
     try {
-      const response = await fetch(getApiUrl('/api/auth/resend-otp'), {
+      const response = await fetch(buildApiUrl('/api/auth/resend-otp'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

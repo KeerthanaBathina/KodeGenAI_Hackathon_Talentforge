@@ -202,188 +202,256 @@ export const ApprovalPolicyEditor: React.FC = () => {
 
   const isValid = Object.keys(errors).length === 0;
 
+  const formatCurrency = (value: number | string): string => {
+    return Number(value).toLocaleString();
+  };
+
+  const formatApproverLabel = (approver: ApproverOption): string => {
+    return `${approver.fullName} (${approver.email})`;
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Current Policies */}
       {!loading && policies.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Current Policies</h2>
-          <div className="space-y-3">
-            {policies.map((policy) => (
-              <div key={policy.id} className="p-3 bg-gray-50 rounded border border-gray-200">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      ${Number(policy.compensationBandMin).toLocaleString()} - $
-                      {Number(policy.compensationBandMax).toLocaleString()}
-                    </p>
-                    <p className="text-xs text-gray-600 mt-1">
-                      {policy.requiredApprovers?.length || 0} approvers
-                      {policy.effectiveFrom && (
-                        <> • Effective {new Date(policy.effectiveFrom).toLocaleDateString()}</>
+        <div className="overflow-hidden rounded-2xl border border-[var(--admin-color-border)] bg-[var(--admin-color-surface-0)] shadow-[var(--admin-shadow-sm)]">
+          <div className="border-b border-[var(--admin-color-border)] bg-[var(--admin-color-surface-1)] px-5 py-4">
+            <h2 className="admin-heading text-lg font-semibold text-[var(--admin-color-ink-primary)]">Current Policies</h2>
+            <p className="mt-1 text-sm text-[var(--admin-color-ink-secondary)]">
+              Approval chains grouped by compensation band.
+            </p>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-[var(--admin-color-border)]">
+              <thead className="bg-[var(--admin-color-surface-1)]">
+                <tr>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--admin-color-ink-tertiary)]">
+                    Band
+                  </th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--admin-color-ink-tertiary)]">
+                    Salary Range
+                  </th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--admin-color-ink-tertiary)]">
+                    Approval Chain
+                  </th>
+                  <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--admin-color-ink-tertiary)]">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--admin-color-border)] bg-white">
+                {policies.map((policy, index) => (
+                  <tr key={policy.id} className="hover:bg-[var(--admin-color-surface-1)]">
+                    <td className="px-4 py-3 text-sm font-medium text-[var(--admin-color-ink-primary)]">
+                      Band {index + 1}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-[var(--admin-color-ink-primary)]">
+                      ${formatCurrency(policy.compensationBandMin)} - ${formatCurrency(policy.compensationBandMax)}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-[var(--admin-color-ink-secondary)]">
+                      {(policy.requiredApprovers || []).length > 0
+                        ? policy.requiredApprovers
+                            .slice()
+                            .sort((a, b) => a.tier - b.tier)
+                            .map((approver) => approver.displayName || approver.role)
+                            .join(' -> ')
+                        : 'No approvers configured'}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {policy.active !== false ? (
+                        <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                          Active
+                        </span>
+                      ) : (
+                        <span className="inline-flex rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                          Archived
+                        </span>
                       )}
-                    </p>
-                  </div>
-                  {policy.active !== false && (
-                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
-                      Active
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {loading && (
+        <div className="animate-pulse rounded-2xl border border-[var(--admin-color-border)] bg-[var(--admin-color-surface-0)] p-6 shadow-[var(--admin-shadow-sm)]">
+          <div className="mb-4 h-5 w-52 rounded bg-slate-200"></div>
+          <div className="space-y-2">
+            <div className="h-9 rounded bg-slate-200"></div>
+            <div className="h-9 rounded bg-slate-200"></div>
+            <div className="h-9 rounded bg-slate-200"></div>
           </div>
         </div>
       )}
 
       {/* Messages */}
       {successMessage && (
-        <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-green-800 font-medium">{successMessage}</p>
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+          <p className="text-sm font-medium text-emerald-900">{successMessage}</p>
         </div>
       )}
       {errorMessage && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-800 font-medium">{errorMessage}</p>
+        <div className="rounded-lg border border-rose-200 bg-rose-50 p-4">
+          <p className="text-sm font-medium text-rose-900">{errorMessage}</p>
         </div>
       )}
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-6">Create New Policy</h2>
-
-        {/* Compensation Band */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Compensation Min ($)
-            </label>
-            <input
-              type="number"
-              name="compensationBandMin"
-              value={formData.compensationBandMin}
-              onChange={handleChange}
-              min="0"
-              step="1000"
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                errors.compensationBandMin
-                  ? 'border-red-300 focus:ring-red-500'
-                  : 'border-gray-300 focus:ring-blue-500'
-              }`}
-            />
-            {errors.compensationBandMin && (
-              <p className="text-xs text-red-600 mt-1">{errors.compensationBandMin}</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Compensation Max ($)
-            </label>
-            <input
-              type="number"
-              name="compensationBandMax"
-              value={formData.compensationBandMax}
-              onChange={handleChange}
-              min="0"
-              step="1000"
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                errors.compensationBandMax
-                  ? 'border-red-300 focus:ring-red-500'
-                  : 'border-gray-300 focus:ring-blue-500'
-              }`}
-            />
-            {errors.compensationBandMax && (
-              <p className="text-xs text-red-600 mt-1">{errors.compensationBandMax}</p>
-            )}
-          </div>
-        </div>
-
-        {/* Approvers */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-3">
-            Required Approvers
-          </label>
-          <div className="space-y-3">
-            {formData.requiredApprovers.map((approver, index) => (
-              <div
-                key={index}
-                className="p-4 bg-gray-50 rounded border border-gray-200 flex items-center gap-3"
-              >
-                <span className="font-semibold text-gray-700 w-12">Tier {approver.tier}</span>
-
-                <select
-                  value={approver.approverId}
-                  onChange={(e) => handleApproverChange(index, 'approverId', e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select approver...</option>
-                  {approvers.map((app) => (
-                    <option key={app.id} value={app.id}>
-                      {app.fullName} ({app.email})
-                    </option>
-                  ))}
-                </select>
-
-                {formData.requiredApprovers.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeApprover(index)}
-                    className="px-3 py-2 text-red-600 hover:text-red-700 font-medium"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {errors.requiredApprovers && (
-            <p className="text-xs text-red-600 mt-2">{errors.requiredApprovers}</p>
-          )}
-
-          <button
-            type="button"
-            onClick={addApprover}
-            className="mt-3 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium text-sm"
-          >
-            + Add Approver Tier
-          </button>
-        </div>
-
-        {/* Effective Date */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Effective From
-          </label>
-          <input
-            type="date"
-            name="effectiveFrom"
-            value={formData.effectiveFrom}
-            onChange={handleChange}
-            min={new Date().toISOString().slice(0, 10)}
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-              errors.effectiveFrom
-                ? 'border-red-300 focus:ring-red-500'
-                : 'border-gray-300 focus:ring-blue-500'
-            }`}
-          />
-          {errors.effectiveFrom && (
-            <p className="text-xs text-red-600 mt-1">{errors.effectiveFrom}</p>
-          )}
-          <p className="text-xs text-gray-500 mt-1">
-            New policy will apply to offers created from this date forward
+      <form
+        onSubmit={handleSubmit}
+        className="overflow-hidden rounded-2xl border border-[var(--admin-color-border)] bg-[var(--admin-color-surface-0)] shadow-[var(--admin-shadow-sm)]"
+      >
+        <div className="border-b border-[var(--admin-color-border)] bg-[var(--admin-color-surface-1)] px-6 py-4">
+          <h2 className="admin-heading text-lg font-semibold text-[var(--admin-color-ink-primary)]">Create New Policy</h2>
+          <p className="mt-1 text-sm text-[var(--admin-color-ink-secondary)]">
+            Configure compensation band and sequential approver chain.
           </p>
         </div>
 
+        <div className="space-y-6 px-6 py-5">
+          {/* Compensation Band */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label htmlFor="compensationBandMin" className="mb-1 block text-xs font-semibold uppercase tracking-[0.06em] text-[var(--admin-color-ink-tertiary)]">
+                Compensation Min ($)
+              </label>
+              <input
+                type="number"
+                id="compensationBandMin"
+                name="compensationBandMin"
+                value={formData.compensationBandMin}
+                onChange={handleChange}
+                min="0"
+                step="1000"
+                className={`h-10 w-full rounded-md border px-3 text-sm text-[var(--admin-color-ink-primary)] focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+                  errors.compensationBandMin
+                    ? 'border-rose-300 focus:ring-rose-500'
+                    : 'border-[var(--admin-color-border)] focus:ring-[var(--admin-color-brand-primary)]'
+                }`}
+              />
+              {errors.compensationBandMin && (
+                <p className="mt-1 text-xs text-rose-700">{errors.compensationBandMin}</p>
+              )}
+            </div>
+            <div>
+              <label htmlFor="compensationBandMax" className="mb-1 block text-xs font-semibold uppercase tracking-[0.06em] text-[var(--admin-color-ink-tertiary)]">
+                Compensation Max ($)
+              </label>
+              <input
+                type="number"
+                id="compensationBandMax"
+                name="compensationBandMax"
+                value={formData.compensationBandMax}
+                onChange={handleChange}
+                min="0"
+                step="1000"
+                className={`h-10 w-full rounded-md border px-3 text-sm text-[var(--admin-color-ink-primary)] focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+                  errors.compensationBandMax
+                    ? 'border-rose-300 focus:ring-rose-500'
+                    : 'border-[var(--admin-color-border)] focus:ring-[var(--admin-color-brand-primary)]'
+                }`}
+              />
+              {errors.compensationBandMax && (
+                <p className="mt-1 text-xs text-rose-700">{errors.compensationBandMax}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Approvers */}
+          <div>
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.06em] text-[var(--admin-color-ink-tertiary)]">
+              Required Approvers
+            </label>
+            <div className="space-y-2">
+              {formData.requiredApprovers.map((approver, index) => (
+                <div
+                  key={index}
+                  className="flex flex-col gap-2 rounded-lg border border-[var(--admin-color-border)] bg-[var(--admin-color-surface-1)] p-3 md:flex-row md:items-center"
+                >
+                  <span className="min-w-[70px] text-xs font-semibold uppercase tracking-[0.06em] text-[var(--admin-color-ink-secondary)]">
+                    Tier {approver.tier}
+                  </span>
+
+                  <select
+                    value={approver.approverId}
+                    onChange={(e) => handleApproverChange(index, 'approverId', e.target.value)}
+                    className="h-9 flex-1 rounded-md border border-[var(--admin-color-border)] bg-white px-3 text-sm text-[var(--admin-color-ink-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--admin-color-brand-primary)]"
+                    aria-label={`Approver for tier ${approver.tier}`}
+                  >
+                    <option value="">Select approver...</option>
+                    {approvers.map((app) => (
+                      <option key={app.id} value={app.id}>
+                        {formatApproverLabel(app)}
+                      </option>
+                    ))}
+                  </select>
+
+                  {formData.requiredApprovers.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeApprover(index)}
+                      className="h-9 rounded-md border border-rose-200 bg-rose-50 px-3 text-xs font-semibold text-rose-700 hover:bg-rose-100"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {errors.requiredApprovers && (
+              <p className="mt-2 text-xs text-rose-700">{errors.requiredApprovers}</p>
+            )}
+
+            <button
+              type="button"
+              onClick={addApprover}
+              className="mt-3 h-9 rounded-md border border-dashed border-[var(--admin-color-border)] bg-white px-3 text-sm font-medium text-[var(--admin-color-ink-secondary)] hover:bg-[var(--admin-color-surface-1)]"
+            >
+              Add Approver Tier
+            </button>
+          </div>
+
+          {/* Effective Date */}
+          <div>
+            <label htmlFor="approval-effectiveFrom" className="mb-1 block text-xs font-semibold uppercase tracking-[0.06em] text-[var(--admin-color-ink-tertiary)]">
+              Effective From
+            </label>
+            <input
+              type="date"
+              id="approval-effectiveFrom"
+              name="effectiveFrom"
+              value={formData.effectiveFrom}
+              onChange={handleChange}
+              min={new Date().toISOString().slice(0, 10)}
+              className={`h-10 w-full rounded-md border px-3 text-sm text-[var(--admin-color-ink-primary)] focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+                errors.effectiveFrom
+                  ? 'border-rose-300 focus:ring-rose-500'
+                  : 'border-[var(--admin-color-border)] focus:ring-[var(--admin-color-brand-primary)]'
+              }`}
+            />
+            {errors.effectiveFrom && (
+              <p className="mt-1 text-xs text-rose-700">{errors.effectiveFrom}</p>
+            )}
+            <p className="mt-1 text-xs text-[var(--admin-color-ink-secondary)]">
+              New policy will apply to offers created from this date forward.
+            </p>
+          </div>
+        </div>
+
         {/* Buttons */}
-        <div className="flex gap-3">
+        <div className="flex flex-wrap items-center gap-3 border-t border-[var(--admin-color-border)] bg-[var(--admin-color-surface-1)] px-6 py-4">
           <button
             type="submit"
             disabled={!isValid || submitting}
-            className={`px-6 py-2 rounded-lg font-medium ${
+            className={`h-10 rounded-md px-5 text-sm font-semibold ${
               isValid && !submitting
-                ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                ? 'bg-[var(--admin-color-brand-primary)] text-white hover:bg-[var(--admin-color-brand-primary-hover)]'
+                : 'cursor-not-allowed bg-slate-300 text-slate-500'
             }`}
           >
             {submitting ? 'Creating...' : 'Create New Policy'}
@@ -391,7 +459,7 @@ export const ApprovalPolicyEditor: React.FC = () => {
           <button
             type="button"
             onClick={resetForm}
-            className="px-6 py-2 rounded-lg font-medium bg-gray-200 text-gray-700 hover:bg-gray-300"
+            className="h-10 rounded-md border border-[var(--admin-color-border)] bg-white px-5 text-sm font-medium text-[var(--admin-color-ink-secondary)] hover:bg-[var(--admin-color-surface-1)]"
           >
             Reset
           </button>

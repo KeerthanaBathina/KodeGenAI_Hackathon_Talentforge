@@ -1,5 +1,6 @@
-import React, { useEffect, useRef } from 'react';
-import { io } from 'socket.io-client';
+import React, { useEffect, useRef, useState } from 'react';
+import { io, type Socket } from 'socket.io-client';
+import { resolveSocketBaseUrl } from '@/lib/api/url';
 
 /**
  * Socket.IO Client Hook
@@ -10,8 +11,9 @@ import { io } from 'socket.io-client';
  * @param authToken - JWT authentication token (null if not authenticated)
  * @returns Socket instance or null if not connected
  */
-export function useSocketClient(authToken: string | null): any {
-  const socketRef = useRef<any>(null);
+export function useSocketClient(authToken: string | null): Socket | null {
+  const socketRef = useRef<Socket | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
     // Don't connect if no auth token
@@ -20,7 +22,7 @@ export function useSocketClient(authToken: string | null): any {
     }
 
     // Create Socket.IO client
-    const socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000', {
+    const socketClient = io(resolveSocketBaseUrl(), {
       auth: { token: authToken },
       transports: ['websocket', 'polling'],
       reconnection: true,
@@ -29,27 +31,29 @@ export function useSocketClient(authToken: string | null): any {
     });
 
     // Connection event handlers
-    socket.on('connected', (data) => {
+    socketClient.on('connected', (data) => {
       console.log('[socket] Connected', data);
     });
 
-    socket.on('connect_error', (error) => {
+    socketClient.on('connect_error', (error) => {
       console.error('[socket] Connection error', error);
     });
 
-    socket.on('disconnect', (reason) => {
+    socketClient.on('disconnect', (reason) => {
       console.log('[socket] Disconnected', reason);
     });
 
-    socketRef.current = socket;
+    socketRef.current = socketClient;
+    setSocket(socketClient);
 
     // Cleanup on unmount or auth token change
     return () => {
       console.log('[socket] Closing connection');
-      (socket as any).close();
+      socketClient.close();
       socketRef.current = null;
+      setSocket(null);
     };
   }, [authToken]);
 
-  return socketRef.current;
+  return socket;
 }

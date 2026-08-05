@@ -6,6 +6,8 @@ import { format } from 'date-fns';
 import { WorkerHealthSection } from '@/components/admin/WorkerHealthSection';
 import { QueueMetricsSection } from '@/components/admin/QueueMetricsSection';
 import { EmailDeliverySection } from '@/components/admin/EmailDeliverySection';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
+import { buildApiUrl } from '@/lib/api/url';
 
 interface QueueMetric {
   queueName: string;
@@ -65,7 +67,7 @@ export default function HealthDashboardPage() {
   const fetchHealthData = async () => {
     try {
       setError(null);
-      const response = await fetch('/api/admin/health', {
+      const response = await fetch(buildApiUrl('/api/admin/health'), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -103,121 +105,108 @@ export default function HealthDashboardPage() {
   }, []);
 
   /**
-   * Auto-refresh every 60 seconds
+   * Auto-refresh every 30 seconds
    */
   useEffect(() => {
     if (!autoRefresh) return;
 
     const intervalId = setInterval(() => {
       fetchHealthData();
-    }, 60000); // 60 seconds
+    }, 30000); // 30 seconds
 
     return () => clearInterval(intervalId);
   }, [autoRefresh]);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 font-medium">Loading health metrics...</p>
+      <AdminPageShell
+        title="Platform Health Dashboard"
+        description="Real-time service status and infrastructure metrics across workers, queues, and outbound delivery."
+      >
+        <div className="flex min-h-[280px] items-center justify-center rounded-2xl border border-[var(--admin-color-border)] bg-[var(--admin-color-surface-0)] shadow-[var(--admin-shadow-sm)]">
+          <div className="text-center">
+            <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-[var(--admin-color-brand-primary)]"></div>
+            <p className="mt-4 text-sm font-medium text-[var(--admin-color-ink-secondary)]">Loading health metrics...</p>
+          </div>
         </div>
-      </div>
+      </AdminPageShell>
     );
   }
 
   if (error && !healthData) {
     return (
-      <div className="p-8 max-w-7xl mx-auto">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <h2 className="text-red-800 font-semibold text-lg">Error Loading Health Data</h2>
-          <p className="text-red-600 mt-2">{error}</p>
+      <AdminPageShell
+        title="Platform Health Dashboard"
+        description="Monitor workers, queues, and outbound delivery performance from one operational dashboard."
+      >
+        <div className="rounded-xl border border-red-200 bg-red-50 p-6">
+          <h2 className="text-lg font-semibold text-red-900">Error loading health data</h2>
+          <p className="mt-2 text-sm text-red-700">{error}</p>
           <button
             onClick={fetchHealthData}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            className="mt-4 rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-800"
           >
             Retry
           </button>
         </div>
-      </div>
+      </AdminPageShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="p-8 max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-start mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Platform Health Dashboard</h1>
-            <p className="text-gray-600 mt-1">Real-time system health and operational metrics</p>
-          </div>
+    <AdminPageShell
+      title="Platform Health Dashboard"
+      description="Real-time service status and infrastructure metrics with optional auto-refresh and failure visibility."
+      actions={
+        <>
+          <label className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-[var(--admin-color-border)] bg-white px-3 py-2 text-sm font-medium text-[var(--admin-color-ink-secondary)] shadow-sm">
+            <input
+              type="checkbox"
+              checked={autoRefresh}
+              onChange={(e) => setAutoRefresh(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-400 text-[var(--admin-color-brand-primary)] focus:ring-[var(--admin-color-brand-primary)]"
+            />
+            Auto-refresh (30s)
+          </label>
 
-          <div className="flex items-center gap-4">
-            {/* Auto-refresh toggle */}
-            <label className="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg bg-white border border-gray-200 hover:border-gray-300">
-              <input
-                type="checkbox"
-                checked={autoRefresh}
-                onChange={(e) => setAutoRefresh(e.target.checked)}
-                className="rounded w-4 h-4"
-              />
-              <span className="text-sm text-gray-700 font-medium">Auto-refresh (60s)</span>
-            </label>
-
-            {/* Manual refresh button */}
-            <button
-              onClick={fetchHealthData}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
-              Refresh Now
-            </button>
-          </div>
+          <button
+            onClick={fetchHealthData}
+            className="inline-flex min-h-[44px] items-center rounded-lg bg-[var(--admin-color-brand-primary)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--admin-color-brand-primary-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--admin-color-brand-primary)]"
+          >
+            Refresh now
+          </button>
+        </>
+      }
+    >
+      {/* Last Updated Timestamp */}
+      {lastUpdated && (
+        <div className="rounded-xl border border-[var(--admin-color-border)] bg-[var(--admin-color-surface-0)] px-4 py-3 text-sm text-[var(--admin-color-ink-secondary)] shadow-[var(--admin-shadow-sm)]">
+          Last updated: <span className="font-semibold text-[var(--admin-color-ink-primary)]">{format(lastUpdated, 'PPpp')}</span>
+          {healthData?.meta?.collectionTimeMs && (
+            <span className="ml-2 text-[var(--admin-color-ink-tertiary)]">
+              (collected in {healthData.meta.collectionTimeMs}ms)
+            </span>
+          )}
         </div>
+      )}
 
-        {/* Last Updated Timestamp */}
-        {lastUpdated && (
-          <div className="mb-6 text-sm text-gray-600 bg-white px-4 py-3 rounded-lg border border-gray-200">
-            Last updated: <span className="font-medium">{format(lastUpdated, 'PPpp')}</span>
-            {healthData?.meta?.collectionTimeMs && (
-              <span className="ml-2 text-gray-500">
-                (collected in {healthData.meta.collectionTimeMs}ms)
-              </span>
-            )}
-          </div>
-        )}
+      {/* Error banner if available */}
+      {error && healthData && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4" role="alert">
+          <p className="text-sm text-amber-800">
+            Warning: {error}. Displaying cached data.
+          </p>
+        </div>
+      )}
 
-        {/* Error banner if available */}
-        {error && healthData && (
-          <div className="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
-            <p className="text-amber-800 text-sm">
-              ⚠ Warning: {error}. Displaying cached data.
-            </p>
-          </div>
-        )}
+      {/* Worker Health Status */}
+      <WorkerHealthSection workers={healthData?.workers || []} />
 
-        {/* Worker Health Status */}
-        <WorkerHealthSection workers={healthData?.workers || []} />
+      {/* Queue Metrics */}
+      <QueueMetricsSection queues={healthData?.queues || []} />
 
-        {/* Queue Metrics */}
-        <QueueMetricsSection queues={healthData?.queues || []} />
-
-        {/* Email Delivery Metrics */}
-        <EmailDeliverySection emailDelivery={healthData?.emailDelivery} />
-      </div>
-    </div>
+      {/* Email Delivery Metrics */}
+      <EmailDeliverySection emailDelivery={healthData?.emailDelivery} />
+    </AdminPageShell>
   );
 }

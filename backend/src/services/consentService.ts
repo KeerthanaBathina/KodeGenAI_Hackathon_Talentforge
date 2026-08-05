@@ -1,5 +1,6 @@
 import prisma from '../db/prisma';
 import { auditService } from './auditService';
+import { applyLatestParsedResumeToProfile } from './parseResultService';
 import logger from '../utils/logger';
 import { env } from '../config/env';
 
@@ -14,6 +15,23 @@ export class ConsentError extends Error {
 }
 
 const CURRENT_POLICY_VERSION = env.PRIVACY_POLICY_VERSION || '1.0';
+
+function triggerDeferredResumePopulation(candidateId: string): void {
+    setImmediate(async () => {
+        try {
+            const result = await applyLatestParsedResumeToProfile(candidateId, 'consent_accept');
+            logger.info(
+                { candidateId, status: result.status, resumeId: result.resumeId, profileId: result.profileId },
+                'Deferred resume profile population checked after consent acceptance'
+            );
+        } catch (error) {
+            logger.error(
+                { candidateId, error: error instanceof Error ? error.message : String(error) },
+                'Deferred resume profile population failed after consent acceptance'
+            );
+        }
+    });
+}
 
 /**
  * Record privacy policy acceptance for a candidate.
@@ -46,6 +64,7 @@ export async function recordConsent(
 
     if (existingConsent) {
         logger.info({ candidateId, policyVersion }, 'Candidate already consented to this policy version');
+        triggerDeferredResumePopulation(candidateId);
         return existingConsent;
     }
 
@@ -74,6 +93,8 @@ export async function recordConsent(
     });
 
     logger.info({ candidateId, policyVersion, consentId: consent.id }, 'Privacy consent recorded');
+
+    triggerDeferredResumePopulation(candidateId);
 
     return consent;
 }

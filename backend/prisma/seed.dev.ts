@@ -18,7 +18,13 @@ const IDS = {
   threshold: '00000008-0000-0000-0000-000000000001',
   requisitions: {
     open: '00000004-0000-0000-0000-000000000001',
-    closed: '00000004-0000-0000-0000-000000000002'
+    closed: '00000004-0000-0000-0000-000000000002',
+    fullStack: '00000004-0000-0000-0000-000000000003',
+    uxDesigner: '00000004-0000-0000-0000-000000000004',
+    devOps: '00000004-0000-0000-0000-000000000005',
+    dataScientist: '00000004-0000-0000-0000-000000000006',
+    qaEngineer: '00000004-0000-0000-0000-000000000007',
+    productOps: '00000004-0000-0000-0000-000000000008'
   },
   applications: {
     alice: '00000005-0000-0000-0000-000000000001',
@@ -131,42 +137,174 @@ async function seedJobFamilyAndThreshold(prisma: PrismaClient): Promise<void> {
 }
 
 async function seedRequisitions(prisma: PrismaClient): Promise<void> {
-  await prisma.requisition.upsert({
-    where: { id: IDS.requisitions.open },
-    update: {},
-    create: {
+  const requisitions = [
+    {
       id: IDS.requisitions.open,
       title: 'Senior Software Engineer',
       department: 'Engineering',
-      jobFamilyId: IDS.jobFamily,
       location: 'Remote',
       jobType: JobType.full_time,
       slots: 3,
       filledSlots: 0,
       status: RequisitionStatus.open,
+      minExperienceYears: 4,
       eligibilityCriteria: { minYearsExperience: 4 },
-      openedAt: new Date('2026-07-01T00:00:00.000Z')
-    }
-  });
-
-  await prisma.requisition.upsert({
-    where: { id: IDS.requisitions.closed },
-    update: {},
-    create: {
+      requiredSkills: ['TypeScript', 'Node.js', 'PostgreSQL'],
+      preferredSkills: ['System Design', 'AWS', 'Redis'],
+      openedAt: new Date('2026-07-01T00:00:00.000Z'),
+      closedAt: null
+    },
+    {
+      id: IDS.requisitions.fullStack,
+      title: 'Full Stack Developer',
+      department: 'Engineering',
+      location: 'Bengaluru',
+      jobType: JobType.full_time,
+      slots: 4,
+      filledSlots: 1,
+      status: RequisitionStatus.open,
+      minExperienceYears: 3,
+      eligibilityCriteria: { minYearsExperience: 3 },
+      requiredSkills: ['React', 'Node.js', 'SQL'],
+      preferredSkills: ['Docker', 'CI/CD', 'GraphQL'],
+      openedAt: new Date('2026-07-03T00:00:00.000Z'),
+      closedAt: null
+    },
+    {
+      id: IDS.requisitions.uxDesigner,
+      title: 'UX Designer',
+      department: 'Design',
+      location: 'Remote',
+      jobType: JobType.full_time,
+      slots: 2,
+      filledSlots: 0,
+      status: RequisitionStatus.open,
+      minExperienceYears: 2,
+      eligibilityCriteria: { minYearsExperience: 2 },
+      requiredSkills: ['Figma', 'UX Research', 'Design Systems'],
+      preferredSkills: ['Accessibility', 'Prototyping', 'Usability Testing'],
+      openedAt: new Date('2026-07-06T00:00:00.000Z'),
+      closedAt: null
+    },
+    {
+      id: IDS.requisitions.devOps,
+      title: 'DevOps Engineer',
+      department: 'Infrastructure',
+      location: 'Pune',
+      jobType: JobType.full_time,
+      slots: 2,
+      filledSlots: 0,
+      status: RequisitionStatus.open,
+      minExperienceYears: 5,
+      eligibilityCriteria: { minYearsExperience: 5 },
+      requiredSkills: ['Kubernetes', 'Terraform', 'Linux'],
+      preferredSkills: ['Azure', 'Observability', 'SRE Practices'],
+      openedAt: new Date('2026-07-08T00:00:00.000Z'),
+      closedAt: null
+    },
+    {
+      id: IDS.requisitions.dataScientist,
+      title: 'Principal Data Scientist',
+      department: 'Analytics',
+      location: 'Remote',
+      jobType: JobType.full_time,
+      slots: 1,
+      filledSlots: 0,
+      status: RequisitionStatus.open,
+      minExperienceYears: 8,
+      eligibilityCriteria: { minYearsExperience: 8 },
+      requiredSkills: ['Python', 'Machine Learning', 'Experimentation'],
+      preferredSkills: ['MLOps', 'A/B Testing', 'NLP'],
+      openedAt: new Date('2026-07-10T00:00:00.000Z'),
+      closedAt: null
+    },
+    {
+      id: IDS.requisitions.qaEngineer,
+      title: 'Junior QA Engineer',
+      department: 'Engineering',
+      location: 'Chennai',
+      jobType: JobType.full_time,
+      slots: 3,
+      filledSlots: 0,
+      status: RequisitionStatus.open,
+      minExperienceYears: 0,
+      eligibilityCriteria: { minYearsExperience: 0 },
+      requiredSkills: ['Manual Testing', 'API Testing'],
+      preferredSkills: ['Playwright', 'Postman', 'SQL'],
+      openedAt: new Date('2026-07-12T00:00:00.000Z'),
+      closedAt: null
+    },
+    {
+      id: IDS.requisitions.productOps,
+      title: 'Product Operations Specialist',
+      department: 'Product',
+      location: 'Hyderabad',
+      jobType: JobType.part_time,
+      slots: 2,
+      filledSlots: 0,
+      status: RequisitionStatus.open,
+      minExperienceYears: 2,
+      eligibilityCriteria: { minYearsExperience: 2 },
+      requiredSkills: ['Stakeholder Management', 'Analytics', 'Documentation'],
+      preferredSkills: ['Product Tooling', 'Agile', 'SQL'],
+      openedAt: new Date('2026-07-13T00:00:00.000Z'),
+      closedAt: null
+    },
+    {
       id: IDS.requisitions.closed,
       title: 'Junior Frontend Developer',
       department: 'Engineering',
-      jobFamilyId: IDS.jobFamily,
       location: 'Hybrid',
       jobType: JobType.full_time,
       slots: 1,
       filledSlots: 1,
       status: RequisitionStatus.closed,
-      eligibilityCriteria: {},
+      minExperienceYears: 1,
+      eligibilityCriteria: { minYearsExperience: 1 },
+      requiredSkills: ['JavaScript', 'HTML', 'CSS'],
+      preferredSkills: ['React', 'TypeScript'],
       openedAt: new Date('2026-06-01T00:00:00.000Z'),
       closedAt: new Date('2026-07-15T00:00:00.000Z')
     }
-  });
+  ];
+
+  for (const requisition of requisitions) {
+    await prisma.requisition.upsert({
+      where: { id: requisition.id },
+      update: {
+        title: requisition.title,
+        department: requisition.department,
+        location: requisition.location,
+        jobType: requisition.jobType,
+        slots: requisition.slots,
+        filledSlots: requisition.filledSlots,
+        status: requisition.status,
+        minExperienceYears: requisition.minExperienceYears,
+        eligibilityCriteria: requisition.eligibilityCriteria,
+        requiredSkills: requisition.requiredSkills,
+        preferredSkills: requisition.preferredSkills,
+        openedAt: requisition.openedAt,
+        closedAt: requisition.closedAt
+      },
+      create: {
+        id: requisition.id,
+        title: requisition.title,
+        department: requisition.department,
+        jobFamilyId: IDS.jobFamily,
+        location: requisition.location,
+        jobType: requisition.jobType,
+        slots: requisition.slots,
+        filledSlots: requisition.filledSlots,
+        status: requisition.status,
+        minExperienceYears: requisition.minExperienceYears,
+        eligibilityCriteria: requisition.eligibilityCriteria,
+        requiredSkills: requisition.requiredSkills,
+        preferredSkills: requisition.preferredSkills,
+        openedAt: requisition.openedAt,
+        closedAt: requisition.closedAt
+      }
+    });
+  }
 }
 
 async function seedApplications(prisma: PrismaClient): Promise<void> {

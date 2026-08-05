@@ -7,23 +7,8 @@ import { ImportResults } from '@/components/requisitions/ImportResults';
 import { getAuthToken } from '@/lib/auth';
 import { useToast } from '@/contexts/ToastContext';
 import type { ImportResultData } from '@/components/requisitions/types';
+import { buildApiUrl } from '@/lib/api/url';
 import styles from './page.module.css';
-
-function getApiUrl(pathname: string): string {
-  const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-  const isLocalDevHost = typeof window !== 'undefined' &&
-    (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost');
-
-  if (isLocalDevHost) {
-    return `http://localhost:3001${pathname}`;
-  }
-
-  if (!base) {
-    return pathname;
-  }
-
-  return `${base}${pathname}`;
-}
 
 export default function BulkImportPage() {
   const [importResult, setImportResult] = useState<ImportResultData | null>(null);
@@ -43,7 +28,7 @@ export default function BulkImportPage() {
   const handleTemplateDownload = async () => {
     try {
       const token = getAuthToken();
-      const response = await fetch(getApiUrl('/api/requisitions/bulk-import/template'), {
+      const response = await fetch(buildApiUrl('/api/requisitions/bulk-import/template'), {
         credentials: 'include',
         headers: token
           ? {

@@ -3,6 +3,7 @@
 import React from 'react';
 import { useToast } from '@/contexts/ToastContext';
 import { getAuthToken } from '@/lib/auth';
+import { buildApiUrl } from '@/lib/api/url';
 import type { ImportResultData } from './types';
 
 interface ImportResultsProps {
@@ -10,15 +11,6 @@ interface ImportResultsProps {
 }
 
 type StatColor = 'blue' | 'green' | 'red' | 'yellow';
-
-function getApiUrl(pathname: string): string {
-  const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-  if (!base || (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')) {
-    return pathname;
-  }
-
-  return `${base}${pathname}`;
-}
 
 function StatCard({ label, value, color }: { label: string; value: number; color: StatColor }) {
   const colorClasses: Record<StatColor, string> = {
@@ -47,7 +39,7 @@ export function ImportResults({ result }: ImportResultsProps) {
 
     try {
       const token = getAuthToken();
-      const response = await fetch(getApiUrl(result.errorReportUrl), {
+      const response = await fetch(buildApiUrl(result.errorReportUrl), {
         credentials: 'include',
         headers: token
           ? {

@@ -1,16 +1,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
-
-function getApiUrl(pathname: string): string {
-    const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-    if (!base || (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')) {
-        return pathname;
-    }
-    return `${base}${pathname}`;
-}
+import { buildApiUrl } from '@/lib/api/url';
+import CandidateTopNav from '@/components/CandidateTopNav';
 
 interface Application {
     id: string;
@@ -46,7 +40,6 @@ const statusStages: StatusStage[] = [
 
 export default function ApplicationTrackingPage() {
     const params = useParams();
-    const router = useRouter();
     const applicationId = params.id as string;
 
     const [application, setApplication] = useState<Application | null>(null);
@@ -59,7 +52,7 @@ export default function ApplicationTrackingPage() {
     useEffect(() => {
         async function loadApplication() {
             try {
-                const response = await fetch(getApiUrl(`/api/applications/${applicationId}`), {
+                const response = await fetch(buildApiUrl(`/api/applications/${applicationId}`), {
                     credentials: 'include',
                 });
 
@@ -104,7 +97,7 @@ export default function ApplicationTrackingPage() {
         setWithdrawalError('');
 
         try {
-            const response = await fetch(getApiUrl(`/api/applications/${applicationId}/withdraw`), {
+            const response = await fetch(buildApiUrl(`/api/applications/${applicationId}/withdraw`), {
                 method: 'PATCH',
                 credentials: 'include',
             });
@@ -124,7 +117,7 @@ export default function ApplicationTrackingPage() {
             }
 
             // Refresh application data
-            const refreshResponse = await fetch(getApiUrl(`/api/applications/${applicationId}`), {
+            const refreshResponse = await fetch(buildApiUrl(`/api/applications/${applicationId}`), {
                 credentials: 'include',
             });
 
@@ -149,16 +142,20 @@ export default function ApplicationTrackingPage() {
 
     if (isLoading) {
         return (
-            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <p>Loading application...</p>
+            <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+                <CandidateTopNav active="applications" />
+                <div style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <p>Loading application...</p>
+                </div>
             </div>
         );
     }
 
     if (error || !application) {
         return (
-            <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', padding: '2rem' }}>
-                <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
+            <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+                <CandidateTopNav active="applications" />
+                <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center', padding: '2rem' }}>
                     <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#ef4444', marginBottom: '1rem' }}>
                         {error || 'Application not found'}
                     </h1>
@@ -186,8 +183,10 @@ export default function ApplicationTrackingPage() {
     const isRejected = currentStatus === 'rejected';
 
     return (
-        <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', padding: '2rem' }}>
-            <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+            <CandidateTopNav active="applications" />
+
+            <div style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem' }}>
                 {/* Header */}
                 <div
                     style={{

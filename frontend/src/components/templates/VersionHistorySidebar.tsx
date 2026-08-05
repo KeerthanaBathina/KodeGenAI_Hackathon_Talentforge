@@ -76,17 +76,17 @@ export default function VersionHistorySidebar({
 
     return (
         <>
-            <div className="bg-white rounded-lg shadow">
-                <div className="px-4 py-5 border-b border-gray-200">
-                    <h3 className="text-lg font-medium text-gray-900">
+            <div className="overflow-hidden rounded-2xl border border-[var(--admin-color-border)] bg-[var(--admin-color-surface-0)] shadow-[var(--admin-shadow-sm)]">
+                <div className="border-b border-[var(--admin-color-border)] bg-[var(--admin-color-surface-1)] px-4 py-4">
+                    <h3 className="admin-heading text-lg font-semibold text-[var(--admin-color-ink-primary)]">
                         Version History
                     </h3>
-                    <p className="mt-1 text-sm text-gray-500">
+                    <p className="mt-1 text-sm text-[var(--admin-color-ink-secondary)]">
                         {versions.length} version{versions.length === 1 ? '' : 's'}
                     </p>
                 </div>
 
-                <div className="divide-y divide-gray-200 max-h-[600px] overflow-y-auto">
+                <div className="max-h-[600px] divide-y divide-[var(--admin-color-border)] overflow-y-auto">
                     {versions.length > 0 ? (
                         versions.map((version) => {
                             const isCurrent = version.versionNumber === currentVersionNumber;
@@ -95,7 +95,7 @@ export default function VersionHistorySidebar({
                                 <div
                                     key={version.id}
                                     className={`px-4 py-4 ${
-                                        isCurrent ? 'bg-blue-50' : 'hover:bg-gray-50'
+                                        isCurrent ? 'bg-indigo-50' : 'hover:bg-[var(--admin-color-surface-1)]'
                                     }`}
                                 >
                                     <div className="flex items-start justify-between">
@@ -104,26 +104,26 @@ export default function VersionHistorySidebar({
                                                 <span
                                                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                                                         isCurrent
-                                                            ? 'bg-blue-100 text-blue-800'
-                                                            : 'bg-gray-100 text-gray-800'
+                                                            ? 'bg-indigo-100 text-indigo-700'
+                                                            : 'bg-[var(--admin-color-surface-2)] text-[var(--admin-color-ink-secondary)]'
                                                     }`}
                                                 >
                                                     Version {version.versionNumber}
                                                 </span>
                                                 {isCurrent && (
-                                                    <span className="text-xs font-medium text-blue-600">
+                                                    <span className="text-xs font-medium text-indigo-600">
                                                         (Current)
                                                     </span>
                                                 )}
                                             </div>
 
-                                            <div className="mt-2 text-sm text-gray-900">
+                                            <div className="mt-2 text-sm text-[var(--admin-color-ink-primary)]">
                                                 <p className="font-medium truncate">
                                                     {version.name}
                                                 </p>
                                             </div>
 
-                                            <div className="mt-1 text-xs text-gray-500">
+                                            <div className="mt-1 text-xs text-[var(--admin-color-ink-tertiary)]">
                                                 <p>by {version.createdBy.name}</p>
                                                 <p className="mt-0.5">
                                                     {formatRelativeTime(version.createdAt)}
@@ -136,7 +136,7 @@ export default function VersionHistorySidebar({
                                                 <button
                                                     type="button"
                                                     onClick={() => handleRestoreClick(version)}
-                                                    className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                                    className="inline-flex items-center rounded border border-[var(--admin-color-border)] bg-white px-2.5 py-1.5 text-xs font-medium text-[var(--admin-color-ink-secondary)] hover:bg-[var(--admin-color-surface-1)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--admin-color-brand-primary)]"
                                                     aria-label={`Restore version ${version.versionNumber}`}
                                                 >
                                                     Restore
@@ -146,16 +146,16 @@ export default function VersionHistorySidebar({
                                     </div>
 
                                     {/* Preview subject line */}
-                                    <div className="mt-3 text-xs text-gray-500 truncate">
+                                    <div className="mt-3 truncate text-xs text-[var(--admin-color-ink-tertiary)]">
                                         <span className="font-medium">Subject:</span> {version.subject}
                                     </div>
                                 </div>
                             );
                         })
                     ) : (
-                        <div className="px-4 py-8 text-center text-sm text-gray-500">
+                        <div className="px-4 py-8 text-center text-sm text-[var(--admin-color-ink-secondary)]">
                             <svg
-                                className="mx-auto h-8 w-8 text-gray-400 mb-2"
+                                className="mx-auto mb-2 h-8 w-8 text-[var(--admin-color-ink-tertiary)]"
                                 fill="none"
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"

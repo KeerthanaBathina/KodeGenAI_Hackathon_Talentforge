@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { buildApiUrl } from '@/lib/api/url';
 
 interface UseAutoSaveParams {
     formData: object;
@@ -11,14 +12,6 @@ interface UseAutoSaveParams {
 interface UseAutoSaveReturn {
     isSaving: boolean;
     lastSavedAt: Date | null;
-}
-
-function getApiUrl(pathname: string): string {
-    const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-    if (!base || (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')) {
-        return pathname;
-    }
-    return `${base}${pathname}`;
 }
 
 /**
@@ -72,7 +65,7 @@ export function useAutoSave(params: UseAutoSaveParams): UseAutoSaveReturn {
         setIsSaving(true);
 
         try {
-            const response = await fetch(getApiUrl('/api/applications/drafts'), {
+            const response = await fetch(buildApiUrl('/api/applications/drafts'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

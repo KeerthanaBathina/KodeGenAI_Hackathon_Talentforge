@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { buildApiUrl } from '@/lib/api/url';
 
 interface RequisitionCardProps {
     requisition: {
@@ -27,15 +29,8 @@ interface EligibilityStatus {
     message?: string;
 }
 
-function getApiUrl(pathname: string): string {
-    const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-    if (!base || (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')) {
-        return pathname;
-    }
-    return `${base}${pathname}`;
-}
-
 export default function RequisitionCard({ requisition }: RequisitionCardProps) {
+    const router = useRouter();
     const [eligibility, setEligibility] = useState<EligibilityStatus | null>(null);
     const [hasDraft, setHasDraft] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -46,7 +41,7 @@ export default function RequisitionCard({ requisition }: RequisitionCardProps) {
             try {
                 // Check eligibility (includes duplicate + cooling period)
                 const eligibilityResponse = await fetch(
-                    getApiUrl(`/api/requisitions/${requisition.id}/eligibility`),
+                    buildApiUrl(`/api/requisitions/${requisition.id}/eligibility`),
                     { credentials: 'include' }
                 );
 
@@ -57,7 +52,7 @@ export default function RequisitionCard({ requisition }: RequisitionCardProps) {
                     // If eligible, check for draft
                     if (eligibilityData.canApply) {
                         const draftResponse = await fetch(
-                            getApiUrl(`/api/requisitions/${requisition.id}/has-draft`),
+                            buildApiUrl(`/api/requisitions/${requisition.id}/has-draft`),
                             { credentials: 'include' }
                         );
 
@@ -86,10 +81,15 @@ export default function RequisitionCard({ requisition }: RequisitionCardProps) {
     };
 
     const slotsRemaining = requisition.slots - requisition.filledSlots;
+    const primaryCardHref =
+        eligibility?.reason === 'active_application' && eligibility.existingApplicationId
+            ? `/applications/track/${eligibility.existingApplicationId}`
+            : `/jobs/${requisition.id}`;
 
     return (
-        <Link
-            href={`/jobs/${requisition.id}`}
+        <article
+            role="link"
+            tabIndex={0}
             data-testid="requisition-card"
             data-requisition-id={requisition.id}
             style={{
@@ -98,10 +98,16 @@ export default function RequisitionCard({ requisition }: RequisitionCardProps) {
                 borderRadius: '8px',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
                 padding: '1.5rem',
-                textDecoration: 'none',
                 color: 'inherit',
                 transition: 'box-shadow 0.2s, transform 0.2s',
                 cursor: 'pointer',
+            }}
+            onClick={() => router.push(primaryCardHref)}
+            onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    router.push(primaryCardHref);
+                }
             }}
             onMouseEnter={(e) => {
                 e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
@@ -166,19 +172,26 @@ export default function RequisitionCard({ requisition }: RequisitionCardProps) {
                 <div style={{ position: 'relative' }}>
                     {/* Active Application - Gray, Not Clickable */}
                     {eligibility.reason === 'active_application' && (
-                        <div
-                            style={{
-                                display: 'inline-block',
-                                padding: '0.5rem 1rem',
-                                backgroundColor: '#9ca3af',
-                                color: 'white',
-                                borderRadius: '6px',
-                                fontSize: '0.875rem',
-                                fontWeight: '500',
-                                cursor: 'not-allowed',
-                            }}
-                        >
-                            Application In Progress
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                            <div
+                                style={{
+                                    display: 'inline-block',
+                                    padding: '0.5rem 1rem',
+                                    backgroundColor: '#9ca3af',
+                                    color: 'white',
+                                    borderRadius: '6px',
+                                    fontSize: '0.875rem',
+                                    fontWeight: '500',
+                                    width: 'fit-content',
+                                }}
+                            >
+                                Application In Progress
+                            </div>
+                            {eligibility.existingApplicationId && (
+                                <span style={{ fontSize: '0.75rem', color: '#4b5563' }}>
+                                    Open this card to track your current application.
+                                </span>
+                            )}
                         </div>
                     )}
 
@@ -259,11 +272,11 @@ export default function RequisitionCard({ requisition }: RequisitionCardProps) {
                             }}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            {hasDraft ? '↻ Continue Application' : 'Apply Now'}
+                            {hasDraft ? 'Continue Application' : 'Apply Now'}
                         </Link>
                     )}
                 </div>
             )}
-        </Link>
+        </article>
     );
 }

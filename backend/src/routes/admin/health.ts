@@ -199,8 +199,21 @@ router.get(
             id: true,
             status: true,
             createdAt: true,
-            recipientEmail: true,
-            templateType: true,
+            applicationId: true,
+            application: {
+              select: {
+                candidate: {
+                  select: {
+                    email: true,
+                  },
+                },
+              },
+            },
+            template: {
+              select: {
+                type: true,
+              },
+            },
           },
           orderBy: { createdAt: 'desc' },
           skip: offset,
@@ -218,8 +231,8 @@ router.get(
       res.status(200).json({
         failedEmails: failedEmails.map((email) => ({
           id: email.id,
-          to: email.recipientEmail,
-          templateType: email.templateType || 'unknown',
+          to: email.application?.candidate?.email ?? `application:${email.applicationId}`,
+          templateType: email.template?.type ?? 'unknown',
           status: email.status,
           createdAt: email.createdAt,
         })),

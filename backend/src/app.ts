@@ -39,9 +39,41 @@ import adminHealthRouter from './routes/admin/health';
 import approvalsRouter from './routes/approvals';
 import offersRouter from './routes/offers';
 import templatesRouter from './routes/templates';
+import notificationsRouter from './routes/notifications';
 import notificationPreferencesRouter from './routes/notificationPreferences';
+import jobFamiliesRouter from './routes/jobFamilies';
 import { buildSecurityHeaders } from './middleware/securityHeaders';
 import publicHealthRouter from './routes/health';
+
+function createCorsOriginValidator() {
+  const normalizedConfiguredOrigin = env.FRONTEND_URL.replace(/\/$/, '');
+  const allowedOrigins = new Set<string>([normalizedConfiguredOrigin]);
+
+  if (env.NODE_ENV === 'development') {
+    [
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'http://localhost:3002',
+      'http://127.0.0.1:3002'
+    ].forEach((origin) => allowedOrigins.add(origin));
+  }
+
+  return (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) => {
+    // Allow non-browser and same-origin requests that do not send Origin.
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+
+    const normalizedOrigin = origin.replace(/\/$/, '');
+    if (allowedOrigins.has(normalizedOrigin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error(`CORS origin not allowed: ${origin}`));
+  };
+}
 
 export function createApp() {
   const app = express();
@@ -51,7 +83,7 @@ export function createApp() {
   app.use(buildSecurityHeaders());
   app.use(
     cors({
-      origin: env.FRONTEND_URL,
+      origin: createCorsOriginValidator(),
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
@@ -88,6 +120,8 @@ export function createApp() {
   app.use('/api/approvals', approvalsRouter);
   app.use('/api/offers', offersRouter);
   app.use('/api/templates', templatesRouter);
+  app.use('/api/notifications', notificationsRouter);
+  app.use('/api/job-families', jobFamiliesRouter);
   app.use('/api/notification-preferences', notificationPreferencesRouter);
   app.use('/api/admin/dead-letter-jobs', deadLetterJobsRouter);
   app.use('/api/admin/email-dlq', emailDLQRouter);

@@ -26,14 +26,6 @@ function formatBrowserTime(value: string) {
     }).format(new Date(value));
 }
 
-function getApiUrl(pathname: string): string {
-    const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-    if (!base || (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')) {
-        return pathname;
-    }
-    return `${base}${pathname}`;
-}
-
 function buildPreviewTimes(startAt: string, endAt: string, timezone: string) {
     return `${formatBrowserTime(startAt)} to ${formatBrowserTime(endAt)} (${timezone})`;
 }

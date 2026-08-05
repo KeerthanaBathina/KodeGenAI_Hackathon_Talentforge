@@ -41,17 +41,30 @@ function normalizeEmail(email: string): string {
     return email.trim().toLowerCase();
 }
 
-function isScryptHash(hash: string): boolean {
-    const parts = hash.split(':');
-    return parts.length === 2 && parts[0].length > 0 && parts[1].length > 0;
+function parseScryptHash(hash: string): { salt: string; digest: string } | null {
+    const match = /^([^:]+):([a-fA-F0-9]+)$/.exec(hash);
+    if (!match) {
+        return null;
+    }
+
+    const salt = match[1];
+    const digest = match[2];
+
+    if (!salt || !digest) {
+        return null;
+    }
+
+    return { salt, digest };
 }
 
 async function verifyCandidatePassword(password: string, storedHash: string): Promise<boolean> {
     // Backward-compatible verification: candidate credentials may be bcrypt or scrypt(salt:hash).
-    if (isScryptHash(storedHash)) {
-        const [salt, expectedHash] = storedHash.split(':');
+    const parsed = parseScryptHash(storedHash);
+    if (parsed) {
+        const { salt, digest } = parsed;
+
         const computedHash = crypto.scryptSync(password, salt, 64).toString('hex');
-        const expectedBuffer = Buffer.from(expectedHash, 'hex');
+        const expectedBuffer = Buffer.from(digest, 'hex');
         const computedBuffer = Buffer.from(computedHash, 'hex');
 
         if (expectedBuffer.length !== computedBuffer.length) {
@@ -251,7 +264,8 @@ export async function authenticateUser(input: LoginInput): Promise<LoginResult> 
             id: candidate.id,
             email: candidate.email,
             role: 'candidate', // TODO: Get from User model if implementing multi-role
-            candidateId: candidate.candidatePublicId || undefined,
+            // Use the candidate DB id for JWT authorization checks in middleware.
+            candidateId: candidate.id,
         },
     };
 }

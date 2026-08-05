@@ -19,40 +19,40 @@ interface QueueMetricsProps {
  */
 export function QueueMetricsSection({ queues }: QueueMetricsProps) {
   return (
-    <section className="mb-8">
-      <h2 className="text-2xl font-semibold text-gray-900 mb-4">BullMQ Queue Metrics</h2>
+    <section className="rounded-2xl border border-[var(--admin-color-border)] bg-[var(--admin-color-surface-0)] p-5 shadow-[var(--admin-shadow-sm)]">
+      <h2 className="admin-heading mb-4 text-xl font-semibold tracking-tight text-[var(--admin-color-ink-primary)]">BullMQ Queue Metrics</h2>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="overflow-hidden rounded-xl border border-[var(--admin-color-border)]">
+        <table className="min-w-full divide-y divide-[var(--admin-color-border)]">
+          <thead className="bg-[var(--admin-color-surface-1)]">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--admin-color-ink-tertiary)]">
                 Queue Name
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--admin-color-ink-tertiary)]">
                 Active
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--admin-color-ink-tertiary)]">
                 Waiting
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--admin-color-ink-tertiary)]">
                 Failed
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--admin-color-ink-tertiary)]">
                 Delayed
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--admin-color-ink-tertiary)]">
                 Completed (1h)
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--admin-color-ink-tertiary)]">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="divide-y divide-[var(--admin-color-border)] bg-white">
             {queues.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-4 text-center text-gray-600">
+                <td colSpan={7} className="px-6 py-6 text-center text-sm text-[var(--admin-color-ink-secondary)]">
                   No queue data available
                 </td>
               </tr>
@@ -79,11 +79,15 @@ function QueueRow({ queue }: { queue: QueueMetricsProps['queues'][0] }) {
     .join(' ');
 
   return (
-    <tr className={hasIssues ? 'bg-yellow-50' : 'hover:bg-gray-50 transition-colors'}>
+    <tr className={hasIssues ? 'bg-amber-50/60' : 'transition-colors hover:bg-[var(--admin-color-surface-1)]'}>
       <td className="px-6 py-4 whitespace-nowrap">
-        <div className="flex items-center">
-          <div className="text-sm font-medium text-gray-900">{displayName}</div>
-          {hasIssues && <span className="ml-2 text-yellow-600 text-lg">⚠</span>}
+        <div className="flex items-center gap-2">
+          <div className="text-sm font-semibold text-[var(--admin-color-ink-primary)]">{displayName}</div>
+          {hasIssues && (
+            <span className="inline-flex rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+              Issue
+            </span>
+          )}
         </div>
       </td>
       <td className="px-6 py-4 text-center">
@@ -99,12 +103,12 @@ function QueueRow({ queue }: { queue: QueueMetricsProps['queues'][0] }) {
         <MetricBadge value={queue.delayed} type="default" />
       </td>
       <td className="px-6 py-4 text-center">
-        <span className="text-sm font-medium text-gray-900">{queue.completed}</span>
+        <span className="text-sm font-semibold text-[var(--admin-color-ink-primary)]">{queue.completed}</span>
       </td>
       <td className="px-6 py-4 text-right">
         <Link
           href={`/admin/health/queue/${queue.queueName}`}
-          className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
+          className="text-sm font-semibold text-[var(--admin-color-brand-primary)] transition-colors hover:text-[var(--admin-color-brand-primary-hover)]"
         >
           Details →
         </Link>
@@ -119,11 +123,11 @@ function QueueRow({ queue }: { queue: QueueMetricsProps['queues'][0] }) {
  */
 function MetricBadge({ value, type }: { value: number; type: string }) {
   const styles = {
-    success: 'bg-green-100 text-green-800 font-medium',
-    error: 'bg-red-100 text-red-800 font-medium',
-    warning: 'bg-yellow-100 text-yellow-800 font-medium',
-    info: 'bg-blue-100 text-blue-800 font-medium',
-    default: 'bg-gray-100 text-gray-800 font-medium',
+    success: 'bg-emerald-100 text-emerald-800 font-semibold',
+    error: 'bg-rose-100 text-rose-800 font-semibold',
+    warning: 'bg-amber-100 text-amber-800 font-semibold',
+    info: 'bg-indigo-100 text-indigo-800 font-semibold',
+    default: 'bg-slate-100 text-slate-700 font-semibold',
   };
 
   return (

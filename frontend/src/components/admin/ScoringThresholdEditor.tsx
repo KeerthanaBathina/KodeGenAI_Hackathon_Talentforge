@@ -206,21 +206,23 @@ export const ScoringThresholdEditor: React.FC = () => {
   const selectedJobFamily = jobFamilies.find((jf) => jf.id === selectedJobFamilyId);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Job Family Selection */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <label className="block text-sm font-medium text-gray-700 mb-3">
+      <div className="rounded-2xl border border-[var(--admin-color-border)] bg-[var(--admin-color-surface-0)] p-5 shadow-[var(--admin-shadow-sm)]">
+        <label htmlFor="jobFamily" className="mb-2 block text-xs font-semibold uppercase tracking-[0.06em] text-[var(--admin-color-ink-tertiary)]">
           Select Job Family
         </label>
         <select
+          id="jobFamily"
           value={selectedJobFamilyId}
           onChange={handleJobFamilyChange}
           disabled={loading}
-          className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+          className={`h-10 w-full rounded-md border px-3 text-sm text-[var(--admin-color-ink-primary)] focus:outline-none focus:ring-2 focus:ring-offset-1 ${
             errors.jobFamilyId
-              ? 'border-red-300 focus:ring-red-500'
-              : 'border-gray-300 focus:ring-blue-500'
+              ? 'border-rose-300 focus:ring-rose-500'
+              : 'border-[var(--admin-color-border)] focus:ring-[var(--admin-color-brand-primary)]'
           }`}
+          aria-label="Select Job Family"
         >
           <option value="">
             {loading ? 'Loading job families...' : 'Select a job family...'}
@@ -232,37 +234,42 @@ export const ScoringThresholdEditor: React.FC = () => {
           ))}
         </select>
         {errors.jobFamilyId && (
-          <p className="text-xs text-red-600 mt-1">{errors.jobFamilyId}</p>
+          <p className="mt-1 text-xs text-rose-700">{errors.jobFamilyId}</p>
+        )}
+        {selectedJobFamily && (
+          <p className="mt-2 text-xs text-[var(--admin-color-ink-secondary)]">
+            Showing thresholds for: <span className="font-semibold text-[var(--admin-color-ink-primary)]">{selectedJobFamily.name}</span>
+          </p>
         )}
       </div>
 
       {/* Current Threshold Display */}
       {selectedJobFamily && currentThreshold && (
-        <div className="bg-blue-50 rounded-lg shadow p-6 border border-blue-200">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="rounded-2xl border border-[var(--admin-color-border)] bg-[var(--admin-color-surface-0)] p-6 shadow-[var(--admin-shadow-sm)]">
+          <h2 className="admin-heading mb-4 text-lg font-semibold text-[var(--admin-color-ink-primary)]">
             Current Thresholds for {selectedJobFamily.name}
           </h2>
-          <dl className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <dl className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div>
-              <dt className="text-sm text-gray-600 font-medium">AI Shortlist Threshold</dt>
-              <dd className="text-2xl font-bold text-gray-900 mt-2">
+              <dt className="text-xs font-semibold uppercase tracking-[0.06em] text-[var(--admin-color-ink-tertiary)]">AI Shortlist Threshold</dt>
+              <dd className="mt-2 text-2xl font-bold text-[var(--admin-color-brand-primary)]">
                 {currentThreshold.aiShortlistThreshold.toFixed(4)}
               </dd>
             </div>
             <div>
-              <dt className="text-sm text-gray-600 font-medium">Confidence Threshold</dt>
-              <dd className="text-2xl font-bold text-gray-900 mt-2">
+              <dt className="text-xs font-semibold uppercase tracking-[0.06em] text-[var(--admin-color-ink-tertiary)]">Confidence Threshold</dt>
+              <dd className="mt-2 text-2xl font-bold text-amber-600">
                 {currentThreshold.confidenceThreshold.toFixed(4)}
               </dd>
             </div>
             <div>
-              <dt className="text-sm text-gray-600 font-medium">Experience (Years)</dt>
-              <dd className="text-2xl font-bold text-gray-900 mt-2">
+              <dt className="text-xs font-semibold uppercase tracking-[0.06em] text-[var(--admin-color-ink-tertiary)]">Experience (Years)</dt>
+              <dd className="mt-2 text-2xl font-bold text-[var(--admin-color-ink-primary)]">
                 {currentThreshold.experienceThresholdYears}
               </dd>
             </div>
           </dl>
-          <p className="text-sm text-gray-600 mt-4">
+          <p className="mt-4 text-sm text-[var(--admin-color-ink-secondary)]">
             Effective since {new Date(currentThreshold.effectiveFrom).toLocaleDateString()}
           </p>
         </div>
@@ -270,140 +277,152 @@ export const ScoringThresholdEditor: React.FC = () => {
 
       {/* Messages */}
       {successMessage && (
-        <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-green-800 font-medium">{successMessage}</p>
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+          <p className="text-sm font-medium text-emerald-900">{successMessage}</p>
         </div>
       )}
       {errorMessage && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-800 font-medium">{errorMessage}</p>
+        <div className="rounded-lg border border-rose-200 bg-rose-50 p-4">
+          <p className="text-sm font-medium text-rose-900">{errorMessage}</p>
         </div>
       )}
 
       {/* Form */}
       {selectedJobFamily && (
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-6">
-            Create New Version for {selectedJobFamily.name}
-          </h2>
+        <form
+          onSubmit={handleSubmit}
+          className="overflow-hidden rounded-2xl border border-[var(--admin-color-border)] bg-[var(--admin-color-surface-0)] shadow-[var(--admin-shadow-sm)]"
+        >
+          <div className="border-b border-[var(--admin-color-border)] bg-[var(--admin-color-surface-1)] px-6 py-4">
+            <h2 className="admin-heading text-lg font-semibold text-[var(--admin-color-ink-primary)]">
+              Create New Version for {selectedJobFamily.name}
+            </h2>
+            <p className="mt-1 text-sm text-[var(--admin-color-ink-secondary)]">
+              Adjust scoring cutoffs for this job family.
+            </p>
+          </div>
 
-          <div className="space-y-4 mb-6">
+          <div className="space-y-5 px-6 py-5">
             {/* AI Shortlist Threshold */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="aiShortlistThreshold" className="mb-1 block text-xs font-semibold uppercase tracking-[0.06em] text-[var(--admin-color-ink-tertiary)]">
                 AI Shortlist Threshold
               </label>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 <input
                   type="range"
+                  id="aiShortlistThreshold"
                   name="aiShortlistThreshold"
                   value={formData.aiShortlistThreshold}
                   onChange={handleChange}
                   min="0"
                   max="1"
                   step="0.0001"
-                  className="flex-1"
+                  className="h-2 flex-1 cursor-pointer accent-[var(--admin-color-brand-primary)]"
                 />
-                <span className="text-lg font-medium text-gray-900 w-20">
+                <span className="w-20 text-right text-lg font-semibold text-[var(--admin-color-brand-primary)]">
                   {Number(formData.aiShortlistThreshold).toFixed(4)}
                 </span>
               </div>
               {errors.aiShortlistThreshold && (
-                <p className="text-xs text-red-600 mt-1">{errors.aiShortlistThreshold}</p>
+                <p className="mt-1 text-xs text-rose-700">{errors.aiShortlistThreshold}</p>
               )}
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="mt-1 text-xs text-[var(--admin-color-ink-secondary)]">
                 Minimum AI confidence score for automatic shortlisting (0.0-1.0)
               </p>
             </div>
 
             {/* Confidence Threshold */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="confidenceThreshold" className="mb-1 block text-xs font-semibold uppercase tracking-[0.06em] text-[var(--admin-color-ink-tertiary)]">
                 Confidence Threshold
               </label>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 <input
                   type="range"
+                  id="confidenceThreshold"
                   name="confidenceThreshold"
                   value={formData.confidenceThreshold}
                   onChange={handleChange}
                   min="0"
                   max="1"
                   step="0.0001"
-                  className="flex-1"
+                  className="h-2 flex-1 cursor-pointer accent-amber-500"
                 />
-                <span className="text-lg font-medium text-gray-900 w-20">
+                <span className="w-20 text-right text-lg font-semibold text-amber-600">
                   {Number(formData.confidenceThreshold).toFixed(4)}
                 </span>
               </div>
               {errors.confidenceThreshold && (
-                <p className="text-xs text-red-600 mt-1">{errors.confidenceThreshold}</p>
+                <p className="mt-1 text-xs text-rose-700">{errors.confidenceThreshold}</p>
               )}
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="mt-1 text-xs text-[var(--admin-color-ink-secondary)]">
                 Minimum confidence level required (0.0-1.0)
               </p>
             </div>
 
             {/* Experience Threshold */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="experienceThresholdYears" className="mb-1 block text-xs font-semibold uppercase tracking-[0.06em] text-[var(--admin-color-ink-tertiary)]">
                 Experience Threshold (Years)
               </label>
               <input
                 type="number"
+                id="experienceThresholdYears"
                 name="experienceThresholdYears"
                 value={formData.experienceThresholdYears}
                 onChange={handleChange}
                 min="0"
                 max="50"
                 step="1"
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                className={`h-10 w-full rounded-md border px-3 text-sm text-[var(--admin-color-ink-primary)] focus:outline-none focus:ring-2 focus:ring-offset-1 ${
                   errors.experienceThresholdYears
-                    ? 'border-red-300 focus:ring-red-500'
-                    : 'border-gray-300 focus:ring-blue-500'
+                    ? 'border-rose-300 focus:ring-rose-500'
+                    : 'border-[var(--admin-color-border)] focus:ring-[var(--admin-color-brand-primary)]'
                 }`}
               />
               {errors.experienceThresholdYears && (
-                <p className="text-xs text-red-600 mt-1">{errors.experienceThresholdYears}</p>
+                <p className="mt-1 text-xs text-rose-700">{errors.experienceThresholdYears}</p>
               )}
-              <p className="text-xs text-gray-500 mt-1">Minimum years of experience required</p>
+              <p className="mt-1 text-xs text-[var(--admin-color-ink-secondary)]">Minimum years of experience required.</p>
+            </div>
+
+            {/* Effective Date */}
+            <div>
+              <label htmlFor="scoring-effectiveFrom" className="mb-1 block text-xs font-semibold uppercase tracking-[0.06em] text-[var(--admin-color-ink-tertiary)]">
+                Effective From
+              </label>
+              <input
+                type="date"
+                id="scoring-effectiveFrom"
+                name="effectiveFrom"
+                value={formData.effectiveFrom}
+                onChange={handleChange}
+                min={new Date().toISOString().slice(0, 10)}
+                className={`h-10 w-full rounded-md border px-3 text-sm text-[var(--admin-color-ink-primary)] focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+                  errors.effectiveFrom
+                    ? 'border-rose-300 focus:ring-rose-500'
+                    : 'border-[var(--admin-color-border)] focus:ring-[var(--admin-color-brand-primary)]'
+                }`}
+              />
+              {errors.effectiveFrom && (
+                <p className="mt-1 text-xs text-rose-700">{errors.effectiveFrom}</p>
+              )}
+              <p className="mt-1 text-xs text-[var(--admin-color-ink-secondary)]">
+                New threshold will apply to applications submitted from this date forward.
+              </p>
             </div>
           </div>
 
-          {/* Effective Date */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Effective From
-            </label>
-            <input
-              type="date"
-              name="effectiveFrom"
-              value={formData.effectiveFrom}
-              onChange={handleChange}
-              min={new Date().toISOString().slice(0, 10)}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                errors.effectiveFrom
-                  ? 'border-red-300 focus:ring-red-500'
-                  : 'border-gray-300 focus:ring-blue-500'
-              }`}
-            />
-            {errors.effectiveFrom && (
-              <p className="text-xs text-red-600 mt-1">{errors.effectiveFrom}</p>
-            )}
-            <p className="text-xs text-gray-500 mt-1">
-              New threshold will apply to applications submitted from this date forward
-            </p>
-          </div>
-
           {/* Buttons */}
-          <div className="flex gap-3">
+          <div className="flex flex-wrap items-center gap-3 border-t border-[var(--admin-color-border)] bg-[var(--admin-color-surface-1)] px-6 py-4">
             <button
               type="submit"
               disabled={!isValid || submitting}
-              className={`px-6 py-2 rounded-lg font-medium ${
+              className={`h-10 rounded-md px-5 text-sm font-semibold ${
                 isValid && !submitting
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  ? 'bg-[var(--admin-color-brand-primary)] text-white hover:bg-[var(--admin-color-brand-primary-hover)]'
+                  : 'cursor-not-allowed bg-slate-300 text-slate-500'
               }`}
             >
               {submitting ? 'Creating...' : 'Create New Version'}
@@ -411,7 +430,7 @@ export const ScoringThresholdEditor: React.FC = () => {
             <button
               type="button"
               onClick={resetForm}
-              className="px-6 py-2 rounded-lg font-medium bg-gray-200 text-gray-700 hover:bg-gray-300"
+              className="h-10 rounded-md border border-[var(--admin-color-border)] bg-white px-5 text-sm font-medium text-[var(--admin-color-ink-secondary)] hover:bg-[var(--admin-color-surface-1)]"
             >
               Reset
             </button>

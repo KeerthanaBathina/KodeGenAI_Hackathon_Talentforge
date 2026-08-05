@@ -5,8 +5,7 @@ import {
   type AuditLogListResponse,
   type AuditLogQueryFilters
 } from '@/types/auditLog';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+import { buildApiUrl } from '@/lib/api/url';
 
 interface ApiErrorBody {
   error?: {
@@ -32,14 +31,9 @@ export class AuditLogServiceError extends Error {
 }
 
 function getApiUrl(pathname: string, params?: URLSearchParams): string {
-  const base = API_BASE_URL.trim();
   const query = params && params.toString().length > 0 ? `?${params.toString()}` : '';
 
-  if (!base || (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')) {
-    return `${pathname}${query}`;
-  }
-
-  return `${base}${pathname}${query}`;
+  return buildApiUrl(`${pathname}${query}`);
 }
 
 function authHeaders(): HeadersInit | undefined {

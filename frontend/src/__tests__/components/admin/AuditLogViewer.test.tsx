@@ -18,7 +18,8 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({
     replace: routingMocks.replace
   }),
-  useSearchParams: () => new URLSearchParams(routingMocks.query)
+  useSearchParams: () => new URLSearchParams(routingMocks.query),
+  usePathname: () => '/admin/audit-log'
 }));
 
 vi.mock('@/services/auditLogService', async () => {

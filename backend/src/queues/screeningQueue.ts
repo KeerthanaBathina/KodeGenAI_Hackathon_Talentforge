@@ -48,6 +48,30 @@ if (screeningQueue) {
 }
 
 export async function enqueueScreening(data: ScreeningJobData): Promise<string | null> {
+    const application = await prisma.application.findUnique({
+        where: { id: data.applicationId },
+        select: {
+            status: true,
+        },
+    });
+
+    if (!application) {
+        logger.warn('Skipping screening enqueue because application was not found', {
+            applicationId: data.applicationId,
+            resumeId: data.resumeId,
+        });
+        return null;
+    }
+
+    if (application.status === 'draft') {
+        logger.info('Skipping screening enqueue for draft application', {
+            applicationId: data.applicationId,
+            resumeId: data.resumeId,
+            triggeredBy: data.triggeredBy,
+        });
+        return null;
+    }
+
     if (!REDIS_QUEUES_ENABLED || !screeningQueue) {
         await prisma.application.update({
             where: { id: data.applicationId },

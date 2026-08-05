@@ -1,0 +1,77 @@
+# Page snapshot
+
+```yaml
+- generic [active]:
+  - alert [ref=e1]
+  - dialog [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - heading "Build Error" [level=1] [ref=e7]
+        - paragraph [ref=e8]: Failed to compile
+        - generic [ref=e9]:
+          - generic "An outdated version detected (latest is 16.2.12), upgrade is highly recommended!" [ref=e11]: Next.js (14.2.5) is outdated
+          - link "(learn more)" [ref=e12] [cursor=pointer]:
+            - /url: https://nextjs.org/docs/messages/version-staleness
+      - generic [ref=e13]:
+        - generic [ref=e14]:
+          - link "./src/app/admin/health/page.tsx:5:1" [ref=e15] [cursor=pointer]:
+            - text: ./src/app/admin/health/page.tsx:5:1
+            - img [ref=e16] [cursor=pointer]
+          - generic [ref=e20]:
+            - generic [ref=e21]: Module not found
+            - generic [ref=e22]: ": Can't resolve '"
+            - generic [ref=e23]: date-fns
+            - generic [ref=e24]: "'"
+            - generic [ref=e26]: 3 |
+            - generic [ref=e28]: import
+            - generic [ref=e29]: "{ useState"
+            - generic [ref=e30]: ","
+            - generic [ref=e31]: "useEffect }"
+            - generic [ref=e32]: from
+            - generic [ref=e34]: "'react'"
+            - generic [ref=e35]: ;
+            - generic [ref=e37]: 4 |
+            - generic [ref=e39]: import
+            - generic [ref=e40]: "{ useRouter }"
+            - generic [ref=e41]: from
+            - generic [ref=e43]: "'next/navigation'"
+            - generic [ref=e44]: ;
+            - generic [ref=e45]: ">"
+            - generic [ref=e46]: 5 |
+            - generic [ref=e48]: import
+            - generic [ref=e49]: "{ format }"
+            - generic [ref=e50]: from
+            - generic [ref=e52]: "'date-fns'"
+            - generic [ref=e53]: ;
+            - generic [ref=e55]: "|"
+            - generic [ref=e57]: ^
+            - generic [ref=e59]: 6 |
+            - generic [ref=e61]: import
+            - generic [ref=e62]: "{"
+            - generic [ref=e63]: WorkerHealthSection
+            - generic [ref=e64]: "}"
+            - generic [ref=e65]: from
+            - generic [ref=e67]: "'@/components/admin/WorkerHealthSection'"
+            - generic [ref=e68]: ;
+            - generic [ref=e70]: 7 |
+            - generic [ref=e72]: import
+            - generic [ref=e73]: "{"
+            - generic [ref=e74]: QueueMetricsSection
+            - generic [ref=e75]: "}"
+            - generic [ref=e76]: from
+            - generic [ref=e78]: "'@/components/admin/QueueMetricsSection'"
+            - generic [ref=e79]: ;
+            - generic [ref=e81]: 8 |
+            - generic [ref=e83]: import
+            - generic [ref=e84]: "{"
+            - generic [ref=e85]: EmailDeliverySection
+            - generic [ref=e86]: "}"
+            - generic [ref=e87]: from
+            - generic [ref=e89]: "'@/components/admin/EmailDeliverySection'"
+            - generic [ref=e90]: ;
+            - link "https://nextjs.org/docs/messages/module-not-found" [ref=e92] [cursor=pointer]:
+              - /url: https://nextjs.org/docs/messages/module-not-found
+        - contentinfo [ref=e93]:
+          - paragraph [ref=e94]:
+            - generic [ref=e95]: This error occurred during the build process and can only be dismissed by fixing the error.
+```

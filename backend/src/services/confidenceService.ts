@@ -10,7 +10,7 @@
  * Low confidence threshold: < 0.5 triggers manual review escalation
  */
 
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 export interface ConfidenceCalculationInput {
     score: number;

@@ -1,29 +1,40 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import React from 'react';
 import { ResumeUpload } from '../ResumeUpload';
 
 global.fetch = vi.fn();
-global.XMLHttpRequest = vi.fn(() => ({
-    open: vi.fn(),
-    send: vi.fn(),
-    setRequestHeader: vi.fn(),
-    upload: {
-        addEventListener: vi.fn(),
-    },
-    addEventListener: vi.fn((event, handler) => {
-        if (event === 'load') {
-            setTimeout(() => {
-                Object.defineProperty(global.XMLHttpRequest.prototype, 'status', { value: 200 });
-                handler();
-            }, 100);
-        }
-    }),
-})) as any;
+global.XMLHttpRequest = vi.fn(() => {
+    const xhrMock = {
+        status: 0,
+        open: vi.fn(),
+        send: vi.fn(),
+        setRequestHeader: vi.fn(),
+        upload: {
+            addEventListener: vi.fn(),
+        },
+        addEventListener: vi.fn((event, handler) => {
+            if (event === 'load') {
+                setTimeout(() => {
+                    xhrMock.status = 200;
+                    handler();
+                }, 100);
+            }
+        }),
+    };
+
+    return xhrMock;
+}) as any;
 
 describe('ResumeUpload', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.mocked(fetch).mockResolvedValue({
+            ok: true,
+            status: 403,
+            json: async () => ({}),
+        } as Response);
     });
 
     it('should render upload button', () => {
@@ -154,7 +165,7 @@ describe('ResumeUpload', () => {
         fireEvent.change(input);
 
         await waitFor(() => {
-            expect(screen.getByText(/Upload failed/)).toBeInTheDocument();
+            expect(screen.getAllByText(/Upload failed/).length).toBeGreaterThan(0);
         });
     });
 });

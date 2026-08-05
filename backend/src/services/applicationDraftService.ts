@@ -2,8 +2,10 @@ import prisma from '../db/prisma';
 import { auditEvent } from './auditService';
 import { checkApplicationEligibility } from './applicationStatusService';
 import { sendApplicationReceivedEmail } from './emailService';
+import { enqueueScreening } from '../queues/screeningQueue';
 import logger from '../utils/logger';
-import type { Application, ApplicationStatus } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import type { Application } from '@prisma/client';
 
 /**
  * Application Draft Service
@@ -33,6 +35,7 @@ export interface DraftData {
     step1_personal?: DraftDataStep1;
     step2_experience?: DraftDataStep2;
     step3_coverLetter?: DraftDataStep3;
+    resumeSetupOnly?: boolean;
     currentStep: 1 | 2 | 3 | 4;
 }
 
@@ -86,12 +89,15 @@ export async function saveDraft(params: SaveDraftParams): Promise<Application> {
                 updatedAt: new Date(),
             },
             create: {
-                candidateId,
-                requisitionId,
                 status: 'draft',
                 draftData: draftData as any,
                 draftSavedAt: new Date(),
-                submittedAt: null as any,
+                candidate: {
+                    connect: { id: candidateId },
+                },
+                requisition: {
+                    connect: { id: requisitionId },
+                },
             },
         });
 
@@ -229,21 +235,58 @@ export async function submitDraft(params: SubmitDraftParams): Promise<Applicatio
             }
         }
 
+        const attachedResume = await prisma.resume.findUnique({
+            where: { applicationId: draft.id },
+            select: {
+                id: true,
+                scanStatus: true,
+                parsedData: true,
+            },
+        });
+
+        if (!attachedResume) {
+            throw new DraftError(
+                'RESUME_REQUIRED',
+                'Please upload your resume before submitting the application'
+            );
+        }
+
+        if (attachedResume.scanStatus === 'infected') {
+            throw new DraftError(
+                'RESUME_SCAN_FAILED',
+                'Uploaded resume failed security scan. Please upload a clean resume before submitting.'
+            );
+        }
+
         // Update to submitted status
         const submittedApplication = await prisma.application.update({
             where: { id: draft.id },
             data: {
                 status: 'submitted',
                 submittedAt: new Date(),
-                draftData: null,
+                draftData: Prisma.JsonNull,
                 draftSavedAt: null,
                 updatedAt: new Date(),
             },
-            include: {
-                requisition: true,
+        });
+
+        const submittedApplicationContext = await prisma.application.findUnique({
+            where: { id: submittedApplication.id },
+            select: {
                 candidate: {
-                    include: {
-                        profile: true,
+                    select: {
+                        email: true,
+                        profile: {
+                            select: {
+                                fullName: true,
+                            },
+                        },
+                    },
+                },
+                requisition: {
+                    select: {
+                        title: true,
+                        department: true,
                     },
                 },
             },
@@ -263,11 +306,26 @@ export async function submitDraft(params: SubmitDraftParams): Promise<Applicatio
         // Send confirmation email (async, don't block response)
         setImmediate(async () => {
             try {
+                const candidateEmail = submittedApplicationContext?.candidate?.email;
+                const requisitionTitle = submittedApplicationContext?.requisition?.title;
+                const requisitionDepartment =
+                    submittedApplicationContext?.requisition?.department;
+
+                if (!candidateEmail || !requisitionTitle || !requisitionDepartment) {
+                    logger.warn('Skipping submission email due to missing context', {
+                        applicationId: submittedApplication.id,
+                        candidateId,
+                        requisitionId,
+                    });
+                    return;
+                }
+
                 await sendApplicationReceivedEmail({
-                    candidateEmail: submittedApplication.candidate.email,
-                    candidateName: submittedApplication.candidate.profile?.fullName || 'Candidate',
-                    requisitionTitle: submittedApplication.requisition.title,
-                    requisitionDepartment: submittedApplication.requisition.department,
+                    candidateEmail,
+                    candidateName:
+                        submittedApplicationContext?.candidate?.profile?.fullName || 'Candidate',
+                    requisitionTitle,
+                    requisitionDepartment,
                     applicationId: submittedApplication.id,
                     submittedAt: submittedApplication.submittedAt!,
                 });
@@ -278,6 +336,41 @@ export async function submitDraft(params: SubmitDraftParams): Promise<Applicatio
                 });
             }
         });
+
+        const hasReadyParsedResume =
+            attachedResume.scanStatus === 'clean' && attachedResume.parsedData !== null;
+
+        if (hasReadyParsedResume) {
+            setImmediate(async () => {
+                try {
+                    await enqueueScreening({
+                        applicationId: submittedApplication.id,
+                        resumeId: attachedResume.id,
+                        triggeredBy: 'manual',
+                    });
+
+                    logger.info('Screening enqueued after draft submission', {
+                        applicationId: submittedApplication.id,
+                        candidateId,
+                        requisitionId,
+                    });
+                } catch (error) {
+                    logger.error('Failed to enqueue screening after draft submission', {
+                        applicationId: submittedApplication.id,
+                        candidateId,
+                        requisitionId,
+                        error: error instanceof Error ? error.message : String(error),
+                    });
+                }
+            });
+        } else {
+            logger.info('Skipping immediate screening enqueue on submit; waiting for parse completion', {
+                applicationId: submittedApplication.id,
+                candidateId,
+                requisitionId,
+                resumeScanStatus: attachedResume.scanStatus,
+            });
+        }
 
         logger.info('Draft submitted successfully', {
             applicationId: submittedApplication.id,

@@ -158,14 +158,86 @@ export default function TemplateEditorForm({
     };
 
     return (
-        <div className="bg-white rounded-lg shadow">
+        <div className="overflow-hidden rounded-2xl border border-[var(--admin-color-border)] bg-[var(--admin-color-surface-0)] shadow-[var(--admin-shadow-sm)]">
             <form onSubmit={handleSubmit}>
-                <div className="p-6 space-y-6">
-                    {/* Template Name */}
+                <div className="border-b border-[var(--admin-color-border)] bg-[var(--admin-color-surface-1)] px-4 py-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <h2 className="admin-heading text-base font-semibold text-[var(--admin-color-ink-primary)]">Template Editor</h2>
+                            <p className="text-xs text-[var(--admin-color-ink-secondary)]">{template.type} · {template.locale} · Version {template.versionNumber}</p>
+                        </div>
+                        <span className="rounded-full border border-[var(--admin-color-border)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--admin-color-ink-secondary)]">
+                            {template.isActive ? 'Active' : 'Draft'}
+                        </span>
+                    </div>
+                </div>
+
+                <div className="border-b border-[var(--admin-color-border)] bg-[var(--admin-color-surface-1)] px-4 py-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <button
+                            type="button"
+                            disabled
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[var(--admin-color-border)] bg-white text-sm font-semibold text-[var(--admin-color-ink-secondary)]"
+                            title="Formatting toolbar placeholder"
+                        >
+                            B
+                        </button>
+                        <button
+                            type="button"
+                            disabled
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[var(--admin-color-border)] bg-white text-sm italic text-[var(--admin-color-ink-secondary)]"
+                            title="Formatting toolbar placeholder"
+                        >
+                            I
+                        </button>
+                        <button
+                            type="button"
+                            disabled
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[var(--admin-color-border)] bg-white text-xs font-semibold text-[var(--admin-color-ink-secondary)]"
+                            title="Formatting toolbar placeholder"
+                        >
+                            L
+                        </button>
+
+                        <TokenInserter
+                            templateType={template.type}
+                            onInsertToken={handleInsertToken}
+                        />
+
+                        <div className="ml-auto inline-flex rounded-md border border-[var(--admin-color-border)] bg-white p-0.5">
+                            <button
+                                type="button"
+                                className={`rounded px-2.5 py-1 text-xs font-semibold transition ${
+                                    activeEditor === 'html'
+                                        ? 'bg-[var(--admin-color-brand-primary)] text-white'
+                                        : 'text-[var(--admin-color-ink-secondary)] hover:bg-[var(--admin-color-surface-1)]'
+                                }`}
+                                onClick={() => setActiveEditor('html')}
+                                aria-pressed={activeEditor === 'html'}
+                            >
+                                HTML
+                            </button>
+                            <button
+                                type="button"
+                                className={`rounded px-2.5 py-1 text-xs font-semibold transition ${
+                                    activeEditor === 'text'
+                                        ? 'bg-[var(--admin-color-brand-primary)] text-white'
+                                        : 'text-[var(--admin-color-ink-secondary)] hover:bg-[var(--admin-color-surface-1)]'
+                                }`}
+                                onClick={() => setActiveEditor('text')}
+                                aria-pressed={activeEditor === 'text'}
+                            >
+                                Text
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="space-y-4 px-4 py-4">
                     <div>
                         <label
                             htmlFor="template-name"
-                            className="block text-sm font-medium text-gray-700 mb-1"
+                            className="mb-1 block text-xs font-semibold uppercase tracking-[0.06em] text-[var(--admin-color-ink-tertiary)]"
                         >
                             Template Name
                         </label>
@@ -174,17 +246,16 @@ export default function TemplateEditorForm({
                             id="template-name"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                            className="block h-10 w-full rounded-md border border-[var(--admin-color-border)] px-3 text-sm text-[var(--admin-color-ink-primary)] focus:border-[var(--admin-color-brand-primary)] focus:outline-none"
                             required
                             aria-label="Template name"
                         />
                     </div>
 
-                    {/* Subject Line */}
                     <div>
                         <label
                             htmlFor="template-subject"
-                            className="block text-sm font-medium text-gray-700 mb-1"
+                            className="mb-1 block text-xs font-semibold uppercase tracking-[0.06em] text-[var(--admin-color-ink-tertiary)]"
                         >
                             Subject Line
                         </label>
@@ -193,122 +264,96 @@ export default function TemplateEditorForm({
                             id="template-subject"
                             value={subject}
                             onChange={(e) => setSubject(e.target.value)}
-                            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                            className="block h-10 w-full rounded-md border border-[var(--admin-color-border)] px-3 text-sm text-[var(--admin-color-ink-primary)] focus:border-[var(--admin-color-brand-primary)] focus:outline-none"
                             maxLength={500}
                             required
                             aria-label="Email subject line"
                         />
-                        <p className="mt-1 text-xs text-gray-500">
+                        <p className="mt-1 text-xs text-[var(--admin-color-ink-tertiary)]">
                             {subject.length}/500 characters
                         </p>
                     </div>
 
-                    {/* Token Inserter */}
-                    <TokenInserter
-                        templateType={template.type}
-                        onInsertToken={handleInsertToken}
-                    />
-
-                    {/* Editor Tabs */}
-                    <div>
-                        <div className="flex border-b border-gray-200 mb-4">
-                            <button
-                                type="button"
-                                className={`px-4 py-2 text-sm font-medium ${
-                                    activeEditor === 'html'
-                                        ? 'text-blue-600 border-b-2 border-blue-600'
-                                        : 'text-gray-500 hover:text-gray-700'
-                                }`}
-                                onClick={() => setActiveEditor('html')}
-                                aria-pressed={activeEditor === 'html'}
+                    {activeEditor === 'html' && (
+                        <div>
+                            <label
+                                htmlFor="html-editor"
+                                className="mb-1 block text-xs font-semibold uppercase tracking-[0.06em] text-[var(--admin-color-ink-tertiary)]"
                             >
                                 HTML Body
-                            </button>
-                            <button
-                                type="button"
-                                className={`px-4 py-2 text-sm font-medium ${
-                                    activeEditor === 'text'
-                                        ? 'text-blue-600 border-b-2 border-blue-600'
-                                        : 'text-gray-500 hover:text-gray-700'
-                                }`}
-                                onClick={() => setActiveEditor('text')}
-                                aria-pressed={activeEditor === 'text'}
-                            >
-                                Plain Text
-                            </button>
+                            </label>
+                            <div
+                                ref={htmlEditorRef}
+                                id="html-editor"
+                                contentEditable
+                                onInput={handleHtmlEditorChange}
+                                onFocus={() => setActiveEditor('html')}
+                                className="block min-h-[360px] w-full overflow-y-auto rounded-md border border-[var(--admin-color-border)] px-3 py-3 text-sm text-[var(--admin-color-ink-primary)] focus:border-[var(--admin-color-brand-primary)] focus:outline-none"
+                                role="textbox"
+                                aria-label="HTML email body editor"
+                                aria-multiline="true"
+                                suppressContentEditableWarning
+                            />
+                            <p className="mt-1 text-xs text-[var(--admin-color-ink-tertiary)]">
+                                Use semantic HTML and insert merge tokens where dynamic data is required.
+                            </p>
                         </div>
+                    )}
 
-                        {/* HTML Editor */}
-                        {activeEditor === 'html' && (
-                            <div>
-                                <label
-                                    htmlFor="html-editor"
-                                    className="block text-sm font-medium text-gray-700 mb-2"
-                                >
-                                    HTML Body
-                                </label>
-                                <div
-                                    ref={htmlEditorRef}
-                                    id="html-editor"
-                                    contentEditable
-                                    onInput={handleHtmlEditorChange}
-                                    onFocus={() => setActiveEditor('html')}
-                                    className="block w-full min-h-[400px] px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm overflow-y-auto"
-                                    role="textbox"
-                                    aria-label="HTML email body editor"
-                                    aria-multiline="true"
-                                    suppressContentEditableWarning
-                                />
-                                <p className="mt-1 text-xs text-gray-500">
-                                    Use HTML tags for formatting. Click "Insert Token" to add dynamic content.
-                                </p>
-                            </div>
-                        )}
-
-                        {/* Plain Text Editor */}
-                        {activeEditor === 'text' && (
-                            <div>
-                                <label
-                                    htmlFor="text-editor"
-                                    className="block text-sm font-medium text-gray-700 mb-2"
-                                >
-                                    Plain Text Body
-                                </label>
-                                <textarea
-                                    ref={textEditorRef}
-                                    id="text-editor"
-                                    value={bodyText}
-                                    onChange={(e) => setBodyText(e.target.value)}
-                                    onFocus={() => setActiveEditor('text')}
-                                    className="block w-full min-h-[400px] px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm font-mono text-sm"
-                                    required
-                                    aria-label="Plain text email body editor"
-                                />
-                                <p className="mt-1 text-xs text-gray-500">
-                                    Fallback version for email clients that don't support HTML.
-                                </p>
-                            </div>
-                        )}
-                    </div>
+                    {activeEditor === 'text' && (
+                        <div>
+                            <label
+                                htmlFor="text-editor"
+                                className="mb-1 block text-xs font-semibold uppercase tracking-[0.06em] text-[var(--admin-color-ink-tertiary)]"
+                            >
+                                Plain Text Body
+                            </label>
+                            <textarea
+                                ref={textEditorRef}
+                                id="text-editor"
+                                value={bodyText}
+                                onChange={(e) => setBodyText(e.target.value)}
+                                onFocus={() => setActiveEditor('text')}
+                                className="admin-mono block min-h-[360px] w-full rounded-md border border-[var(--admin-color-border)] px-3 py-3 text-sm text-[var(--admin-color-ink-primary)] focus:border-[var(--admin-color-brand-primary)] focus:outline-none"
+                                required
+                                aria-label="Plain text email body editor"
+                            />
+                            <p className="mt-1 text-xs text-[var(--admin-color-ink-tertiary)]">
+                                Plain-text fallback content for clients that block HTML rendering.
+                            </p>
+                        </div>
+                    )}
                 </div>
 
-                {/* Action Buttons */}
-                <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3 rounded-b-lg">
-                    <button
-                        type="button"
-                        onClick={handleCancel}
-                        disabled={!hasChanges || isSaving}
-                        className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="submit"
-                        disabled={!hasChanges || isSaving}
-                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {isSaving ? 'Saving...' : 'Save Template'}
-                    </button>
+                <div className="flex items-center justify-between gap-3 border-t border-[var(--admin-color-border)] bg-[var(--admin-color-surface-1)] px-4 py-3">
+                    <p className="text-xs text-[var(--admin-color-ink-secondary)]">
+                        {hasChanges ? 'You have unsaved changes.' : 'All changes saved.'}
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            disabled
+                            className="h-9 rounded-md border border-[var(--admin-color-border)] bg-white px-3 text-sm font-medium text-[var(--admin-color-ink-secondary)] opacity-70"
+                            title="Send test flow is not enabled in this environment."
+                        >
+                            Send Test
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleCancel}
+                            disabled={!hasChanges || isSaving}
+                            className="h-9 rounded-md border border-[var(--admin-color-border)] bg-white px-3 text-sm font-medium text-[var(--admin-color-ink-secondary)] hover:bg-[var(--admin-color-surface-1)] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={!hasChanges || isSaving}
+                            className="h-9 rounded-md bg-[var(--admin-color-brand-primary)] px-3 text-sm font-semibold text-white hover:bg-[var(--admin-color-brand-primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            {isSaving ? 'Saving...' : 'Save Template'}
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>

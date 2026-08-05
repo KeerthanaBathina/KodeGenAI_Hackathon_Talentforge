@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { buildApiUrl } from '@/lib/api/url';
+import CandidateTopNav from '@/components/CandidateTopNav';
 
 interface RequisitionDetail {
     id: string;
@@ -18,23 +20,16 @@ interface RequisitionDetail {
     description?: string;
     requiredSkills?: string[];
     preferredSkills?: string[];
+    minExperienceYears?: number;
 }
 
-function getApiUrl(pathname: string): string {
-    const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-    const isLocalDevHost =
-        typeof window !== 'undefined' &&
-        (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost');
-
-    if (isLocalDevHost) {
-        return `http://localhost:3001${pathname}`;
-    }
-
-    if (!base) {
-        return pathname;
-    }
-
-    return `${base}${pathname}`;
+interface EligibilityStatus {
+    canApply: boolean;
+    reason: 'active_application' | 'cooling_period' | 'eligible';
+    existingApplicationId?: string;
+    daysRemaining?: number;
+    rejectedAt?: string;
+    message?: string;
 }
 
 function formatJobType(jobType: string): string {
@@ -55,11 +50,13 @@ export default function JobDetailPage() {
     const [job, setJob] = useState<RequisitionDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [eligibility, setEligibility] = useState<EligibilityStatus | null>(null);
+    const [hasDraft, setHasDraft] = useState(false);
 
     useEffect(() => {
         async function loadRequisition() {
             try {
-                const response = await fetch(getApiUrl(`/api/requisitions/${requisitionId}`), {
+                const response = await fetch(buildApiUrl(`/api/requisitions/${requisitionId}`), {
                     credentials: 'include',
                 });
 
@@ -78,6 +75,64 @@ export default function JobDetailPage() {
         }
 
         void loadRequisition();
+    }, [requisitionId]);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        async function loadApplicationStatus() {
+            try {
+                const eligibilityResponse = await fetch(
+                    buildApiUrl(`/api/requisitions/${requisitionId}/eligibility`),
+                    { credentials: 'include' }
+                );
+
+                if (!isMounted) {
+                    return;
+                }
+
+                if (!eligibilityResponse.ok) {
+                    // Anonymous users can still view details; eligibility is candidate-specific.
+                    if (eligibilityResponse.status === 401 || eligibilityResponse.status === 403) {
+                        return;
+                    }
+
+                    throw new Error('Unable to load eligibility status');
+                }
+
+                const eligibilityData: EligibilityStatus = await eligibilityResponse.json();
+                if (!isMounted) {
+                    return;
+                }
+
+                setEligibility(eligibilityData);
+
+                if (!eligibilityData.canApply) {
+                    setHasDraft(false);
+                    return;
+                }
+
+                const draftResponse = await fetch(
+                    buildApiUrl(`/api/requisitions/${requisitionId}/has-draft`),
+                    { credentials: 'include' }
+                );
+
+                if (!isMounted || !draftResponse.ok) {
+                    return;
+                }
+
+                const draftData: { hasDraft?: boolean } = await draftResponse.json();
+                setHasDraft(Boolean(draftData.hasDraft));
+            } catch (err) {
+                console.error('Error loading application status:', err);
+            }
+        }
+
+        void loadApplicationStatus();
+
+        return () => {
+            isMounted = false;
+        };
     }, [requisitionId]);
 
     if (loading) {
@@ -102,30 +157,12 @@ export default function JobDetailPage() {
     }
 
     const slotsRemaining = Math.max(job.slots - job.filledSlots, 0);
+    const minYearsExperience =
+        job.minExperienceYears ?? job.eligibilityCriteria?.minYearsExperience;
 
     return (
         <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc' }}>
-            <nav
-                style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    height: '64px',
-                    padding: '0 24px',
-                    backgroundColor: '#ffffff',
-                    borderBottom: '1px solid #e2e8f0',
-                }}
-            >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#6366f1', fontWeight: 700, fontSize: '18px' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#6366f1', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px' }}>
-                        TF
-                    </div>
-                    TalentForge
-                </div>
-                <Link href="/candidate/jobs" style={{ color: '#64748b', textDecoration: 'none', fontWeight: 600 }}>
-                    Browse Jobs
-                </Link>
-            </nav>
+            <CandidateTopNav active="jobs" />
 
             <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '24px', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: '16px' }}>
                 <p style={{ color: '#64748b', fontSize: '13px' }}>
@@ -144,21 +181,43 @@ export default function JobDetailPage() {
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '14px' }}>
                         <span style={{ border: '1px solid #e2e8f0', backgroundColor: '#f8fafc', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', color: '#64748b' }}>{formatJobType(job.jobType)}</span>
                         <span style={{ border: '1px solid #e2e8f0', backgroundColor: '#f8fafc', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', color: '#64748b' }}>{slotsRemaining} slots left</span>
-                        {job.eligibilityCriteria?.minYearsExperience !== undefined && (
+                        {minYearsExperience !== undefined && (
                             <span style={{ border: '1px solid #e2e8f0', backgroundColor: '#f8fafc', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', color: '#64748b' }}>
-                                {job.eligibilityCriteria.minYearsExperience}+ years exp.
+                                {minYearsExperience}+ years exp.
                             </span>
                         )}
                     </div>
 
                     <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                        <Link href={`/jobs/${job.id}/apply`} style={{ backgroundColor: '#6366f1', color: '#ffffff', textDecoration: 'none', borderRadius: '10px', padding: '11px 18px', fontWeight: 600, fontSize: '14px' }}>
-                            Apply Now
-                        </Link>
+                        {eligibility?.reason === 'active_application' && eligibility.existingApplicationId ? (
+                            <Link href={`/applications/track/${eligibility.existingApplicationId}`} style={{ backgroundColor: '#3b82f6', color: '#ffffff', textDecoration: 'none', borderRadius: '10px', padding: '11px 18px', fontWeight: 600, fontSize: '14px' }}>
+                                Track Application
+                            </Link>
+                        ) : eligibility?.reason === 'cooling_period' ? (
+                            <button type="button" disabled style={{ backgroundColor: '#d1d5db', color: '#4b5563', border: 'none', borderRadius: '10px', padding: '11px 18px', fontWeight: 600, fontSize: '14px', cursor: 'not-allowed' }}>
+                                Re-apply in {eligibility.daysRemaining ?? 0} day{eligibility.daysRemaining === 1 ? '' : 's'}
+                            </button>
+                        ) : (
+                            <Link href={`/jobs/${job.id}/apply`} style={{ backgroundColor: hasDraft ? '#3b82f6' : '#6366f1', color: '#ffffff', textDecoration: 'none', borderRadius: '10px', padding: '11px 18px', fontWeight: 600, fontSize: '14px' }}>
+                                {hasDraft ? 'Continue Application' : 'Apply Now'}
+                            </Link>
+                        )}
                         <Link href="/jobs" style={{ border: '1px solid #e2e8f0', color: '#64748b', textDecoration: 'none', borderRadius: '10px', padding: '11px 18px', fontWeight: 600, fontSize: '14px' }}>
                             Back to List
                         </Link>
                     </div>
+
+                    {eligibility?.reason === 'active_application' && (
+                        <p style={{ color: '#1f2937', marginTop: '10px', fontSize: '13px' }}>
+                            You already have an active application for this role.
+                        </p>
+                    )}
+
+                    {eligibility?.reason === 'cooling_period' && eligibility.message && (
+                        <p style={{ color: '#1f2937', marginTop: '10px', fontSize: '13px' }}>
+                            {eligibility.message}
+                        </p>
+                    )}
                 </section>
 
                 <section style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '20px' }}>

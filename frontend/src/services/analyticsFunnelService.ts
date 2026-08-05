@@ -1,4 +1,5 @@
 import { getAuthToken } from '@/lib/auth';
+import { buildApiUrl } from '@/lib/api/url';
 
 export interface FunnelStage {
   stageName: string;
@@ -14,15 +15,6 @@ export interface FunnelAnalyticsData {
   largestDropTransition: string | null;
   lastRefreshedAt: string | null;
   generatedAt: string;
-}
-
-function getApiUrl(pathname: string): string {
-  const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-  if (!base || (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')) {
-    return pathname;
-  }
-
-  return `${base}${pathname}`;
 }
 
 async function handleResponse<T>(response: Response): Promise<T> {
@@ -55,7 +47,7 @@ function authHeaders(): HeadersInit | undefined {
 
 export async function fetchFunnelAnalytics(requisitionId?: string): Promise<FunnelAnalyticsData> {
   const query = requisitionId ? `?requisitionId=${encodeURIComponent(requisitionId)}` : '';
-  const response = await fetch(getApiUrl(`/api/analytics/funnel${query}`), {
+  const response = await fetch(buildApiUrl(`/api/analytics/funnel${query}`), {
     method: 'GET',
     credentials: 'include',
     headers: authHeaders()

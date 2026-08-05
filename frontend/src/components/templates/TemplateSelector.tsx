@@ -1,8 +1,8 @@
 /**
  * Template Selector Component
  * 
- * Dropdown to select email templates by type and name.
- * Displays template type badge and name for easy identification.
+ * Sidebar list selector for template editing.
+ * Supports lightweight channel filtering and active-item highlighting.
  */
 
 import React from 'react';
@@ -24,46 +24,94 @@ const TEMPLATE_TYPE_LABELS: Record<string, string> = {
     general: 'General',
 };
 
+type TemplateChannel = 'all' | 'email' | 'sms';
+
+function inferTemplateChannel(type: string): Exclude<TemplateChannel, 'all'> {
+    return type.toLowerCase().includes('sms') ? 'sms' : 'email';
+}
+
 export default function TemplateSelector({
     templates,
     selectedTemplateId,
     onSelect,
 }: TemplateSelectorProps) {
+    const [channelFilter, setChannelFilter] = React.useState<TemplateChannel>('all');
+
+    const filteredTemplates = React.useMemo(() => {
+        if (channelFilter === 'all') {
+            return templates;
+        }
+
+        return templates.filter((template) => inferTemplateChannel(template.type) === channelFilter);
+    }, [templates, channelFilter]);
+
     return (
-        <div className="bg-white rounded-lg shadow p-4">
-            <label
-                htmlFor="template-selector"
-                className="block text-sm font-medium text-gray-700 mb-2"
-            >
-                Select Template
-            </label>
-            <select
-                id="template-selector"
-                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-                value={selectedTemplateId || ''}
-                onChange={(e) => onSelect(e.target.value)}
-                aria-label="Select email template to edit"
-            >
-                <option value="" disabled>
-                    Choose a template...
-                </option>
-                {templates.map((template) => (
-                    <option key={template.id} value={template.id}>
-                        [{TEMPLATE_TYPE_LABELS[template.type] || template.type}] {template.name} ({template.locale})
-                    </option>
-                ))}
-            </select>
-            
-            {selectedTemplateId && (
-                <div className="mt-3 text-xs text-gray-500">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        Version {templates.find(t => t.id === selectedTemplateId)?.versionNumber}
-                    </span>
-                    <span className="ml-2">
-                        {templates.find(t => t.id === selectedTemplateId)?.isActive ? '(Active)' : '(Inactive)'}
-                    </span>
-                </div>
-            )}
-        </div>
+        <aside className="flex h-full min-h-[560px] flex-col rounded-2xl border border-[var(--admin-color-border)] bg-[var(--admin-color-surface-1)]">
+            <div className="flex items-center justify-between border-b border-[var(--admin-color-border)] px-3 py-3">
+                <h2 className="admin-heading text-sm font-semibold text-[var(--admin-color-ink-primary)]">Templates</h2>
+                <button
+                    type="button"
+                    disabled
+                    className="text-xs font-semibold text-[var(--admin-color-brand-primary)] opacity-70"
+                    title="Template creation is not enabled in this environment."
+                >
+                    + New
+                </button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-1 border-b border-[var(--admin-color-border)] px-2 py-2">
+                {(['all', 'email', 'sms'] as TemplateChannel[]).map((channel) => {
+                    const isActive = channelFilter === channel;
+                    return (
+                        <button
+                            key={channel}
+                            type="button"
+                            onClick={() => setChannelFilter(channel)}
+                            className={`h-7 rounded-md border text-[11px] font-semibold uppercase tracking-[0.04em] transition ${
+                                isActive
+                                    ? 'border-[var(--admin-color-brand-primary)] bg-[var(--admin-color-brand-primary)] text-white'
+                                    : 'border-[var(--admin-color-border)] bg-[var(--admin-color-surface-0)] text-[var(--admin-color-ink-secondary)] hover:bg-[var(--admin-color-surface-2)]'
+                            }`}
+                        >
+                            {channel}
+                        </button>
+                    );
+                })}
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+                {filteredTemplates.length === 0 ? (
+                    <p className="px-3 py-4 text-sm text-[var(--admin-color-ink-secondary)]">No templates available.</p>
+                ) : (
+                    <ul>
+                        {filteredTemplates.map((template) => {
+                            const active = selectedTemplateId === template.id;
+                            const statusText = template.isActive ? 'Active' : 'Draft';
+                            const typeLabel = TEMPLATE_TYPE_LABELS[template.type] || template.type;
+                            return (
+                                <li key={template.id}>
+                                    <button
+                                        type="button"
+                                        onClick={() => onSelect(template.id)}
+                                        className={`w-full border-b border-[var(--admin-color-border)] px-3 py-2 text-left transition ${
+                                            active
+                                                ? 'border-r-2 border-r-[var(--admin-color-brand-primary)] bg-indigo-50'
+                                                : 'bg-transparent hover:bg-[var(--admin-color-surface-2)]'
+                                        }`}
+                                        aria-current={active ? 'true' : undefined}
+                                        aria-label={`Select template ${template.name}`}
+                                    >
+                                        <p className="truncate text-sm font-semibold text-[var(--admin-color-ink-primary)]">{template.name}</p>
+                                        <p className="mt-0.5 text-xs text-[var(--admin-color-ink-tertiary)]">
+                                            {typeLabel} · {template.locale} · v{template.versionNumber} · {statusText}
+                                        </p>
+                                    </button>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                )}
+            </div>
+        </aside>
     );
 }

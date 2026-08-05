@@ -17,7 +17,9 @@ import TemplateEditorForm from '@/components/templates/TemplateEditorForm';
 import VersionHistorySidebar from '@/components/templates/VersionHistorySidebar';
 import TemplatePreviewPanel from '@/components/templates/TemplatePreviewPanel';
 import TokenDocumentationPanel from '@/components/templates/TokenDocumentationPanel';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
 import { useTemplatePreview } from '@/hooks/useTemplatePreview';
+import { buildApiUrl } from '@/lib/api/url';
 
 export interface Template {
     id: string;
@@ -44,12 +46,96 @@ export interface TemplateVersion {
     createdAt: string;
 }
 
-function getApiUrl(pathname: string): string {
-    const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-    if (!base || (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')) {
-        return pathname;
-    }
-    return `${base}${pathname}`;
+interface TemplateApiPayload {
+    id: string;
+    name: string;
+    type: string;
+    locale: string;
+    subject: string;
+    bodyHtml: string;
+    bodyText: string;
+    version?: number;
+    versionNumber?: number;
+    active?: boolean;
+    isActive?: boolean;
+}
+
+interface TemplateVersionApiPayload {
+    id: string;
+    versionNumber: number;
+    name: string;
+    subject: string;
+    bodyHtml: string;
+    bodyText: string;
+    createdBy?: {
+        name?: string;
+        fullName?: string;
+    };
+    createdAt: string;
+}
+
+function normalizeTemplate(payload: TemplateApiPayload): Template {
+    return {
+        id: payload.id,
+        name: payload.name,
+        type: payload.type,
+        locale: payload.locale,
+        subject: payload.subject,
+        bodyHtml: payload.bodyHtml,
+        bodyText: payload.bodyText,
+        versionNumber:
+            typeof payload.versionNumber === 'number'
+                ? payload.versionNumber
+                : typeof payload.version === 'number'
+                  ? payload.version
+                  : 1,
+        isActive: typeof payload.isActive === 'boolean' ? payload.isActive : payload.active !== false,
+    };
+}
+
+function normalizeTemplatesResponse(payload: unknown): Template[] {
+    const response = payload as {
+        templates?: unknown;
+        data?: unknown;
+    };
+
+    const templates = Array.isArray(response?.templates)
+        ? response.templates
+        : Array.isArray(response?.data)
+          ? response.data
+          : [];
+
+    return templates.map((template) => normalizeTemplate(template as TemplateApiPayload));
+}
+
+function normalizeVersionsResponse(payload: unknown): TemplateVersion[] {
+    const response = payload as {
+        versions?: unknown;
+        data?: unknown;
+    };
+
+    const versions = Array.isArray(response?.versions)
+        ? response.versions
+        : Array.isArray(response?.data)
+          ? response.data
+          : [];
+
+    return versions.map((version) => {
+        const item = version as TemplateVersionApiPayload;
+
+        return {
+            id: item.id,
+            versionNumber: item.versionNumber,
+            name: item.name,
+            subject: item.subject,
+            bodyHtml: item.bodyHtml,
+            bodyText: item.bodyText,
+            createdBy: {
+                name: item.createdBy?.name || item.createdBy?.fullName || 'Unknown',
+            },
+            createdAt: item.createdAt,
+        };
+    });
 }
 
 export default function TemplateManagementPage() {
@@ -83,7 +169,7 @@ export default function TemplateManagementPage() {
             try {
                 // TODO: Replace with actual auth check when auth service is ready
                 // For now, assuming user is authorized if they can fetch templates
-                const response = await fetch(getApiUrl('/api/templates'), {
+                const response = await fetch(buildApiUrl('/api/templates'), {
                     credentials: 'include',
                 });
 
@@ -98,7 +184,7 @@ export default function TemplateManagementPage() {
                 }
 
                 const data = await response.json();
-                setTemplates(data.data || []);
+                setTemplates(normalizeTemplatesResponse(data));
                 setIsAuthorized(true);
             } catch (error) {
                 console.error('Error loading templates:', error);
@@ -126,7 +212,7 @@ export default function TemplateManagementPage() {
             
             try {
                 const response = await fetch(
-                    getApiUrl(`/api/templates/${selectedTemplate.id}/versions`),
+                    buildApiUrl(`/api/templates/${selectedTemplate.id}/versions`),
                     {
                         credentials: 'include',
                     }
@@ -137,7 +223,7 @@ export default function TemplateManagementPage() {
                 }
 
                 const data = await response.json();
-                setVersions(data.data || []);
+                setVersions(normalizeVersionsResponse(data));
             } catch (error) {
                 console.error('Error loading version history:', error);
                 setToast({
@@ -162,7 +248,7 @@ export default function TemplateManagementPage() {
             
             try {
                 const response = await fetch(
-                    getApiUrl(`/api/templates/sample-data/${selectedTemplate.type}`),
+                    buildApiUrl(`/api/templates/sample-data/${selectedTemplate.type}`),
                     {
                         credentials: 'include',
                     }
@@ -215,7 +301,7 @@ export default function TemplateManagementPage() {
         setIsSaving(true);
         try {
             const response = await fetch(
-                getApiUrl(`/api/templates/${selectedTemplate.id}`),
+                buildApiUrl(`/api/templates/${selectedTemplate.id}`),
                 {
                     method: 'PUT',
                     headers: {
@@ -230,30 +316,37 @@ export default function TemplateManagementPage() {
                 throw new Error('Failed to save template');
             }
 
-            const updatedTemplate = await response.json();
+            const updatedTemplatePayload = await response.json();
+            const updatedTemplate = normalizeTemplate({
+                ...(updatedTemplatePayload.template || updatedTemplatePayload.data || updatedTemplatePayload),
+                versionNumber:
+                    typeof updatedTemplatePayload.version === 'number'
+                        ? updatedTemplatePayload.version
+                        : undefined,
+            } as TemplateApiPayload);
             
             // Update local state
             setTemplates((prev) =>
                 prev.map((t) =>
                     t.id === selectedTemplate.id
-                        ? { ...t, ...updatedTemplate.data }
+                        ? { ...t, ...updatedTemplate }
                         : t
                 )
             );
             setSelectedTemplate((prev) =>
-                prev ? { ...prev, ...updatedTemplate.data } : null
+                prev ? { ...prev, ...updatedTemplate } : null
             );
 
             // Reload version history
             const versionsResponse = await fetch(
-                getApiUrl(`/api/templates/${selectedTemplate.id}/versions`),
+                buildApiUrl(`/api/templates/${selectedTemplate.id}/versions`),
                 {
                     credentials: 'include',
                 }
             );
             if (versionsResponse.ok) {
                 const versionsData = await versionsResponse.json();
-                setVersions(versionsData.data || []);
+                setVersions(normalizeVersionsResponse(versionsData));
             }
 
             setToast({
@@ -276,7 +369,7 @@ export default function TemplateManagementPage() {
 
         try {
             const response = await fetch(
-                getApiUrl(`/api/templates/${selectedTemplate.id}/rollback`),
+                buildApiUrl(`/api/templates/${selectedTemplate.id}/rollback`),
                 {
                     method: 'POST',
                     headers: {
@@ -291,30 +384,37 @@ export default function TemplateManagementPage() {
                 throw new Error('Failed to rollback template');
             }
 
-            const restoredTemplate = await response.json();
+            const restoredTemplatePayload = await response.json();
+            const restoredTemplate = normalizeTemplate({
+                ...(restoredTemplatePayload.template || restoredTemplatePayload.data || restoredTemplatePayload),
+                versionNumber:
+                    typeof restoredTemplatePayload.newVersion === 'number'
+                        ? restoredTemplatePayload.newVersion
+                        : undefined,
+            } as TemplateApiPayload);
 
             // Update local state
             setTemplates((prev) =>
                 prev.map((t) =>
                     t.id === selectedTemplate.id
-                        ? { ...t, ...restoredTemplate.data }
+                        ? { ...t, ...restoredTemplate }
                         : t
                 )
             );
             setSelectedTemplate((prev) =>
-                prev ? { ...prev, ...restoredTemplate.data } : null
+                prev ? { ...prev, ...restoredTemplate } : null
             );
 
             // Reload version history
             const versionsResponse = await fetch(
-                getApiUrl(`/api/templates/${selectedTemplate.id}/versions`),
+                buildApiUrl(`/api/templates/${selectedTemplate.id}/versions`),
                 {
                     credentials: 'include',
                 }
             );
             if (versionsResponse.ok) {
                 const versionsData = await versionsResponse.json();
-                setVersions(versionsData.data || []);
+                setVersions(normalizeVersionsResponse(versionsData));
             }
 
             setToast({
@@ -332,12 +432,17 @@ export default function TemplateManagementPage() {
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading templates...</p>
+            <AdminPageShell
+                title="Template Management"
+                description="Create and manage notification templates with token-safe content and version history."
+            >
+                <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-[var(--admin-color-border)] bg-[var(--admin-color-surface-0)] shadow-[var(--admin-shadow-sm)]">
+                    <div className="text-center">
+                        <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-[var(--admin-color-brand-primary)]"></div>
+                        <p className="text-sm text-[var(--admin-color-ink-secondary)]">Loading templates...</p>
+                    </div>
                 </div>
-            </div>
+            </AdminPageShell>
         );
     }
 
@@ -346,41 +451,27 @@ export default function TemplateManagementPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                {/* Header */}
-                <div className="mb-6">
-                    <h1 className="text-3xl font-bold text-gray-900">
-                        Email Template Management
-                    </h1>
-                    <p className="mt-2 text-sm text-gray-600">
-                        Edit email templates, manage versions, and preview token replacements
-                    </p>
-                </div>
+        <AdminPageShell
+            title="Template Management"
+            description="Create and manage email or SMS notification templates with version control, token guidance, and live preview support."
+        >
+            <div className="grid gap-5 xl:grid-cols-[230px_minmax(0,1fr)_320px]">
+                <TemplateSelector
+                    templates={templates}
+                    selectedTemplateId={selectedTemplate?.id}
+                    onSelect={handleTemplateSelect}
+                />
 
-                {/* Template Selector */}
-                <div className="mb-6">
-                    <TemplateSelector
-                        templates={templates}
-                        selectedTemplateId={selectedTemplate?.id}
-                        onSelect={handleTemplateSelect}
-                    />
-                </div>
-
-                {/* Main Content Area */}
-                {selectedTemplate ? (
-                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-                        {/* Left Column: Editor + Preview (8/12 width on xl screens) */}
-                        <div className="xl:col-span-8 space-y-6">
-                            {/* Editor */}
+                <div className="space-y-5">
+                    {selectedTemplate ? (
+                        <>
                             <TemplateEditorForm
                                 template={selectedTemplate}
                                 onSave={handleSave}
                                 onChange={handleEditorChange}
                                 isSaving={isSaving}
                             />
-                            
-                            {/* Preview Panel */}
+
                             <TemplatePreviewPanel
                                 subject={preview?.subject || editorContent.subject}
                                 bodyHtml={preview?.bodyHtml || editorContent.bodyHtml}
@@ -388,88 +479,63 @@ export default function TemplateManagementPage() {
                                 isLoading={isPreviewLoading}
                                 error={previewError}
                             />
+                        </>
+                    ) : (
+                        <div className="rounded-2xl border border-[var(--admin-color-border)] bg-[var(--admin-color-surface-0)] p-10 text-center shadow-[var(--admin-shadow-sm)]">
+                            <h2 className="admin-heading text-lg font-semibold text-[var(--admin-color-ink-primary)]">No template selected</h2>
+                            <p className="mt-2 text-sm text-[var(--admin-color-ink-secondary)]">
+                                Select a template from the sidebar to begin editing.
+                            </p>
                         </div>
+                    )}
+                </div>
 
-                        {/* Right Column: Token Docs + Version History (4/12 width on xl screens) */}
-                        <div className="xl:col-span-4 space-y-6">
-                            {/* Token Documentation */}
+                <div className="space-y-5">
+                    {selectedTemplate ? (
+                        <>
                             <TokenDocumentationPanel
                                 templateType={selectedTemplate.type}
                                 missingTokens={missingTokens}
                             />
-                            
-                            {/* Version History */}
+
                             <VersionHistorySidebar
                                 versions={versions}
                                 currentVersionNumber={selectedTemplate.versionNumber}
                                 onRestore={handleRollback}
                             />
+                        </>
+                    ) : (
+                        <div className="rounded-2xl border border-dashed border-[var(--admin-color-border)] bg-[var(--admin-color-surface-0)] p-5 text-sm text-[var(--admin-color-ink-secondary)] shadow-[var(--admin-shadow-sm)]">
+                            Version history and token reference will appear after you select a template.
                         </div>
-                    </div>
-                ) : (
-                    <div className="bg-white rounded-lg shadow p-8 text-center">
-                        <svg
-                            className="mx-auto h-12 w-12 text-gray-400"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            aria-hidden="true"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                            />
-                        </svg>
-                        <h3 className="mt-2 text-sm font-medium text-gray-900">
-                            No template selected
-                        </h3>
-                        <p className="mt-1 text-sm text-gray-500">
-                            Select a template from the dropdown above to start editing
-                        </p>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
 
             {/* Toast Notifications */}
             {toast && (
                 <div
-                    style={{
-                        position: 'fixed',
-                        top: '1rem',
-                        right: '1rem',
-                        padding: '1rem',
-                        borderRadius: '0.5rem',
-                        backgroundColor: toast.type === 'success' ? '#10b981' : toast.type === 'error' ? '#ef4444' : '#3b82f6',
-                        color: 'white',
-                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-                        zIndex: 9999,
-                        maxWidth: '400px',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        gap: '1rem'
-                    }}
+                    role="status"
+                    aria-live="polite"
+                    className={`fixed right-4 top-4 z-[9999] flex max-w-md items-center justify-between gap-4 rounded-xl border px-4 py-3 text-white shadow-lg ${
+                        toast.type === 'success'
+                            ? 'border-emerald-200 bg-emerald-600'
+                            : toast.type === 'error'
+                              ? 'border-red-200 bg-red-600'
+                              : 'border-blue-200 bg-blue-600'
+                    }`}
                 >
                     <span>{toast.message}</span>
                     <button
                         onClick={() => setToast(null)}
-                        style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: 'white',
-                            cursor: 'pointer',
-                            fontSize: '1.25rem',
-                            padding: '0',
-                            lineHeight: '1'
-                        }}
+                        type="button"
+                        className="text-xl leading-none text-white hover:text-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                         aria-label="Close notification"
                     >
                         ×
                     </button>
                 </div>
             )}
-        </div>
+        </AdminPageShell>
     );
 }

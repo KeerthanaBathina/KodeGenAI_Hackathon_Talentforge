@@ -2,29 +2,39 @@
 
 import React from 'react';
 import { FormEvent, useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CountdownTimer } from '../../components/CountdownTimer';
+import { buildApiUrl } from '@/lib/api/url';
 import styles from '../auth-pages.module.css';
 
-function getApiUrl(pathname: string): string {
-    const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-    const isLocalDevHost = typeof window !== 'undefined' &&
-        (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost');
-
-    if (isLocalDevHost) {
-        return `http://localhost:3001${pathname}`;
+function getOAuthErrorMessage(code: string | null, provider: string | null): string | null {
+    if (!code) {
+        return null;
     }
 
-    if (!base) {
-        return pathname;
-    }
+    const providerLabel = provider === 'google'
+        ? 'Google'
+        : provider === 'github'
+            ? 'GitHub'
+            : 'OAuth provider';
 
-    return `${base}${pathname}`;
+    const messages: Record<string, string> = {
+        provider_not_configured: `${providerLabel} sign-in is not configured right now. Please use email and password.`,
+        missing_code: `${providerLabel} sign-in did not complete correctly. Please try again.`,
+        invalid_code: `${providerLabel} authorization expired or is invalid. Please try signing in again.`,
+        email_required: `${providerLabel} account did not provide an email address. Please use another sign-in method.`,
+        account_unavailable: 'This account is unavailable. Please contact support.',
+        oauth_init_failed: `${providerLabel} sign-in could not be started. Please try again later.`,
+        oauth_failed: `${providerLabel} sign-in failed. Please try again.`,
+    };
+
+    return messages[code] ?? 'Unable to complete social sign-in. Please try again.';
 }
 
 export default function LoginPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -48,7 +58,14 @@ export default function LoginPage() {
                 localStorage.removeItem('account_locked_until');
             }
         }
-    }, []);
+
+        const oauthError = searchParams.get('oauthError');
+        const oauthProvider = searchParams.get('oauthProvider');
+        const oauthErrorMessage = getOAuthErrorMessage(oauthError, oauthProvider);
+        if (oauthErrorMessage) {
+            setError(oauthErrorMessage);
+        }
+    }, [searchParams]);
 
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -81,7 +98,7 @@ export default function LoginPage() {
         setSubmitting(true);
 
         try {
-            const response = await fetch(getApiUrl('/api/auth/login'), {
+            const response = await fetch(buildApiUrl('/api/auth/login'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include', // Important for cookies
@@ -160,7 +177,7 @@ export default function LoginPage() {
 
     function handleOAuthLogin(provider: 'google' | 'github') {
         // Redirect to OAuth endpoint
-        window.location.href = getApiUrl(`/api/auth/oauth/${provider}`);
+        window.location.href = buildApiUrl(`/api/auth/oauth/${provider}`);
     }
 
     function handleLockoutExpire() {

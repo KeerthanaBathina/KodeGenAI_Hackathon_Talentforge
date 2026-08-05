@@ -4,14 +4,7 @@ import React from 'react';
 import { FormEvent, useState } from 'react';
 import Link from 'next/link';
 import { CountdownTimer } from '../../components/CountdownTimer';
-
-function getApiUrl(pathname: string): string {
-    const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-    if (!base || (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')) {
-        return pathname;
-    }
-    return `${base}${pathname}`;
-}
+import { buildApiUrl } from '@/lib/api/url';
 
 export default function ForgotPasswordPage() {
     const [email, setEmail] = useState('');
@@ -39,7 +32,7 @@ export default function ForgotPasswordPage() {
         setSubmitting(true);
 
         try {
-            const response = await fetch(getApiUrl('/api/auth/request-password-reset'), {
+            const response = await fetch(buildApiUrl('/api/auth/request-password-reset'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email }),

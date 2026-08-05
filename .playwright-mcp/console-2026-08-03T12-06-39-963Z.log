@@ -1,0 +1,4 @@
+[79810821ms] [ERROR] Failed to load resource: net::ERR_QUIC_PROTOCOL_ERROR.QUIC_NETWORK_IDLE_TIMEOUT @ https://www.googleadservices.com/pagead/conversion/16521530460/?gad_source=1&adview_type=1&adview_query_id=CIGO_57fhpYDFawhgwMd-qQqDQ:0
+[79811678ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_RESET @ https://static.doubleclick.net/instream/ad_status.js:0
+[79812541ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_RESET @ https://ep2.adtrafficquality.google/sodar/sodar2.js:0
+[79815223ms] [ERROR] Failed to load resource: net::ERR_QUIC_PROTOCOL_ERROR.QUIC_NETWORK_IDLE_TIMEOUT @ https://googleads.g.doubleclick.net/pagead/id:0

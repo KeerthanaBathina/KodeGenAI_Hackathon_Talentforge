@@ -1,6 +1,6 @@
 import prisma from '../db/prisma';
 import { computeScreeningScore } from './scoringService';
-import { getActiveThresholds, getRecommendation } from './thresholdService';
+import { getEffectiveThreshold, getRecommendation } from './thresholdService';
 import { processRejection } from './rejectionService';
 import { auditEvent } from './auditService';
 import { calculateConfidence, requiresManualReview, formatConfidenceForDb } from './confidenceService';
@@ -210,7 +210,7 @@ export async function performScreening(applicationId: string): Promise<Screening
             score,
             recommendation,
             factors,
-            thresholdVersion: thresholds.version,
+            thresholdVersion: effectiveThresholds.version,
         };
     } catch (error) {
         const elapsed = Date.now() - startTime;

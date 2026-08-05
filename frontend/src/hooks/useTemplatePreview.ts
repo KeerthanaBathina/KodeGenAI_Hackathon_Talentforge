@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { buildApiUrl } from '@/lib/api/url';
 
 interface PreviewContent {
     subject: string;
@@ -23,14 +24,6 @@ interface PreviewResponse {
 interface UseTemplatePreviewOptions {
     debounceMs?: number;
     enabled?: boolean;
-}
-
-function getApiUrl(pathname: string): string {
-    const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-    if (!base || (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')) {
-        return pathname;
-    }
-    return `${base}${pathname}`;
 }
 
 export function useTemplatePreview(
@@ -64,7 +57,7 @@ export function useTemplatePreview(
         setError(null);
 
         try {
-            const response = await fetch(getApiUrl('/api/templates/preview'), {
+            const response = await fetch(buildApiUrl('/api/templates/preview'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { buildApiUrl } from '@/lib/api/url';
 
 interface Filters {
     department: string | null;
@@ -22,14 +23,6 @@ interface FilterOptions {
     jobTypes: string[];
 }
 
-function getApiUrl(pathname: string): string {
-    const base = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
-    if (!base || (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')) {
-        return pathname;
-    }
-    return `${base}${pathname}`;
-}
-
 export default function FilterControls({
     filters,
     onFilterChange,
@@ -47,7 +40,7 @@ export default function FilterControls({
     useEffect(() => {
         async function fetchOptions() {
             try {
-                const response = await fetch(getApiUrl('/api/requisitions/filters'), {
+                const response = await fetch(buildApiUrl('/api/requisitions/filters'), {
                     credentials: 'include',
                 });
                 if (response.ok) {
