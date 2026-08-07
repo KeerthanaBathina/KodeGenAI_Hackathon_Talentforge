@@ -16,6 +16,7 @@ import { ApplicationDecisionLockedError } from '../services/manualReviewQueueSer
 import { InvalidPathOverrideError } from '../services/manualReviewQueueService';
 import { authenticate } from '../middleware/authenticate';
 import { authorize } from '../middleware/authorize';
+import { InterviewConflictError, PrerequisiteNotMetError } from '../services/interviewSchedulingService';
 
 const router = express.Router();
 
@@ -99,6 +100,21 @@ const BulkRejectSchema = z.object({
         .trim()
         .max(500, 'Comment must be 500 characters or fewer')
         .optional(),
+});
+
+const ScheduleInitialInterviewSchema = z.object({
+    stageType: z.enum(['aptitude', 'coding', 'technical', 'hr']).optional(),
+    startAt: z.string().datetime(),
+    endAt: z.string().datetime(),
+    timezone: z.string().trim().min(1).max(50),
+    joinUrl: z
+        .string()
+        .trim()
+        .optional()
+        .refine(
+            (value) => !value || z.string().url().safeParse(value).success,
+            'Join URL must be a valid URL'
+        ),
 });
 
 /**
@@ -358,6 +374,89 @@ router.post(
                 console.error('[ManualReviewQueue] Failed to override path:', error);
                 res.status(500).json({ error: 'Failed to override application path' });
             }
+        }
+    }
+);
+
+router.post(
+    '/:id/schedule-interview',
+    authorize(['recruiter', 'hr_reviewer', 'hr_manager']),
+    async (req, res) => {
+        try {
+            const { id } = req.params;
+
+            if (!id) {
+                res.status(400).json({ error: 'Application ID is required' });
+                return;
+            }
+
+            const validatedBody = ScheduleInitialInterviewSchema.parse(req.body);
+
+            const result = await ManualReviewQueueService.scheduleInitialInterviewFromManualReview({
+                applicationId: id,
+                actorId: req.user!.id,
+                stageType: validatedBody.stageType,
+                startAt: validatedBody.startAt,
+                endAt: validatedBody.endAt,
+                timezone: validatedBody.timezone,
+                 joinUrl: validatedBody.joinUrl ?? '',
+            });
+
+            res.status(201).json({
+                success: true,
+                message: 'Interview scheduled and invite sent',
+                interview: result,
+            });
+        } catch (error) {
+            if (error instanceof z.ZodError) {
+                res.status(400).json({
+                    error: 'Invalid request body',
+                    details: error.issues,
+                });
+                return;
+            }
+
+            if (error instanceof ApplicationDecisionLockedError) {
+                res.status(409).json({
+                    error: 'Application is no longer pending review',
+                });
+                return;
+            }
+
+            if (error instanceof InvalidPathOverrideError) {
+                res.status(409).json({
+                    error: error.message,
+                    code: error.code,
+                });
+                return;
+            }
+
+            if (error instanceof PrerequisiteNotMetError) {
+                res.status(422).json({
+                    error: 'Prerequisite stage not complete',
+                    message: error.message,
+                    requiredStage: error.requiredStage,
+                    requestedStage: error.requestedStage,
+                    missingStages: error.missingStages,
+                });
+                return;
+            }
+
+            if (error instanceof InterviewConflictError) {
+                res.status(422).json({
+                    error: 'Conflict detected',
+                    conflicts: error.conflicts,
+                });
+                return;
+            }
+
+            if (error instanceof Error && error.message === 'Application not found') {
+                res.status(404).json({ error: 'Application not found' });
+                return;
+            }
+
+            console.error('[ManualReviewQueue] Failed to schedule interview:', error);
+            res.status(500).json({ error: 'Failed to schedule interview' });
         }
     }
 );

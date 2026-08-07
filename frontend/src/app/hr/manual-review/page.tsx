@@ -228,6 +228,7 @@ export default function ManualReviewQueuePage() {
         >
             {toast && (
                 <div
+                    data-testid={`toast-${toast.type}`}
                     style={{
                         position: 'fixed',
                         top: '1rem',

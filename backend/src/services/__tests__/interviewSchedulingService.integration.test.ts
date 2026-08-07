@@ -19,6 +19,10 @@ const auditMocks = vi.hoisted(() => ({
     auditEvent: vi.fn(),
 }));
 
+const prerequisiteMocks = vi.hoisted(() => ({
+    canScheduleStage: vi.fn(),
+}));
+
 async function flushSetImmediateQueue(): Promise<void> {
     await new Promise<void>((resolve) => {
         setImmediate(() => resolve());
@@ -62,11 +66,20 @@ vi.mock('../../queues/interviewReminderQueue', () => ({
     enqueueInterviewReminder: reminderMocks.enqueueInterviewReminder,
 }));
 
+vi.mock('../stagePrerequisiteService', () => ({
+    canScheduleStage: prerequisiteMocks.canScheduleStage,
+}));
+
 import { scheduleInterview, InterviewConflictError } from '../interviewSchedulingService';
 
 describe('interviewSchedulingService', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        prerequisiteMocks.canScheduleStage.mockResolvedValue({
+            canSchedule: true,
+            missingStages: [],
+            reason: null,
+        });
         prismaMocks.applicationFindUnique.mockResolvedValue({
             id: 'app-1',
             candidate: {
@@ -156,6 +169,7 @@ describe('interviewSchedulingService', () => {
             select: expect.any(Object),
         });
         expect(prismaMocks.communicationCreate).toHaveBeenCalledTimes(4);
+        expect(prerequisiteMocks.canScheduleStage).toHaveBeenCalledWith('app-1', 'technical');
         await flushSetImmediateQueue();
         expect(prismaMocks.communicationUpdate).toHaveBeenCalledTimes(4);
         expect(reminderMocks.enqueueInterviewReminder).toHaveBeenCalledTimes(2);
@@ -197,5 +211,31 @@ describe('interviewSchedulingService', () => {
         ).rejects.toBeInstanceOf(InterviewConflictError);
 
         expect(prismaMocks.interviewStageCreate).not.toHaveBeenCalled();
+    });
+
+    it('skips prerequisite validation when skipPrerequisiteCheck is enabled', async () => {
+        prismaMocks.interviewStageFindMany.mockResolvedValue([]);
+        prismaMocks.interviewStageCreate.mockResolvedValue({
+            id: 'stage-override-1',
+            applicationId: 'app-1',
+            type: 'coding',
+            scheduledAt: new Date('2026-07-25T06:00:00.000Z'),
+            endAt: new Date('2026-07-25T06:45:00.000Z'),
+            timezone: 'UTC',
+            panelMembers: ['panel-1'],
+        });
+
+        const result = await scheduleInterview({
+            applicationId: 'app-1',
+            type: 'coding',
+            startAt: '2026-07-25T06:00:00.000Z',
+            endAt: '2026-07-25T06:45:00.000Z',
+            timezone: 'UTC',
+            panelMemberIds: ['panel-1'],
+            skipPrerequisiteCheck: true,
+        });
+
+        expect(result.id).toBe('stage-override-1');
+        expect(prerequisiteMocks.canScheduleStage).not.toHaveBeenCalled();
     });
 });

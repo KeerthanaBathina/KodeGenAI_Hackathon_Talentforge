@@ -4,6 +4,8 @@
  * Client functions for interacting with manual review queue endpoints
  */
 
+import { buildApiUrl } from '@/lib/api/url';
+
 export interface ManualReviewQueueItem {
     id: string;
     candidateId: string;
@@ -17,6 +19,7 @@ export interface ManualReviewQueueItem {
     submittedAt: string;
     screeningScore?: number | null;
     screeningConfidence?: number | null;
+    aptitudeScore?: number | null;
     path?: 'fresher' | 'experienced' | null;
     pathOverridden?: boolean;
     slaDeadlineAt: string;
@@ -81,7 +84,7 @@ export interface PathOverrideResponse {
     message: string;
     override: {
         applicationId: string;
-        originalPath: 'fresher' | 'experienced';
+        originalPath: 'fresher' | 'experienced' | null;
         newPath: 'fresher' | 'experienced';
         justification: string;
         overriddenAt: string;
@@ -101,6 +104,20 @@ export interface BulkRejectResponse {
         reasonCode: string;
         correlationId: string;
         communicationsQueued: number;
+    };
+}
+
+export interface ScheduleInitialInterviewResponse {
+    success: boolean;
+    message: string;
+    interview: {
+        applicationId: string;
+        stageType: 'aptitude' | 'coding' | 'technical' | 'hr';
+        interviewId: string;
+        scheduledAt: string;
+        endAt: string;
+        timezone: string;
+        joinUrl: string;
     };
 }
 
@@ -159,7 +176,7 @@ export async function getManualReviewQueue(
     }
 
     const response = await fetch(
-        `/api/manual-review-queue?${params.toString()}`,
+        buildApiUrl(`/api/manual-review-queue?${params.toString()}`),
         {
             method: 'GET',
             credentials: 'include',
@@ -180,7 +197,7 @@ export async function getManualReviewQueue(
  * Get queue statistics
  */
 export async function getManualReviewQueueStats(): Promise<ManualReviewQueueStats> {
-    const response = await fetch('/api/manual-review-queue/stats', {
+    const response = await fetch(buildApiUrl('/api/manual-review-queue/stats'), {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -208,7 +225,7 @@ export async function getManualReviewReasonCodes(
 
     const query = params.toString();
     const response = await fetch(
-        `/api/manual-review-queue/reason-codes${query ? `?${query}` : ''}`,
+        buildApiUrl(`/api/manual-review-queue/reason-codes${query ? `?${query}` : ''}`),
         {
             method: 'GET',
             credentials: 'include',
@@ -236,7 +253,7 @@ export async function markApplicationAsReviewed(
     comment?: string
 ): Promise<void> {
     const response = await fetch(
-        `/api/manual-review-queue/${applicationId}/review`,
+        buildApiUrl(`/api/manual-review-queue/${applicationId}/review`),
         {
             method: 'POST',
             credentials: 'include',
@@ -258,7 +275,7 @@ export async function overrideApplicationPath(
     justification: string
 ): Promise<PathOverrideResponse> {
     const response = await fetch(
-        `/api/manual-review-queue/${applicationId}/path-override`,
+        buildApiUrl(`/api/manual-review-queue/${applicationId}/path-override`),
         {
             method: 'POST',
             credentials: 'include',
@@ -281,7 +298,7 @@ export async function bulkRejectApplications(
     reasonCode: string,
     comment?: string
 ): Promise<BulkRejectResponse> {
-    const response = await fetch('/api/manual-review-queue/bulk-reject', {
+    const response = await fetch(buildApiUrl('/api/manual-review-queue/bulk-reject'), {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -292,6 +309,35 @@ export async function bulkRejectApplications(
 
     if (!response.ok) {
         throw new Error('Failed to bulk reject applications');
+    }
+
+    return response.json();
+}
+
+export async function scheduleInitialInterviewFromReview(
+    applicationId: string,
+    payload: {
+        stageType?: 'aptitude' | 'coding' | 'technical' | 'hr';
+        startAt: string;
+        endAt: string;
+        timezone: string;
+        joinUrl?: string;
+    }
+): Promise<ScheduleInitialInterviewResponse> {
+    const response = await fetch(
+        buildApiUrl(`/api/manual-review-queue/${applicationId}/schedule-interview`),
+        {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        }
+    );
+
+    if (!response.ok) {
+        throw new Error('Failed to schedule interview');
     }
 
     return response.json();

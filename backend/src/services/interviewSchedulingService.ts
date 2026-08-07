@@ -29,6 +29,8 @@ export interface ScheduleInterviewInput {
     endAt: string;
     timezone: string;
     panelMemberIds: string[];
+    joinUrl?: string;
+    skipPrerequisiteCheck?: boolean;
 }
 
 export interface InterviewConflict {
@@ -238,15 +240,17 @@ export async function scheduleInterview(input: ScheduleInterviewInput): Promise<
         throw new Error('Interview end time must be after start time');
     }
 
-    // Check prerequisites before scheduling
-    const prerequisiteCheck = await canScheduleStage(input.applicationId, input.type);
+    // Keep prerequisite enforcement by default; allow explicit bypass for HR manual-review scheduling.
+    if (!input.skipPrerequisiteCheck) {
+        const prerequisiteCheck = await canScheduleStage(input.applicationId, input.type);
 
-    if (!prerequisiteCheck.canSchedule) {
-        throw new PrerequisiteNotMetError(
-            prerequisiteCheck.missingStages[0] || 'unknown',
-            input.type,
-            prerequisiteCheck.missingStages
-        );
+        if (!prerequisiteCheck.canSchedule) {
+            throw new PrerequisiteNotMetError(
+                prerequisiteCheck.missingStages[0] || 'unknown',
+                input.type,
+                prerequisiteCheck.missingStages
+            );
+        }
     }
 
     const panelists = input.panelMemberIds.length > 0
@@ -422,6 +426,7 @@ export async function scheduleInterview(input: ScheduleInterviewInput): Promise<
             timezone: input.timezone,
             candidateName: application.candidate.profile?.fullName || 'Candidate',
             requisitionTitle: application.requisition.title,
+            joinUrl: input.joinUrl,
             recipients,
         };
 

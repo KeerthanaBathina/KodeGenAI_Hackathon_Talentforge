@@ -1,6 +1,8 @@
 import express from 'express';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { dirname, resolve } from 'node:path';
 import { authenticate } from '../middleware/authenticate';
 import {
     generatePresignedUrl,
@@ -31,6 +33,8 @@ const GenerateUploadUrlSchema = z.object({
 const ProcessLocallySchema = z.object({
     resumeId: z.string().uuid(),
 });
+
+const LOCAL_UPLOAD_ROOT = resolve(process.cwd(), '.local-resume-storage');
 
 /**
  * POST /api/resumes/presigned-url
@@ -170,6 +174,96 @@ router.post('/presigned-url', authenticate, async (req, res) => {
         });
     }
 });
+
+/**
+ * PUT /api/resumes/upload/:resumeId
+ * Local development upload endpoint used when RESUME_STORAGE_MODE=local.
+ */
+router.put(
+    '/upload/:resumeId',
+    authenticate,
+    express.raw({
+        limit: '10mb',
+        type: [
+            'application/pdf',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/octet-stream',
+        ],
+    }),
+    async (req, res) => {
+        const resumeId = req.params.resumeId;
+        const candidateId = req.user?.candidateId ?? req.user?.id;
+
+        if (!resumeId || !candidateId) {
+            return res.status(403).json({
+                error: {
+                    code: 'UNAUTHORIZED',
+                    message: 'Candidate access required',
+                },
+            });
+        }
+
+        if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
+            return res.status(400).json({
+                error: {
+                    code: 'INVALID_UPLOAD_BODY',
+                    message: 'Binary upload payload is required',
+                },
+            });
+        }
+
+        try {
+            const resume = await prisma.resume.findUnique({
+                where: { id: resumeId },
+                select: {
+                    id: true,
+                    storageKey: true,
+                    application: {
+                        select: {
+                            candidateId: true,
+                        },
+                    },
+                },
+            });
+
+            if (!resume || resume.application.candidateId !== candidateId) {
+                return res.status(404).json({
+                    error: {
+                        code: 'RESUME_NOT_FOUND',
+                        message: 'Resume not found',
+                    },
+                });
+            }
+
+            const absolutePath = resolve(LOCAL_UPLOAD_ROOT, resume.storageKey);
+            await mkdir(dirname(absolutePath), { recursive: true });
+            await writeFile(absolutePath, req.body as Buffer);
+
+            await prisma.resume.update({
+                where: { id: resume.id },
+                data: {
+                    uploadedAt: new Date(),
+                    scanStatus: 'pending',
+                },
+            });
+
+            return res.status(200).json({ success: true, resumeId: resume.id });
+        } catch (error) {
+            logger.error('Local resume upload failed', {
+                resumeId,
+                candidateId,
+                error: error instanceof Error ? error.message : String(error),
+            });
+
+            return res.status(500).json({
+                error: {
+                    code: 'LOCAL_UPLOAD_FAILED',
+                    message: 'Unable to store uploaded file locally',
+                },
+            });
+        }
+    }
+);
 
 /**
  * POST /api/resumes/process-locally

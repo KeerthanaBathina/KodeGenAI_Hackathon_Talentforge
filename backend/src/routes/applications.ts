@@ -28,6 +28,7 @@ const ACTIVE_APPLICATION_STATUSES = [
     'offer_pending',
     'offered',
 ] as const;
+const INTERNAL_APTITUDE_PROVIDER_NAME = 'Internal Aptitude Portal';
 
 // Accept PostgreSQL UUID textual format without enforcing specific RFC version bits.
 const UUID_COMPATIBLE_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -413,14 +414,54 @@ router.get('/mine', authenticate, async (req, res) => {
                         minExperienceYears: true,
                     },
                 },
+                assessmentSessions: {
+                    where: {
+                        provider: {
+                            name: INTERNAL_APTITUDE_PROVIDER_NAME,
+                        },
+                        status: 'in_progress',
+                    },
+                    orderBy: [{ launchedAt: 'desc' }],
+                    take: 1,
+                    select: {
+                        testUrl: true,
+                    },
+                },
+                interviewStages: {
+                    where: {
+                        state: 'scheduled',
+                        scheduledAt: { not: null },
+                    },
+                    orderBy: [{ scheduledAt: 'desc' }],
+                    take: 1,
+                    select: {
+                        type: true,
+                        scheduledAt: true,
+                        endAt: true,
+                        timezone: true,
+                    },
+                },
             },
         });
 
+        const responseData = applications.map(({ assessmentSessions, interviewStages, ...application }) => ({
+            ...application,
+            aptitudeTestUrl: assessmentSessions[0]?.testUrl ?? null,
+            scheduledStage: interviewStages[0]
+                ? {
+                      type: interviewStages[0].type,
+                      scheduledAt: interviewStages[0].scheduledAt?.toISOString() ?? null,
+                      endAt: interviewStages[0].endAt?.toISOString() ?? null,
+                      timezone: interviewStages[0].timezone,
+                  }
+                : null,
+        }));
+
         return res.status(200).json({
-            data: applications,
+            data: responseData,
             meta: {
                 scope,
-                count: applications.length,
+                count: responseData.length,
             },
         });
     } catch (error) {

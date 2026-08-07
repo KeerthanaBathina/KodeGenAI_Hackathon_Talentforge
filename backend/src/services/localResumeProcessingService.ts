@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import mammoth from 'mammoth';
 import { PDFParse } from 'pdf-parse';
 import prisma from '../db/prisma';
@@ -7,6 +9,7 @@ import logger from '../utils/logger';
 import { ParsedResumeData, processParseResult } from './parseResultService';
 
 const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+const LOCAL_UPLOAD_ROOT = resolve(process.cwd(), '.local-resume-storage');
 
 const COMMON_SKILL_KEYWORDS = [
     'typescript',
@@ -594,6 +597,15 @@ function fallbackEducationFromProfile(profileEducation: unknown): ParsedResumeDa
 }
 
 async function downloadResumeBytesFromStorage(storageKey: string): Promise<Buffer | null> {
+    const localPath = resolve(LOCAL_UPLOAD_ROOT, storageKey);
+
+    try {
+        const localBuffer = await readFile(localPath);
+        return localBuffer;
+    } catch {
+        // Continue to remote storage fallback.
+    }
+
     try {
         const { data, error } = await supabase.storage.from('resumes').download(storageKey);
         if (error || !data) {

@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   getManualReviewReasonCodes: vi.fn(),
   markApplicationAsReviewed: vi.fn(),
   overrideApplicationPath: vi.fn(),
+  scheduleInitialInterviewFromReview: vi.fn(),
   bulkRejectApplications: vi.fn(),
 }));
 
@@ -23,6 +24,7 @@ vi.mock('@/lib/api/manualReview', () => ({
   getManualReviewReasonCodes: mocks.getManualReviewReasonCodes,
   markApplicationAsReviewed: mocks.markApplicationAsReviewed,
   overrideApplicationPath: mocks.overrideApplicationPath,
+  scheduleInitialInterviewFromReview: mocks.scheduleInitialInterviewFromReview,
   bulkRejectApplications: mocks.bulkRejectApplications,
 }));
 
@@ -75,6 +77,7 @@ function buildResponse() {
         submittedAt: '2026-07-25T00:00:00.000Z',
         screeningScore: 71,
         screeningConfidence: 0.7,
+        aptitudeScore: 84,
         path: 'experienced',
         pathOverridden: true,
         slaDeadlineAt: '2026-07-27T00:00:00.000Z',
@@ -100,6 +103,7 @@ describe('ManualReviewQueueTable', () => {
     mocks.getManualReviewReasonCodes.mockReset();
     mocks.markApplicationAsReviewed.mockReset();
     mocks.overrideApplicationPath.mockReset();
+    mocks.scheduleInitialInterviewFromReview.mockReset();
     mocks.bulkRejectApplications.mockReset();
     realtimeMocks.ensureRealtime.mockReset();
     realtimeMocks.subscribeSlaTick.mockReset();
@@ -242,8 +246,10 @@ describe('ManualReviewQueueTable', () => {
     render(<ManualReviewQueueTable />);
 
     expect(await screen.findByText('Alex Red')).toBeInTheDocument();
+    expect(screen.getByText('Test Score')).toBeInTheDocument();
     expect(screen.getByLabelText('Interview path fresher')).toBeInTheDocument();
     expect(screen.getByText('experienced (overridden)')).toBeInTheDocument();
+    expect(screen.getByText('84%')).toBeInTheDocument();
   });
 
   it('opens path override modal, validates justification length, and submits override', async () => {
@@ -290,6 +296,87 @@ describe('ManualReviewQueueTable', () => {
         'Candidate has solid internship record and production coding exposure.'
       );
     });
+  });
+
+  it('allows setting path when current path is unassigned', async () => {
+    const user = userEvent.setup();
+    const response = buildResponse();
+    response.items[0].path = null;
+
+    mocks.getManualReviewQueue.mockResolvedValueOnce(response);
+    mocks.overrideApplicationPath.mockResolvedValue({
+      success: true,
+      message: 'Application path overridden',
+      override: {
+        applicationId: 'app-red',
+        originalPath: null,
+        newPath: 'experienced',
+        justification: 'Candidate has strong project depth and leadership across internships.',
+        overriddenAt: '2026-07-25T16:00:00.000Z',
+      },
+    });
+
+    render(<ManualReviewQueueTable />);
+
+    await screen.findByText('Alex Red');
+    const overrideButton = screen.getByRole('button', { name: 'Override path for Alex Red' });
+    expect(overrideButton).toBeEnabled();
+
+    await user.click(overrideButton);
+    expect(await screen.findByRole('dialog', { name: 'Override interview path form' })).toBeInTheDocument();
+    expect(screen.getByText('unassigned')).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText('Override path'), 'experienced');
+    await user.type(
+      screen.getByLabelText('Path override justification'),
+      'Candidate has strong project depth and leadership across internships.'
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Confirm path override' }));
+
+    await waitFor(() => {
+      expect(mocks.overrideApplicationPath).toHaveBeenCalledWith(
+        'app-red',
+        'experienced',
+        'Candidate has strong project depth and leadership across internships.'
+      );
+    });
+  });
+
+  it('enables schedule interview only after path override is present', async () => {
+    const user = userEvent.setup();
+    render(<ManualReviewQueueTable />);
+
+    await screen.findByText('Alex Red');
+
+    expect(screen.getByRole('button', { name: 'Schedule interview for Alex Red' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Schedule interview for Blair Amber' })).toBeEnabled();
+
+    await user.click(screen.getByRole('button', { name: 'Schedule interview for Blair Amber' }));
+    expect(await screen.findByRole('dialog', { name: 'Schedule interview form' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Schedule Aptitude stage' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Schedule Programming stage' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Schedule Tech Interview stage' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Schedule HR Round stage' })).toBeInTheDocument();
+  });
+
+  it('hides the interview link field for fresher aptitude scheduling', async () => {
+    const user = userEvent.setup();
+    const response = buildResponse();
+    response.items[0].pathOverridden = true;
+
+    mocks.getManualReviewQueue.mockResolvedValueOnce(response);
+
+    render(<ManualReviewQueueTable />);
+
+    await screen.findByText('Alex Red');
+    await user.click(screen.getByRole('button', { name: 'Schedule interview for Alex Red' }));
+
+    expect(await screen.findByRole('dialog', { name: 'Schedule interview form' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Interview Link')).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/A secure aptitude test link will be generated automatically/i)
+    ).toBeInTheDocument();
   });
 
   it('keeps bulk reject disabled until at least two applications are selected', async () => {

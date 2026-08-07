@@ -18,6 +18,7 @@ import {
 import { renderTemplate } from '../services/templateRenderer';
 import { resolveTemplate } from '../services/templateService';
 import nodemailer, { type SendMailOptions, type Transporter } from 'nodemailer';
+import Brevo from '@getbrevo/brevo';
 import { prisma } from '../db/prisma';
 import { TemplateType } from '@prisma/client';
 
@@ -40,6 +41,7 @@ export type SendPasswordResetEmailInput = {
 };
 
 let smtpTransporter: Transporter | null = null;
+let brevoApiInstance: Brevo.TransactionalEmailsApi | null = null;
 
 function getSmtpTransporter(): Transporter {
   if (smtpTransporter) {
@@ -63,6 +65,79 @@ function getSmtpTransporter(): Transporter {
   return smtpTransporter;
 }
 
+function getBrevoClient(): Brevo.TransactionalEmailsApi {
+  if (brevoApiInstance) {
+    return brevoApiInstance;
+  }
+
+  if (!env.BREVO_API_KEY) {
+    throw new Error('BREVO_API_KEY is required when EMAIL_PROVIDER=brevo');
+  }
+
+  const apiInstance = new Brevo.TransactionalEmailsApi();
+  apiInstance.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, env.BREVO_API_KEY);
+  brevoApiInstance = apiInstance;
+  return apiInstance;
+}
+
+function toEmailList(to: SendMailOptions['to']): Array<{ email: string }> {
+  if (!to) {
+    return [];
+  }
+
+  const list = Array.isArray(to) ? to : [to];
+
+  return list
+    .map((entry) => {
+      if (typeof entry === 'string') {
+        return entry;
+      }
+
+      if (entry && typeof entry === 'object' && 'address' in entry) {
+        return entry.address;
+      }
+
+      return '';
+    })
+    .map((email) => email.trim())
+    .filter((email) => email.length > 0)
+    .map((email) => ({ email }));
+}
+
+function toBrevoAttachments(attachments: SendMailOptions['attachments']): Array<{ name: string; content: string }> {
+  if (!attachments || attachments.length === 0) {
+    return [];
+  }
+
+  return attachments
+    .map((attachment) => {
+      const filename = attachment.filename || 'attachment';
+      const content = attachment.content;
+
+      if (!content) {
+        return null;
+      }
+
+      if (Buffer.isBuffer(content)) {
+        return {
+          name: filename,
+          content: content.toString('base64'),
+        };
+      }
+
+      if (typeof content === 'string') {
+        return {
+          name: filename,
+          content: Buffer.from(content, 'utf8').toString('base64'),
+        };
+      }
+
+      logger.warn({ filename }, 'Skipped non-buffer/string attachment for Brevo email');
+      return null;
+    })
+    .filter((item): item is { name: string; content: string } => item !== null);
+}
+
 export async function sendEmail(options: SendMailOptions): Promise<void> {
   if (env.EMAIL_PROVIDER === 'mock') {
     logger.info(
@@ -77,7 +152,34 @@ export async function sendEmail(options: SendMailOptions): Promise<void> {
   }
 
   if (env.EMAIL_PROVIDER !== 'smtp') {
-    throw new Error(`Unsupported EMAIL_PROVIDER: ${env.EMAIL_PROVIDER}`);
+    if (env.EMAIL_PROVIDER !== 'brevo') {
+      throw new Error(`Unsupported EMAIL_PROVIDER: ${env.EMAIL_PROVIDER}`);
+    }
+
+    const to = toEmailList(options.to);
+    if (to.length === 0) {
+      throw new Error('Email recipient is required');
+    }
+
+    const subject = options.subject?.toString().trim() || 'Notification from TalentForge';
+    const htmlContent = options.html?.toString() || undefined;
+    const textContent = options.text?.toString() || undefined;
+    const attachments = toBrevoAttachments(options.attachments);
+
+    const emailPayload: Brevo.SendSmtpEmail = {
+      sender: {
+        name: env.BREVO_SENDER_NAME || 'Recruitment Portal',
+        email: env.EMAIL_FROM,
+      },
+      to,
+      subject,
+      htmlContent,
+      textContent,
+      attachment: attachments.length > 0 ? attachments : undefined,
+    };
+
+    await getBrevoClient().sendTransacEmail(emailPayload);
+    return;
   }
 
   const transporter = getSmtpTransporter();

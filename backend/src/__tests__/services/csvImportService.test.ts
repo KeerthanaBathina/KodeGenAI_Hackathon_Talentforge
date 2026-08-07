@@ -180,6 +180,23 @@ describe('csvImportService', () => {
       );
     });
 
+    it('accepts hyphenated and case-varied job_type', async () => {
+      const jobFamilyCache = new Map([['software development', 'jf-123']]);
+      const row = {
+        role_title: 'Engineer',
+        department: 'Engineering',
+        location: 'Remote',
+        job_type: 'Full-time',
+        slots: '2',
+        job_family: 'Software Development'
+      };
+
+      const result = await validateRow(row, 2, jobFamilyCache);
+
+      expect(result.valid).toBe(true);
+      expect(result.data.job_type).toBe('full_time');
+    });
+
     it('rejects row with non-existent job family', async () => {
       const jobFamilyCache = new Map([['software development', 'jf-123']]);
       const row = {

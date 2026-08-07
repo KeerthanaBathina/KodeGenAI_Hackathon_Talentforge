@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { buildApiUrl } from '@/lib/api/url';
+import { getAuthToken } from '@/lib/auth';
 
 interface UploadState {
     status: 'idle' | 'validating' | 'requesting_url' | 'uploading' | 'scanning' | 'success' | 'error';
@@ -52,10 +53,12 @@ async function triggerLocalResumeProcessing(resumeId: string): Promise<void> {
 function uploadWithProgress(
     url: string,
     file: File,
+    authToken: string | null,
     onProgress: (progress: number) => void
 ): Promise<void> {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
+        const uploadTarget = url.startsWith('/') ? buildApiUrl(url) : url;
 
         xhr.upload.addEventListener('progress', (event) => {
             if (event.lengthComputable) {
@@ -74,8 +77,12 @@ function uploadWithProgress(
 
         xhr.addEventListener('error', () => reject(new Error('Upload failed')));
 
-        xhr.open('PUT', url);
+        xhr.open('PUT', uploadTarget);
+        xhr.withCredentials = true;
         xhr.setRequestHeader('Content-Type', file.type);
+        if (authToken) {
+            xhr.setRequestHeader('Authorization', `Bearer ${authToken}`);
+        }
         xhr.send(file);
     });
 }
@@ -138,11 +145,12 @@ export function useResumeUpload({ applicationId, onSuccess, onError }: UseResume
                 }
 
                 const { uploadUrl, resumeId } = await presignedResponse.json();
+                const authToken = getAuthToken();
 
                 // Upload file to Supabase Storage with progress tracking
                 setUploadState({ status: 'uploading', progress: 20, error: null, resumeId });
 
-                await uploadWithProgress(uploadUrl, file, (progress) => {
+                await uploadWithProgress(uploadUrl, file, authToken, (progress) => {
                     setUploadState((prev) => ({ ...prev, progress: 20 + progress * 70 })); // 20-90%
                 });
 

@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
     getDecisionReasonCodes: vi.fn(),
     markAsReviewed: vi.fn(),
     overrideApplicationPath: vi.fn(),
+    scheduleInitialInterviewFromManualReview: vi.fn(),
     bulkRejectApplications: vi.fn(),
     InvalidReasonCodeError: class InvalidReasonCodeError extends Error {},
     ApplicationDecisionLockedError: class ApplicationDecisionLockedError extends Error {},
@@ -55,6 +56,7 @@ vi.mock('../../services/manualReviewQueueService', () => ({
         getDecisionReasonCodes: mocks.getDecisionReasonCodes,
         markAsReviewed: mocks.markAsReviewed,
         overrideApplicationPath: mocks.overrideApplicationPath,
+        scheduleInitialInterviewFromManualReview: mocks.scheduleInitialInterviewFromManualReview,
         bulkRejectApplications: mocks.bulkRejectApplications,
     },
     InvalidReasonCodeError: mocks.InvalidReasonCodeError,
@@ -77,6 +79,7 @@ describe('manual review queue API integration tests', () => {
         mocks.getDecisionReasonCodes.mockReset();
         mocks.markAsReviewed.mockReset();
         mocks.overrideApplicationPath.mockReset();
+        mocks.scheduleInitialInterviewFromManualReview.mockReset();
         mocks.bulkRejectApplications.mockReset();
     });
 
@@ -420,6 +423,47 @@ describe('manual review queue API integration tests', () => {
 
         expect(response.status).toBe(404);
         expect(response.body.error).toBe('Application not found');
+    });
+
+    it('schedules initial interview for candidate with overridden path', async () => {
+        mocks.scheduleInitialInterviewFromManualReview.mockResolvedValue({
+            applicationId: 'app-1',
+            stageType: 'technical',
+            interviewId: 'int-1',
+            scheduledAt: '2026-08-06T10:00:00.000Z',
+            endAt: '2026-08-06T11:00:00.000Z',
+            timezone: 'UTC',
+            joinUrl: 'https://meet.example.com/interview-1',
+        });
+
+        const app = createTestApp();
+        const response = await request(app)
+            .post('/api/manual-review-queue/app-1/schedule-interview')
+            .send({
+                startAt: '2026-08-06T10:00:00.000Z',
+                endAt: '2026-08-06T11:00:00.000Z',
+                timezone: 'UTC',
+                joinUrl: 'https://meet.example.com/interview-1',
+            });
+
+        expect(response.status).toBe(201);
+        expect(response.body.success).toBe(true);
+        expect(response.body.interview).toEqual(
+            expect.objectContaining({
+                applicationId: 'app-1',
+                stageType: 'technical',
+                interviewId: 'int-1',
+            })
+        );
+        expect(mocks.scheduleInitialInterviewFromManualReview).toHaveBeenCalledWith({
+            applicationId: 'app-1',
+            actorId: 'user-1',
+            stageType: undefined,
+            startAt: '2026-08-06T10:00:00.000Z',
+            endAt: '2026-08-06T11:00:00.000Z',
+            timezone: 'UTC',
+            joinUrl: 'https://meet.example.com/interview-1',
+        });
     });
 
     it('bulk rejects applications for authorized HR actors', async () => {

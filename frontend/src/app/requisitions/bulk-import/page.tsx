@@ -38,6 +38,9 @@ export default function BulkImportPage() {
       });
 
       if (!response.ok) {
+        if (response.status === 403) {
+          throw new Error('You do not have permission to download this template. Contact your administrator if you need access.');
+        }
         throw new Error('Unable to download CSV template');
       }
 

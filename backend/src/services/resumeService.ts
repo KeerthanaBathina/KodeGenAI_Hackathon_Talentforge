@@ -13,6 +13,16 @@ const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 const PRESIGNED_URL_EXPIRY_SECONDS = 300; // 5 minutes
 
+function isLocalResumeUploadMode(): boolean {
+    const configuredMode = process.env.RESUME_STORAGE_MODE?.trim().toLowerCase();
+    if (configuredMode === 'local') {
+        return true;
+    }
+
+    // Developer fallback: placeholder Supabase host means remote storage is not configured.
+    return env.NODE_ENV === 'development' && env.SUPABASE_URL.includes('example.supabase.co');
+}
+
 export interface GeneratePresignedUrlParams {
     candidateId: string;
     applicationId: string;
@@ -87,6 +97,15 @@ export async function generatePresignedUrl(
             scanStatus: 'pending',
         },
     });
+
+    if (isLocalResumeUploadMode()) {
+        return {
+            uploadUrl: `/api/resumes/upload/${resume.id}`,
+            storageKey,
+            resumeId: resume.id,
+            expiresIn: PRESIGNED_URL_EXPIRY_SECONDS,
+        };
+    }
 
     // Generate presigned URL for upload
     const { data: uploadData, error } = await supabase.storage

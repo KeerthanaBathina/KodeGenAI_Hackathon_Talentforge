@@ -23,13 +23,13 @@ export interface StageStatus {
 export const pathStageSequences: Record<ApplicationPath, StagePrerequisite[]> = {
     fresher: [
         { stage: 'aptitude', prerequisiteStages: [] },
-        { stage: 'technical', prerequisiteStages: ['aptitude'] },
-        { stage: 'cultural', prerequisiteStages: ['aptitude', 'technical'] },
+        { stage: 'coding', prerequisiteStages: ['aptitude'] },
+        { stage: 'technical', prerequisiteStages: ['aptitude', 'coding'] },
+        { stage: 'hr', prerequisiteStages: ['aptitude', 'coding', 'technical'] },
     ],
     experienced: [
         { stage: 'technical', prerequisiteStages: [] },
-        { stage: 'system_design', prerequisiteStages: ['technical'] },
-        { stage: 'cultural', prerequisiteStages: ['technical', 'system_design'] },
+        { stage: 'hr', prerequisiteStages: ['technical'] },
     ],
 };
 

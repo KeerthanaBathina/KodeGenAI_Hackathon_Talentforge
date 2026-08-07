@@ -12,6 +12,13 @@ interface CandidateApplication {
     status: string;
     submittedAt: string;
     draftSavedAt?: string | null;
+    aptitudeTestUrl?: string | null;
+    scheduledStage?: {
+        type: 'aptitude' | 'coding' | 'technical' | 'hr' | string;
+        scheduledAt: string | null;
+        endAt: string | null;
+        timezone: string;
+    } | null;
     requisition: {
         id: string;
         title: string;
@@ -43,6 +50,17 @@ function formatJobType(jobType: string): string {
     };
 
     return labels[jobType] || jobType;
+}
+
+function formatStageLabel(stageType: string): string {
+    const labels: Record<string, string> = {
+        aptitude: 'aptitude test',
+        coding: 'programming assessment',
+        technical: 'technical interview',
+        hr: 'HR round',
+    };
+
+    return labels[stageType] || stageType;
 }
 
 function getStatusBadgeStyle(status: string): { backgroundColor: string; color: string; border: string } {
@@ -181,6 +199,8 @@ export default function ApplicationsPage() {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '12px' }}>
                         {applications.map((application) => {
                             const statusBadge = getStatusBadgeStyle(application.status);
+                            const hasScheduledCandidateStep =
+                                Boolean(application.aptitudeTestUrl) || Boolean(application.scheduledStage);
 
                             const isDraft = application.status === 'draft';
                             const primaryHref = isDraft
@@ -208,6 +228,14 @@ export default function ApplicationsPage() {
                                             ? `Last draft save: ${application.draftSavedAt ? new Date(application.draftSavedAt).toLocaleString() : 'Not available'}`
                                             : `Submitted on ${new Date(application.submittedAt).toLocaleDateString()}`}
                                     </p>
+
+                                    {!isDraft && hasScheduledCandidateStep ? (
+                                        <p style={{ color: '#0f766e', fontSize: '13px', fontWeight: 600, marginBottom: '12px' }}>
+                                            {application.scheduledStage
+                                                ? `Check your email. Your ${formatStageLabel(application.scheduledStage.type)} got scheduled.`
+                                                : 'Check your email. Your aptitude test got scheduled.'}
+                                        </p>
+                                    ) : null}
 
                                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                                         <Link href={primaryHref} style={{ backgroundColor: '#3b82f6', color: '#ffffff', textDecoration: 'none', borderRadius: '8px', padding: '8px 12px', fontSize: '13px', fontWeight: 600 }}>

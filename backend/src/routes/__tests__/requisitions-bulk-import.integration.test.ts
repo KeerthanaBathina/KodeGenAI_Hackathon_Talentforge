@@ -94,6 +94,16 @@ vi.mock('../../middleware/authenticate', () => ({
       return;
     }
 
+    if (token === 'hr-reviewer-token') {
+      req.user = {
+        id: '44444444-4444-4444-4444-444444444444',
+        email: 'hr-reviewer@test.com',
+        role: 'hr_reviewer'
+      };
+      next();
+      return;
+    }
+
     if (token === 'candidate-token') {
       req.user = {
         id: '33333333-3333-3333-3333-333333333333',
@@ -251,6 +261,43 @@ describe('Requisitions bulk import API', () => {
       expect(mocks.redisSetex).toHaveBeenCalledOnce();
     });
 
+    it('does not fail import when error report storage fails', async () => {
+      mocks.importRequisitionsFromCSV.mockResolvedValueOnce({
+        success: true,
+        totalRows: 2,
+        validRows: 1,
+        invalidRows: 1,
+        duplicateRows: 0,
+        importedRequisitions: ['req-1'],
+        errors: [
+          {
+            rowNumber: 3,
+            field: 'role_title',
+            value: '',
+            message: 'Role title is required'
+          }
+        ],
+        duplicates: []
+      });
+      mocks.redisSetex.mockRejectedValueOnce(new Error('fetch failed'));
+
+      const csv =
+        'role_title,department,location,job_type,slots,job_family\n' +
+        'Senior Engineer,Engineering,Remote,full_time,2,Software Development\n' +
+        ',Marketing,NYC,full_time,1,Product Management';
+
+      const response = await request(app)
+        .post('/api/requisitions/bulk-import')
+        .set('Authorization', 'Bearer recruiter-token')
+        .attach('file', Buffer.from(csv), 'requisitions.csv');
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.results.importedCount).toBe(1);
+      expect(response.body.errorReportUrl).toBeUndefined();
+      expect(mocks.redisSetex).toHaveBeenCalledOnce();
+    });
+
     it('maps missing required column failures to 400', async () => {
       mocks.importRequisitionsFromCSV.mockRejectedValueOnce(
         new Error('Missing required column: job_type')
@@ -379,6 +426,15 @@ describe('Requisitions bulk import API', () => {
     it('requires authentication', async () => {
       const response = await request(app).get('/api/requisitions/bulk-import/template');
       expect(response.status).toBe(401);
+    });
+
+    it('allows hr reviewer role', async () => {
+      const response = await request(app)
+        .get('/api/requisitions/bulk-import/template')
+        .set('Authorization', 'Bearer hr-reviewer-token');
+
+      expect(response.status).toBe(200);
+      expect(response.headers['content-type']).toContain('text/csv');
     });
   });
 });

@@ -17,6 +17,7 @@ import {
     markApplicationAsReviewed,
     overrideApplicationPath,
     bulkRejectApplications,
+    scheduleInitialInterviewFromReview,
 } from '@/lib/api/manualReview';
 import {
     ensureReviewQueueBadgeRealtime,
@@ -37,6 +38,45 @@ interface ManualReviewQueueTableProps {
     filters?: ManualReviewFilters;
     onQueueSnapshot?: (snapshot: ManualReviewQueueResponse) => void;
 }
+
+type SchedulableStage = 'aptitude' | 'coding' | 'technical' | 'hr';
+
+const TIMEZONE_OPTIONS = [
+    { value: 'UTC', label: 'UTC' },
+    { value: 'Asia/Kolkata', label: 'India (IST)' },
+    { value: 'America/New_York', label: 'Eastern Time (ET)' },
+    { value: 'America/Chicago', label: 'Central Time (CT)' },
+    { value: 'America/Denver', label: 'Mountain Time (MT)' },
+    { value: 'America/Los_Angeles', label: 'Pacific Time (PT)' },
+    { value: 'Europe/London', label: 'London (GMT)' },
+    { value: 'Europe/Paris', label: 'Paris (CET)' },
+    { value: 'Asia/Tokyo', label: 'Tokyo (JST)' },
+    { value: 'Australia/Sydney', label: 'Sydney (AEDT)' },
+] as const;
+
+function normalizeTimezoneValue(timezone: string): string {
+    if (timezone === 'Asia/Calcutta') {
+        return 'Asia/Kolkata';
+    }
+
+    const match = TIMEZONE_OPTIONS.find((option) => option.value === timezone);
+    return match ? match.value : 'UTC';
+}
+
+const STAGE_OPTIONS: Array<{
+    value: SchedulableStage;
+    label: string;
+}> = [
+    { value: 'aptitude', label: 'Aptitude' },
+    { value: 'coding', label: 'Programming' },
+    { value: 'technical', label: 'Tech Interview' },
+    { value: 'hr', label: 'HR Round' },
+];
+
+const ALLOWED_STAGES_BY_PATH: Record<'fresher' | 'experienced', SchedulableStage[]> = {
+    fresher: ['aptitude', 'coding', 'technical', 'hr'],
+    experienced: ['technical', 'hr'],
+};
 
 export function ManualReviewQueueTable({
     filters = {},
@@ -63,11 +103,22 @@ export function ManualReviewQueueTable({
     const [pendingPathOverride, setPendingPathOverride] = useState<{
         applicationId: string;
         candidateName: string;
-        originalPath: 'fresher' | 'experienced';
+        originalPath: 'fresher' | 'experienced' | null;
     } | null>(null);
     const [overridePath, setOverridePath] = useState<'fresher' | 'experienced' | ''>('');
     const [overrideJustification, setOverrideJustification] = useState('');
     const [pathOverrideError, setPathOverrideError] = useState<string | null>(null);
+    const [pendingInterviewSchedule, setPendingInterviewSchedule] = useState<{
+        applicationId: string;
+        candidateName: string;
+        path: 'fresher' | 'experienced';
+    } | null>(null);
+    const [scheduleStartAt, setScheduleStartAt] = useState('');
+    const [scheduleEndAt, setScheduleEndAt] = useState('');
+    const [scheduleTimezone, setScheduleTimezone] = useState('UTC');
+    const [scheduleJoinUrl, setScheduleJoinUrl] = useState('');
+    const [scheduleStageType, setScheduleStageType] = useState<SchedulableStage>('aptitude');
+    const [scheduleError, setScheduleError] = useState<string | null>(null);
     const [sortBy, setSortBy] = useState<ManualReviewSortBy>('sla');
     const [sortDir, setSortDir] = useState<ManualReviewSortDir>('asc');
     const [selectedApplicationIds, setSelectedApplicationIds] = useState<string[]>([]);
@@ -80,6 +131,11 @@ export function ManualReviewQueueTable({
     const commentCharLimit = 500;
     const pathJustificationMinLength = 20;
     const minBulkSelection = 2;
+
+    function toDateTimeLocalValue(date: Date): string {
+        const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+        return localDate.toISOString().slice(0, 16);
+    }
 
     const loadQueue = useCallback(async () => {
         try {
@@ -225,16 +281,19 @@ export function ManualReviewQueueTable({
 
     async function handleOpenPathOverride(item: ManualReviewQueueItem) {
         const currentPath = item.path;
-        if (!currentPath) {
-            return;
-        }
 
         setPendingPathOverride({
             applicationId: item.id,
             candidateName: item.candidateName,
-            originalPath: currentPath,
+            originalPath: currentPath ?? null,
         });
-        setOverridePath(currentPath === 'fresher' ? 'experienced' : 'fresher');
+        setOverridePath(
+            currentPath
+                ? currentPath === 'fresher'
+                    ? 'experienced'
+                    : 'fresher'
+                : ''
+        );
         setOverrideJustification('');
         setPathOverrideError(null);
     }
@@ -347,6 +406,98 @@ export function ManualReviewQueueTable({
         setOverridePath('');
         setOverrideJustification('');
         setPathOverrideError(null);
+    }
+
+    function handleOpenScheduleInterview(item: ManualReviewQueueItem) {
+        if (!item.path) {
+            return;
+        }
+
+        const now = new Date();
+        const roundedStart = new Date(now);
+        roundedStart.setMinutes(0, 0, 0);
+        roundedStart.setHours(roundedStart.getHours() + 1);
+        const defaultEnd = new Date(roundedStart.getTime() + 60 * 60 * 1000);
+
+        setPendingInterviewSchedule({
+            applicationId: item.id,
+            candidateName: item.candidateName,
+            path: item.path,
+        });
+        setScheduleStageType(item.path === 'fresher' ? 'aptitude' : 'technical');
+        setScheduleStartAt(toDateTimeLocalValue(roundedStart));
+        setScheduleEndAt(toDateTimeLocalValue(defaultEnd));
+        setScheduleTimezone(
+            normalizeTimezoneValue(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC')
+        );
+        setScheduleJoinUrl('');
+        setScheduleError(null);
+    }
+
+    function handleCancelScheduleInterview() {
+        if (actioningId) {
+            return;
+        }
+
+        setPendingInterviewSchedule(null);
+        setScheduleStartAt('');
+        setScheduleEndAt('');
+        setScheduleTimezone('UTC');
+        setScheduleJoinUrl('');
+        setScheduleStageType('aptitude');
+        setScheduleError(null);
+    }
+
+    async function handleConfirmScheduleInterview() {
+        if (!pendingInterviewSchedule) {
+            return;
+        }
+
+        const allowedStages = ALLOWED_STAGES_BY_PATH[pendingInterviewSchedule.path];
+        if (!allowedStages.includes(scheduleStageType)) {
+            setScheduleError(
+                `The ${scheduleStageType} stage is not part of the ${pendingInterviewSchedule.path} path.`
+            );
+            return;
+        }
+
+        const requiresJoinUrl = scheduleStageType !== 'aptitude';
+
+        if (!scheduleStartAt || !scheduleEndAt || !scheduleTimezone.trim()) {
+            setScheduleError('Start time, end time, and timezone are required.');
+            return;
+        }
+
+        if (requiresJoinUrl && !scheduleJoinUrl.trim()) {
+            setScheduleError(`Join link is required for ${scheduleStageType} stage scheduling.`);
+            return;
+        }
+
+        try {
+            setActioningId(pendingInterviewSchedule.applicationId);
+            setScheduleError(null);
+
+            await scheduleInitialInterviewFromReview(pendingInterviewSchedule.applicationId, {
+                stageType: scheduleStageType,
+                startAt: new Date(scheduleStartAt).toISOString(),
+                endAt: new Date(scheduleEndAt).toISOString(),
+                timezone: scheduleTimezone.trim() || 'UTC',
+                joinUrl: requiresJoinUrl ? scheduleJoinUrl.trim() : undefined,
+            });
+
+            await loadQueue();
+            setPendingInterviewSchedule(null);
+            setScheduleStartAt('');
+            setScheduleEndAt('');
+            setScheduleTimezone('UTC');
+            setScheduleJoinUrl('');
+            setScheduleStageType('aptitude');
+        } catch (error) {
+            console.error('Failed to schedule interview:', error);
+            setScheduleError('Failed to schedule interview. Please verify timing/link and try again.');
+        } finally {
+            setActioningId(null);
+        }
     }
 
     async function handleConfirmPathOverride() {
@@ -659,6 +810,17 @@ export function ManualReviewQueueTable({
                                     color: '#374151',
                                 }}
                             >
+                                Test Score
+                            </th>
+                            <th
+                                style={{
+                                    padding: '12px 16px',
+                                    textAlign: 'center',
+                                    fontSize: '13px',
+                                    fontWeight: 600,
+                                    color: '#374151',
+                                }}
+                            >
                                 <button
                                     type="button"
                                     onClick={() => handleSort('sla')}
@@ -795,8 +957,24 @@ export function ManualReviewQueueTable({
                                     }}
                                 >
                                     {item.screeningScore !== null &&
-                                        item.screeningScore !== undefined
+                                    item.screeningScore !== undefined
                                         ? item.screeningScore
+                                        : '—'}
+                                </td>
+                                <td
+                                    style={{
+                                        padding: '16px',
+                                        textAlign: 'center',
+                                        fontSize: '14px',
+                                        fontWeight: 600,
+                                        color:
+                                            item.aptitudeScore !== null && item.aptitudeScore !== undefined
+                                                ? '#0f766e'
+                                                : '#111827',
+                                    }}
+                                >
+                                    {item.aptitudeScore !== null && item.aptitudeScore !== undefined
+                                        ? `${item.aptitudeScore}%`
                                         : '—'}
                                 </td>
                                 <td
@@ -880,8 +1058,37 @@ export function ManualReviewQueueTable({
                                             onClick={() => handleOpenPathOverride(item)}
                                             disabled={
                                                 actioningId !== null ||
+                                                item.decisionLocked
+                                            }
+                                            style={{
+                                                padding: '6px 14px',
+                                                fontSize: '13px',
+                                                fontWeight: 500,
+                                                color: '#FFFFFF',
+                                                backgroundColor:
+                                                    actioningId === item.id ||
+                                                        item.decisionLocked
+                                                        ? '#9CA3AF'
+                                                        : '#4B5563',
+                                                border: 'none',
+                                                borderRadius: '6px',
+                                                cursor:
+                                                    actioningId !== null ||
+                                                        item.decisionLocked
+                                                        ? 'not-allowed'
+                                                        : 'pointer',
+                                            }}
+                                            aria-label={`Override path for ${item.candidateName}`}
+                                        >
+                                            Override Path
+                                        </button>
+                                        <button
+                                            onClick={() => handleOpenScheduleInterview(item)}
+                                            disabled={
+                                                actioningId !== null ||
                                                 item.decisionLocked ||
-                                                !item.path
+                                                !item.path ||
+                                                !item.pathOverridden
                                             }
                                             style={{
                                                 padding: '6px 14px',
@@ -891,21 +1098,23 @@ export function ManualReviewQueueTable({
                                                 backgroundColor:
                                                     actioningId === item.id ||
                                                         item.decisionLocked ||
-                                                        !item.path
+                                                        !item.path ||
+                                                        !item.pathOverridden
                                                         ? '#9CA3AF'
-                                                        : '#4B5563',
+                                                        : '#1D4ED8',
                                                 border: 'none',
                                                 borderRadius: '6px',
                                                 cursor:
                                                     actioningId !== null ||
                                                         item.decisionLocked ||
-                                                        !item.path
+                                                        !item.path ||
+                                                        !item.pathOverridden
                                                         ? 'not-allowed'
                                                         : 'pointer',
                                             }}
-                                            aria-label={`Override path for ${item.candidateName}`}
+                                            aria-label={`Schedule interview for ${item.candidateName}`}
                                         >
-                                            Override Path
+                                            Schedule Interview
                                         </button>
                                         <button
                                             onClick={() => handleAction(item.id, item.candidateName, 'shortlisted')}
@@ -1219,7 +1428,7 @@ export function ManualReviewQueueTable({
                     </div>
 
                     <p style={{ fontSize: '13px', color: '#374151', marginBottom: '10px' }}>
-                        Current path: <strong style={{ textTransform: 'capitalize' }}>{pendingPathOverride.originalPath}</strong>
+                        Current path: <strong style={{ textTransform: 'capitalize' }}>{pendingPathOverride.originalPath ?? 'unassigned'}</strong>
                     </p>
 
                     <div style={{ marginBottom: '12px' }}>
@@ -1360,6 +1569,219 @@ export function ManualReviewQueueTable({
                             {actioningId === pendingPathOverride.applicationId
                                 ? 'Processing...'
                                 : 'Confirm Override'}
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {pendingInterviewSchedule && (
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Schedule interview form"
+                    style={{
+                        marginTop: '20px',
+                        border: '1px solid #D1D5DB',
+                        borderRadius: '10px',
+                        backgroundColor: '#FFFFFF',
+                        padding: '16px',
+                    }}
+                >
+                    <div
+                        style={{
+                            fontSize: '15px',
+                            fontWeight: 700,
+                            color: '#111827',
+                            marginBottom: '12px',
+                        }}
+                    >
+                        Schedule {pendingInterviewSchedule.candidateName}
+                    </div>
+
+                    <div style={{ marginBottom: '12px' }}>
+                        <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
+                            Stage
+                        </label>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            {STAGE_OPTIONS.map((stage) => {
+                                const isAllowed = ALLOWED_STAGES_BY_PATH[pendingInterviewSchedule.path].includes(stage.value);
+                                const isSelected = scheduleStageType === stage.value;
+
+                                return (
+                                    <button
+                                        key={stage.value}
+                                        type="button"
+                                        onClick={() => {
+                                            if (!isAllowed) {
+                                                return;
+                                            }
+
+                                            setScheduleStageType(stage.value);
+                                            setScheduleError(null);
+                                        }}
+                                        disabled={!isAllowed || actioningId === pendingInterviewSchedule.applicationId}
+                                        aria-label={`Schedule ${stage.label} stage`}
+                                        style={{
+                                            padding: '7px 10px',
+                                            borderRadius: '6px',
+                                            border: isSelected ? '1px solid #1D4ED8' : '1px solid #D1D5DB',
+                                            backgroundColor: isSelected ? '#DBEAFE' : '#FFFFFF',
+                                            color: !isAllowed ? '#9CA3AF' : '#1F2937',
+                                            fontSize: '12px',
+                                            fontWeight: 600,
+                                            cursor:
+                                                !isAllowed || actioningId === pendingInterviewSchedule.applicationId
+                                                    ? 'not-allowed'
+                                                    : 'pointer',
+                                        }}
+                                    >
+                                        {stage.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div style={{ marginBottom: '12px' }}>
+                        <label htmlFor="schedule-start-at" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
+                            Start Time
+                        </label>
+                        <input
+                            id="schedule-start-at"
+                            type="datetime-local"
+                            value={scheduleStartAt}
+                            onChange={(event) => setScheduleStartAt(event.target.value)}
+                            disabled={actioningId === pendingInterviewSchedule.applicationId}
+                            style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '14px' }}
+                        />
+                    </div>
+
+                    <div style={{ marginBottom: '12px' }}>
+                        <label htmlFor="schedule-end-at" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
+                            End Time
+                        </label>
+                        <input
+                            id="schedule-end-at"
+                            type="datetime-local"
+                            value={scheduleEndAt}
+                            onChange={(event) => setScheduleEndAt(event.target.value)}
+                            disabled={actioningId === pendingInterviewSchedule.applicationId}
+                            style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '14px' }}
+                        />
+                    </div>
+
+                    <div style={{ marginBottom: '12px' }}>
+                        <label htmlFor="schedule-timezone" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
+                            Timezone
+                        </label>
+                        <select
+                            id="schedule-timezone"
+                            value={scheduleTimezone}
+                            onChange={(event) => setScheduleTimezone(event.target.value)}
+                            disabled={actioningId === pendingInterviewSchedule.applicationId}
+                            style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '14px' }}
+                        >
+                            {TIMEZONE_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {scheduleStageType !== 'aptitude' ? (
+                        <div style={{ marginBottom: '12px' }}>
+                            <label htmlFor="schedule-join-url" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
+                                Interview Link
+                            </label>
+                            <input
+                                id="schedule-join-url"
+                                type="url"
+                                value={scheduleJoinUrl}
+                                onChange={(event) => setScheduleJoinUrl(event.target.value)}
+                                placeholder="https://meet.example.com/session"
+                                disabled={actioningId === pendingInterviewSchedule.applicationId}
+                                style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '14px' }}
+                            />
+                        </div>
+                    ) : (
+                        <div
+                            style={{
+                                marginBottom: '12px',
+                                borderRadius: '6px',
+                                border: '1px solid #BFDBFE',
+                                backgroundColor: '#EFF6FF',
+                                padding: '10px 12px',
+                                fontSize: '12px',
+                                color: '#1E3A8A',
+                            }}
+                        >
+                            A secure aptitude test link will be generated automatically and sent to the candidate by email and notification after you confirm the schedule.
+                        </div>
+                    )}
+
+                    {scheduleError && (
+                        <p role="alert" style={{ marginTop: '6px', fontSize: '12px', color: '#B91C1C' }}>
+                            {scheduleError}
+                        </p>
+                    )}
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                        <button
+                            type="button"
+                            onClick={handleCancelScheduleInterview}
+                            disabled={actioningId === pendingInterviewSchedule.applicationId}
+                            style={{
+                                padding: '7px 12px',
+                                borderRadius: '6px',
+                                border: '1px solid #D1D5DB',
+                                backgroundColor: '#FFFFFF',
+                                color: '#374151',
+                                cursor: actioningId === pendingInterviewSchedule.applicationId ? 'not-allowed' : 'pointer',
+                            }}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleConfirmScheduleInterview}
+                            disabled={
+                                !scheduleStartAt ||
+                                !scheduleEndAt ||
+                                !scheduleTimezone.trim() ||
+                                (scheduleStageType !== 'aptitude' &&
+                                    !scheduleJoinUrl.trim()) ||
+                                actioningId === pendingInterviewSchedule.applicationId
+                            }
+                            aria-label="Confirm schedule interview"
+                            style={{
+                                padding: '7px 12px',
+                                borderRadius: '6px',
+                                border: 'none',
+                                backgroundColor:
+                                    !scheduleStartAt ||
+                                        !scheduleEndAt ||
+                                        !scheduleTimezone.trim() ||
+                                        (scheduleStageType !== 'aptitude' &&
+                                            !scheduleJoinUrl.trim()) ||
+                                        actioningId === pendingInterviewSchedule.applicationId
+                                        ? '#9CA3AF'
+                                        : '#1D4ED8',
+                                color: '#FFFFFF',
+                                cursor:
+                                    !scheduleStartAt ||
+                                        !scheduleEndAt ||
+                                        !scheduleTimezone.trim() ||
+                                        (scheduleStageType !== 'aptitude' &&
+                                            !scheduleJoinUrl.trim()) ||
+                                        actioningId === pendingInterviewSchedule.applicationId
+                                        ? 'not-allowed'
+                                        : 'pointer',
+                            }}
+                        >
+                            {actioningId === pendingInterviewSchedule.applicationId
+                                ? 'Scheduling...'
+                                : 'Confirm Schedule'}
                         </button>
                     </div>
                 </div>

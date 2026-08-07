@@ -38,6 +38,26 @@ export const OPTIONAL_COLUMNS = [
 
 const VALID_JOB_TYPES = ['full_time', 'part_time', 'contract', 'internship'] as const;
 
+function normalizeJobType(value: string): string {
+  const canonical = value.trim().toLowerCase();
+
+  if (canonical === '') {
+    return canonical;
+  }
+
+  const normalizedSeparators = canonical.replace(/[\s-]+/g, '_');
+
+  if (normalizedSeparators === 'fulltime') {
+    return 'full_time';
+  }
+
+  if (normalizedSeparators === 'parttime') {
+    return 'part_time';
+  }
+
+  return normalizedSeparators;
+}
+
 export interface ParsedCSVResult {
   data: Record<string, unknown>[];
   errors: Papa.ParseError[];
@@ -167,7 +187,7 @@ export async function validateRow(
   const roleTitle = toTrimmedString(row.role_title);
   const department = toTrimmedString(row.department);
   const location = toTrimmedString(row.location);
-  const rawJobType = toTrimmedString(row.job_type).toLowerCase();
+  const rawJobType = normalizeJobType(toTrimmedString(row.job_type));
   const slotsRaw = row.slots;
   const jobFamily = toTrimmedString(row.job_family);
   const requiredSkills = toTrimmedString(row.required_skills);

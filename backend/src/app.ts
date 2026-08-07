@@ -42,6 +42,7 @@ import templatesRouter from './routes/templates';
 import notificationsRouter from './routes/notifications';
 import notificationPreferencesRouter from './routes/notificationPreferences';
 import jobFamiliesRouter from './routes/jobFamilies';
+import aptitudeTestRouter from './routes/aptitudeTest';
 import { buildSecurityHeaders } from './middleware/securityHeaders';
 import publicHealthRouter from './routes/health';
 
@@ -123,6 +124,7 @@ export function createApp() {
   app.use('/api/notifications', notificationsRouter);
   app.use('/api/job-families', jobFamiliesRouter);
   app.use('/api/notification-preferences', notificationPreferencesRouter);
+  app.use('/api/aptitude-test', aptitudeTestRouter);
   app.use('/api/admin/dead-letter-jobs', deadLetterJobsRouter);
   app.use('/api/admin/email-dlq', emailDLQRouter);
   app.use('/api/admin/queue-stats', queueStatsRouter);

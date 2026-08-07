@@ -11,6 +11,7 @@ import type { Prisma } from '@prisma/client';
 import type { ReasonCodeCategory } from '@prisma/client';
 import type { CommunicationStatus, TemplateType } from '@prisma/client';
 import type { ApplicationPath } from '@prisma/client';
+import type { InterviewStageType } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import logger from '../utils/logger';
 import { env } from '../config/env';
@@ -20,6 +21,8 @@ import {
 } from './reviewQueueSla';
 import { emitReviewQueueBadgeCountSnapshot } from './reviewQueueRealtimeService';
 import { renderTemplate } from './templateRenderer';
+import { scheduleInterview } from './interviewSchedulingService';
+import { sendEmail } from './brevoEmailService';
 
 const ALLOWED_REASON_CATEGORIES: Record<
     'shortlisted' | 'rejected',
@@ -45,7 +48,7 @@ interface DecisionExecutionResult {
 
 interface PathOverrideResult {
     applicationId: string;
-    originalPath: ApplicationPath;
+    originalPath: ApplicationPath | null;
     newPath: ApplicationPath;
     justification: string;
     overriddenAt: string;
@@ -64,6 +67,10 @@ interface BulkRejectResult {
     correlationId: string;
     communicationsQueued: number;
 }
+
+const INTERNAL_APTITUDE_PROVIDER_NAME = 'Internal Aptitude Portal';
+const INTERNAL_APTITUDE_PROVIDER_ENDPOINT = 'internal://aptitude-test';
+const INTERNAL_APTITUDE_PROVIDER_AUTH_MODE = 'none';
 
 interface DecisionTemplateSelector {
     type?: TemplateType;
@@ -86,13 +93,11 @@ export class ApplicationDecisionLockedError extends Error {
 
 export class InvalidPathOverrideError extends Error {
     code:
-        | 'PATH_NOT_SET'
         | 'NO_OP_OVERRIDE'
         | 'JUSTIFICATION_TOO_SHORT';
 
     constructor(
         code:
-            | 'PATH_NOT_SET'
             | 'NO_OP_OVERRIDE'
             | 'JUSTIFICATION_TOO_SHORT',
         message: string
@@ -335,6 +340,7 @@ export interface ManualReviewQueueItem {
     submittedAt: Date;
     screeningScore?: number | null;
     screeningConfidence?: number | null;
+    aptitudeScore?: number | null;
     path: ApplicationPath | null;
     pathOverridden: boolean;
     slaDeadlineAt: string;
@@ -371,6 +377,26 @@ export interface BulkRejectInput {
     actorId: string;
     reasonCode: string;
     comment?: string;
+}
+
+export interface ScheduleInitialInterviewInput {
+    applicationId: string;
+    actorId: string;
+    startAt: string;
+    endAt: string;
+    timezone: string;
+    joinUrl: string;
+    stageType?: 'aptitude' | 'coding' | 'technical' | 'hr';
+}
+
+export interface ScheduleInitialInterviewResult {
+    applicationId: string;
+    stageType: InterviewStageType;
+    interviewId: string;
+    scheduledAt: string;
+    endAt: string;
+    timezone: string;
+    joinUrl: string;
 }
 
 export interface PaginationOptions {
@@ -593,6 +619,21 @@ export async function getManualReviewQueue(
                     confidence: true,
                 },
             },
+            assessmentSessions: {
+                where: {
+                    provider: {
+                        name: INTERNAL_APTITUDE_PROVIDER_NAME,
+                    },
+                    status: 'completed',
+                },
+                orderBy: {
+                    completedAt: 'desc',
+                },
+                take: 1,
+                select: {
+                    score: true,
+                },
+            },
         },
     });
 
@@ -601,6 +642,9 @@ export async function getManualReviewQueue(
             const score = app.screenings[0]?.score ?? null;
             const confidence = app.screenings[0]?.confidence
                 ? Number(app.screenings[0].confidence)
+                : null;
+            const aptitudeScore = app.assessmentSessions[0]?.score
+                ? Number(app.assessmentSessions[0].score)
                 : null;
             const sla = computeReviewQueueSlaState(
                 app.submittedAt,
@@ -623,6 +667,7 @@ export async function getManualReviewQueue(
                 submittedAt: app.submittedAt,
                 screeningScore: score,
                 screeningConfidence: confidence,
+                aptitudeScore,
                 ...sla,
                 canShortlist: true,
                 canReject: true,
@@ -924,14 +969,7 @@ export async function overrideApplicationPath(
             throw new Error('Application not found');
         }
 
-        if (!application.path) {
-            throw new InvalidPathOverrideError(
-                'PATH_NOT_SET',
-                'Application path is not set and cannot be overridden'
-            );
-        }
-
-        if (application.path === input.newPath) {
+        if (application.path !== null && application.path === input.newPath) {
             throw new InvalidPathOverrideError(
                 'NO_OP_OVERRIDE',
                 'New path must differ from current path'
@@ -1182,6 +1220,186 @@ export async function bulkRejectApplications(
     return result;
 }
 
+export async function scheduleInitialInterviewFromManualReview(
+    input: ScheduleInitialInterviewInput
+): Promise<ScheduleInitialInterviewResult> {
+    const application = await prisma.application.findUnique({
+        where: { id: input.applicationId },
+        select: {
+            id: true,
+            status: true,
+            path: true,
+            pathOverridden: true,
+            candidate: {
+                select: {
+                    email: true,
+                    profile: {
+                        select: {
+                            fullName: true,
+                        },
+                    },
+                },
+            },
+            requisition: {
+                select: {
+                    title: true,
+                },
+            },
+        },
+    });
+
+    if (!application) {
+        throw new Error('Application not found');
+    }
+
+    if (application.status !== 'pending_review') {
+        throw new ApplicationDecisionLockedError();
+    }
+
+    if (!application.path) {
+        throw new InvalidPathOverrideError('NO_OP_OVERRIDE', 'Application path is not set');
+    }
+
+    if (!application.pathOverridden) {
+        throw new InvalidPathOverrideError(
+            'NO_OP_OVERRIDE',
+            'Override path before scheduling the first interview stage'
+        );
+    }
+
+    const allowedStagesByPath: Record<ApplicationPath, Array<'aptitude' | 'coding' | 'technical' | 'hr'>> = {
+        fresher: ['aptitude', 'coding', 'technical', 'hr'],
+        experienced: ['technical', 'hr'],
+    };
+
+    const defaultStageType: 'aptitude' | 'technical' =
+        application.path === 'fresher' ? 'aptitude' : 'technical';
+    const stageType = input.stageType ?? defaultStageType;
+
+    if (!allowedStagesByPath[application.path].includes(stageType)) {
+        throw new Error(`Stage ${stageType} is not part of ${application.path} path`);
+    }
+
+    let joinUrl = input.joinUrl.trim();
+    if (stageType === 'aptitude') {
+        const provider = await prisma.assessmentProvider.findFirst({
+            where: {
+                name: INTERNAL_APTITUDE_PROVIDER_NAME,
+            },
+            select: {
+                id: true,
+            },
+        }) ?? await prisma.assessmentProvider.create({
+            data: {
+                name: INTERNAL_APTITUDE_PROVIDER_NAME,
+                apiEndpoint: INTERNAL_APTITUDE_PROVIDER_ENDPOINT,
+                authMode: INTERNAL_APTITUDE_PROVIDER_AUTH_MODE,
+                timeoutSeconds: 30,
+                active: true,
+            },
+            select: {
+                id: true,
+            },
+        });
+
+        const sessionToken = randomUUID();
+        joinUrl = `${env.FRONTEND_URL.replace(/\/$/, '')}/candidate/aptitude-test?token=${sessionToken}`;
+
+        await prisma.assessmentSession.create({
+            data: {
+                applicationId: input.applicationId,
+                providerId: provider.id,
+                sessionToken,
+                testUrl: joinUrl,
+                status: 'in_progress',
+                metadata: {
+                    testType: 'aptitude_internal',
+                    durationMinutes: 45,
+                    totalQuestions: 30,
+                    generatedBy: 'manual_review_schedule',
+                },
+            },
+        });
+    }
+
+    if (stageType !== 'aptitude' && joinUrl.length === 0) {
+        throw new Error(`Join URL is required for ${stageType} interview scheduling`);
+    }
+
+    const panelist = await prisma.user.findFirst({
+        where: {
+            active: true,
+            role: {
+                in: ['tech_interviewer', 'hr_manager', 'hr_reviewer'],
+            },
+        },
+        select: {
+            id: true,
+        },
+        orderBy: {
+            createdAt: 'asc',
+        },
+    });
+
+    if (!panelist) {
+        throw new Error('No active interview panelist available');
+    }
+
+    const scheduledInterview = await scheduleInterview({
+        applicationId: input.applicationId,
+        type: stageType,
+        startAt: input.startAt,
+        endAt: input.endAt,
+        timezone: input.timezone,
+        panelMemberIds: [panelist.id],
+        joinUrl,
+        skipPrerequisiteCheck: true,
+    });
+
+    const candidateName = application.candidate.profile?.fullName?.trim() || 'Candidate';
+    const stageLabelMap: Record<'aptitude' | 'coding' | 'technical' | 'hr', string> = {
+        aptitude: 'Aptitude Test',
+        coding: 'Programming Assessment',
+        technical: 'Technical Interview',
+        hr: 'HR Round',
+    };
+    const stageLabel = stageLabelMap[stageType as 'aptitude' | 'coding' | 'technical' | 'hr'] ?? stageType;
+    const stageLinkLabel = stageType === 'aptitude' ? 'Aptitude Test Link' : 'Interview Link';
+    const emailSubject = `${stageLabel} Scheduled - ${application.requisition.title}`;
+    const emailHtml = `
+      <h1>${stageLabel} Scheduled</h1>
+            <p>Hi ${candidateName},</p>
+      <p>Your <strong>${stageLabel}</strong> has been scheduled for the role <strong>${application.requisition.title}</strong>.</p>
+            <p><strong>Start Date:</strong> ${new Date(scheduledInterview.scheduledAt).toLocaleString()}</p>
+            <p><strong>End Date:</strong> ${new Date(scheduledInterview.endAt).toLocaleString()}</p>
+            <p><strong>Timezone:</strong> ${scheduledInterview.timezone}</p>
+      <p><strong>${stageLinkLabel}:</strong> <a href="${joinUrl}">${joinUrl}</a></p>
+      <p>Please use the link above at the scheduled time.</p>
+      <p>Regards,<br/>TalentForge Recruitment Team</p>
+    `.trim();
+
+    try {
+        await sendEmail(application.candidate.email, emailSubject, emailHtml);
+    } catch (error) {
+        logger.error('Manual review candidate schedule email failed', {
+            applicationId: input.applicationId,
+            stageType,
+            candidateEmail: application.candidate.email,
+            error: error instanceof Error ? error.message : String(error),
+        });
+    }
+
+    return {
+        applicationId: input.applicationId,
+        stageType,
+        interviewId: scheduledInterview.id,
+        scheduledAt: scheduledInterview.scheduledAt,
+        endAt: scheduledInterview.endAt,
+        timezone: scheduledInterview.timezone,
+        joinUrl,
+    };
+}
+
 export const ManualReviewQueueService = {
     getManualReviewQueue,
     getManualReviewQueueStats,
@@ -1189,4 +1407,5 @@ export const ManualReviewQueueService = {
     markAsReviewed,
     overrideApplicationPath,
     bulkRejectApplications,
+    scheduleInitialInterviewFromManualReview,
 };

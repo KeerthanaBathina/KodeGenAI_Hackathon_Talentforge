@@ -18,6 +18,7 @@ import { randomUUID } from 'crypto';
 import logger from '../utils/logger';
 
 const router = Router();
+const REQUISITION_IMPORT_ROLES = ['recruiter', 'admin', 'hr_reviewer', 'hr_manager'] as const;
 
 // Validation schema for query parameters
 const ListRequisitionsSchema = z.object({
@@ -102,7 +103,7 @@ router.get('/filters', async (req: Request, res: Response) => {
 router.post(
     '/bulk-import',
     authenticate,
-    requireRole(['recruiter', 'admin']),
+    requireRole(REQUISITION_IMPORT_ROLES),
     uploadCSV.single('file'),
     async (req: Request, res: Response): Promise<void> => {
         const importSessionId = randomUUID();
@@ -172,12 +173,53 @@ router.post(
             );
 
             let errorReportUrl: string | undefined;
+            let errorPreview:
+                | {
+                    validationErrors: Array<{
+                        rowNumber: number;
+                        field: string;
+                        message: string;
+                    }>;
+                    duplicateRows: Array<{
+                        rowNumber: number;
+                        title: string;
+                        department: string;
+                        location: string;
+                    }>;
+                }
+                | undefined;
             if (result.errors.length > 0 || result.duplicates.length > 0) {
                 const reportId = `bulk-import-${Date.now()}-${randomUUID()}`;
                 const redisKey = `csv-error-report:${reportId}`;
                 const errorCSV = generateErrorReportCSV(result);
-                await redis.setex(redisKey, 3600, errorCSV);
-                errorReportUrl = `/api/requisitions/bulk-import/error-report/${reportId}`;
+
+                try {
+                    await redis.setex(redisKey, 3600, errorCSV);
+                    errorReportUrl = `/api/requisitions/bulk-import/error-report/${reportId}`;
+                } catch (storageError) {
+                    logger.warn(
+                        {
+                            storageError,
+                            redisKey,
+                            userId: req.user?.id
+                        },
+                        '[bulk-import] failed to store CSV error report; continuing without downloadable report'
+                    );
+
+                    errorPreview = {
+                        validationErrors: result.errors.slice(0, 20).map((entry) => ({
+                            rowNumber: entry.rowNumber,
+                            field: entry.field,
+                            message: entry.message
+                        })),
+                        duplicateRows: result.duplicates.slice(0, 10).map((entry) => ({
+                            rowNumber: entry.rowNumber,
+                            title: entry.title,
+                            department: entry.department,
+                            location: entry.location
+                        }))
+                    };
+                }
             }
 
             await auditEvent({
@@ -210,6 +252,7 @@ router.post(
                     importedRequisitions: result.importedRequisitions
                 },
                 errorReportUrl,
+                errorPreview,
                 processingTime
             });
         } catch (error) {
@@ -265,7 +308,7 @@ router.post(
 router.get(
     '/bulk-import/error-report/:reportId',
     authenticate,
-    requireRole(['recruiter', 'admin']),
+    requireRole(REQUISITION_IMPORT_ROLES),
     async (req: Request, res: Response): Promise<void> => {
         try {
             const reportId = req.params.reportId;
@@ -306,7 +349,7 @@ router.get(
 router.get(
     '/bulk-import/template',
     authenticate,
-    requireRole(['recruiter', 'admin']),
+    requireRole(REQUISITION_IMPORT_ROLES),
     async (_req: Request, res: Response): Promise<void> => {
         try {
             const templateCSV =

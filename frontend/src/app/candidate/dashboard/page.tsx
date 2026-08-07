@@ -23,6 +23,13 @@ interface CandidateApplication {
     requisitionId: string;
     status: string;
     submittedAt: string;
+    aptitudeTestUrl?: string | null;
+    scheduledStage?: {
+        type: 'aptitude' | 'coding' | 'technical' | 'hr' | string;
+        scheduledAt: string | null;
+        endAt: string | null;
+        timezone: string;
+    } | null;
     requisition: {
         id: string;
         title: string;
@@ -77,6 +84,17 @@ function formatJobType(jobType: string): string {
     };
 
     return labels[jobType] || jobType;
+}
+
+function formatStageLabel(stageType: string): string {
+    const labels: Record<string, string> = {
+        aptitude: 'aptitude test',
+        coding: 'programming assessment',
+        technical: 'technical interview',
+        hr: 'HR round',
+    };
+
+    return labels[stageType] || stageType;
 }
 
 function normalizeSkill(skill: string): string {
@@ -499,6 +517,8 @@ export default function CandidateDashboardPage() {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px', marginBottom: '28px' }}>
                         {activeApplications.map((application) => {
                             const statusBadge = getStatusBadgeStyle(application.status);
+                            const hasScheduledCandidateStep =
+                                Boolean(application.aptitudeTestUrl) || Boolean(application.scheduledStage);
 
                             return (
                                 <article key={application.id} style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '18px' }}>
@@ -520,7 +540,15 @@ export default function CandidateDashboardPage() {
                                         Applied on {new Date(application.submittedAt).toLocaleDateString()}
                                     </p>
 
-                                    <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
+                                    {hasScheduledCandidateStep ? (
+                                        <p style={{ color: '#0f766e', fontSize: '13px', fontWeight: 600, marginBottom: '10px' }}>
+                                            {application.scheduledStage
+                                                ? `Check your email. Your ${formatStageLabel(application.scheduledStage.type)} got scheduled.`
+                                                : 'Check your email. Your aptitude test got scheduled.'}
+                                        </p>
+                                    ) : null}
+
+                                    <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
                                         <Link href={`/applications/track/${application.id}`} style={{ backgroundColor: '#3b82f6', color: '#ffffff', textDecoration: 'none', borderRadius: '7px', padding: '8px 12px', fontSize: '13px', fontWeight: 600 }}>
                                             Track Application
                                         </Link>
