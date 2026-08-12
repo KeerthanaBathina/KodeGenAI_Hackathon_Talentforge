@@ -2,8 +2,10 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { useState } from 'react';
+import { buildApiUrl } from '@/lib/api/url';
 
 type AdminSection = {
   href?: string;
@@ -111,8 +113,31 @@ export function AdminPageShell({
   actions,
   children,
 }: AdminPageShellProps) {
+  const router = useRouter();
   const pathname = usePathname() || '';
   const searchParams = useSearchParams();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  async function handleLogout() {
+    setLoggingOut(true);
+
+    try {
+      await fetch(buildApiUrl('/api/auth/logout'), {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error('Admin logout request failed:', error);
+    } finally {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_role');
+        localStorage.removeItem('auth_email');
+      }
+
+      router.replace('/login');
+    }
+  }
 
   const groupedSections: Array<AdminSection['group']> = ['Overview', 'Management', 'Monitoring'];
 
@@ -219,6 +244,14 @@ export function AdminPageShell({
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 {actions}
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  disabled={loggingOut}
+                  className="inline-flex min-h-[36px] items-center rounded-md border border-[var(--admin-color-border)] bg-[var(--admin-color-surface-0)] px-3 text-sm font-semibold text-[var(--admin-color-ink-secondary)] transition hover:bg-[var(--admin-color-surface-1)] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {loggingOut ? 'Logging out...' : 'Logout'}
+                </button>
                 <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-[11px] font-bold text-white">
                   SA
                 </span>

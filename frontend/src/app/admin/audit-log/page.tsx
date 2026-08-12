@@ -300,7 +300,7 @@ export default function AuditLogPage() {
           >
             {exporting ? 'Exporting CSV...' : 'Export CSV'}
           </button>
-          <span className="text-xs text-[var(--admin-color-ink-tertiary)]">Exports use current filters and fixed page size of 50 rows.</span>
+          {/* <span className="text-xs text-[var(--admin-color-ink-tertiary)]">Exports use current filters and fixed page size of 50 rows.</span> */}
         </div>
       }
     >
