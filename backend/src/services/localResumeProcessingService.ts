@@ -697,6 +697,23 @@ function getCandidateObject(payload: unknown): Record<string, unknown> | null {
 }
 
 function toSkillList(value: unknown): string[] {
+    if (typeof value === 'string') {
+        return dedupeSkills(
+            value
+                .split(/[\n,;|]/)
+                .map((item) => item.trim())
+                .filter((item) => item.length > 0)
+        );
+    }
+
+    if (isRecord(value)) {
+        const grouped: string[] = [];
+        for (const nested of Object.values(value)) {
+            grouped.push(...toSkillList(nested));
+        }
+        return dedupeSkills(grouped);
+    }
+
     if (!Array.isArray(value)) {
         return [];
     }
@@ -734,9 +751,22 @@ function toEmployerList(value: unknown): ParsedResumeData['employers'] {
                 return null;
             }
 
-            const name = toText(item.name) || toText(item.company) || toText(item.employer);
-            const title = toText(item.title) || toText(item.role) || toText(item.position);
-            const duration = toText(item.duration);
+            const name =
+                toText(item.name) ||
+                toText(item.company) ||
+                toText(item.company_name) ||
+                toText(item.employer) ||
+                toText(item.organization);
+            const title =
+                toText(item.title) ||
+                toText(item.job_title) ||
+                toText(item.role) ||
+                toText(item.position) ||
+                toText(item.designation);
+            const duration =
+                toText(item.duration) ||
+                toDurationLabel(item.start_date, item.end_date, item.is_current) ||
+                toDurationLabel(item.startDate, item.endDate, item.isCurrent);
 
             if (!name && !title) {
                 return null;
@@ -815,9 +845,18 @@ function toEducationList(value: unknown): ParsedResumeData['education'] {
             }
 
             const degree = toText(item.degree) || toText(item.qualification);
-            const field = toText(item.field) || toText(item.fieldOfStudy) || toText(item.major);
+            const field =
+                toText(item.field) ||
+                toText(item.fieldOfStudy) ||
+                toText(item.field_of_study) ||
+                toText(item.major) ||
+                toText(item.specialization);
             const institution =
-                toText(item.institution) || toText(item.school) || toText(item.university);
+                toText(item.institution) ||
+                toText(item.school) ||
+                toText(item.college) ||
+                toText(item.college_name) ||
+                toText(item.university);
 
             if (!degree && !institution && !field) {
                 return null;
@@ -956,13 +995,30 @@ function mapProviderPayloadToParsedData(payload: unknown): Partial<ParsedResumeD
         toNumber(obj.experience_years) ?? toNumber(obj.experienceYears) ?? toNumber(obj.totalYears);
 
     const skills = toSkillList(
-        obj.skills ?? obj.skillSet ?? obj.keySkills ?? obj.extractedSkills
+        obj.skills ??
+            obj.skillSet ??
+            obj.keySkills ??
+            obj.technicalSkills ??
+            obj.extractedSkills
     );
     const employers = toEmployerList(
-        obj.employers ?? obj.workHistory ?? obj.experience ?? obj.positions
+        obj.employers ??
+            obj.workHistory ??
+            obj.work_history ??
+            obj.workExperience ??
+            obj.work_experience ??
+            obj.experience ??
+            obj.employmentHistory ??
+            obj.employment_history ??
+            obj.positions
     );
     const education = toEducationList(
-        obj.education ?? obj.educationHistory ?? obj.qualifications
+        obj.education ??
+            obj.educationHistory ??
+            obj.education_history ??
+            obj.academicHistory ??
+            obj.academic_history ??
+            obj.qualifications
     );
     const rawText = toText(obj.raw_text) || toText(obj.rawText) || toText(obj.text);
 

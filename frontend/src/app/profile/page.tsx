@@ -57,7 +57,19 @@ interface ResumeStateSnapshot {
     id: string;
     scanStatus: 'pending' | 'clean' | 'infected';
     parsedData?: {
+        name?: string;
         skills?: string[];
+        experience_years?: number;
+        employers?: Array<{
+            name?: string;
+            title?: string;
+            duration?: string;
+        }>;
+        education?: Array<{
+            degree?: string;
+            field?: string;
+            institution?: string;
+        }>;
     } | null;
     parsePopulationStatus?: ResumeParsePopulationStatus | null;
     parseMergeSummary?: ResumeParseMergeSummary | null;
@@ -67,6 +79,27 @@ interface CandidateApplicationSnapshot {
     id: string;
     resume?: ResumeStateSnapshot | null;
 }
+
+const DEFAULT_IMPORTED_START_DATE = '2000-01-01';
+
+function normalizeMonthPrecision(value?: string | null): string {
+    const normalized = (value || '').trim();
+    if (!normalized) {
+        return '';
+    }
+
+    const monthMatch = normalized.match(/^(\d{4}-\d{2})/);
+    return monthMatch ? monthMatch[1] : '';
+}
+
+function normalizeNullableMonth(value?: string | null): string | null {
+    const normalized = normalizeMonthPrecision(value);
+    return normalized.length > 0 ? normalized : null;
+}
+
+    function isNonEmptyText(value?: string | null): boolean {
+        return typeof value === 'string' && value.trim().length > 0;
+    }
 
 function normalizeOptionalDate(value?: string): string | null {
     const normalized = value?.trim();
@@ -138,6 +171,144 @@ export default function ProfilePage() {
     const [resumeMergeSummary, setResumeMergeSummary] = useState<ResumeParseMergeSummary | null>(
         null
     );
+    const [lastAutoFilledResumeId, setLastAutoFilledResumeId] = useState<string | null>(null);
+
+    function normalizeSkill(skill: string): string {
+        return skill.trim().toLowerCase();
+    }
+
+    function dedupeSkills(values: string[]): string[] {
+        const output: string[] = [];
+        const seen = new Set<string>();
+
+        for (const value of values) {
+            const trimmed = value.trim();
+            if (!trimmed) {
+                continue;
+            }
+
+            const key = normalizeSkill(trimmed);
+            if (seen.has(key)) {
+                continue;
+            }
+
+            seen.add(key);
+            output.push(trimmed);
+        }
+
+        return output;
+    }
+
+    function toDateFromYear(year: number, isEndDate: boolean): string {
+        return `${year}-${isEndDate ? '12' : '01'}`;
+    }
+
+    function parseDuration(duration?: string): {
+        startDate: string;
+        endDate?: string;
+        isCurrent: boolean;
+    } {
+        const value = (duration || '').trim().toLowerCase();
+        const isCurrent = /present|current|now/.test(value);
+        const years = (value.match(/\b(19|20)\d{2}\b/g) || [])
+            .map((year) => Number.parseInt(year, 10))
+            .filter((year) => Number.isFinite(year));
+
+        const startYear = years[0];
+        const endYear = years[1];
+
+        return {
+            startDate:
+                typeof startYear === 'number'
+                    ? toDateFromYear(startYear, false)
+                    : DEFAULT_IMPORTED_START_DATE,
+            endDate:
+                !isCurrent && typeof endYear === 'number'
+                    ? toDateFromYear(endYear, true)
+                    : undefined,
+            isCurrent,
+        };
+    }
+
+    function autoFillFromParsedData(parsedData?: ResumeStateSnapshot['parsedData']): void {
+        if (!parsedData || typeof parsedData !== 'object') {
+            return;
+        }
+
+        const parsedName = typeof parsedData.name === 'string' ? parsedData.name.trim() : '';
+        if (parsedName.length > 0) {
+            setFullName(parsedName);
+        }
+
+        if (
+            typeof parsedData.experience_years === 'number' &&
+            Number.isFinite(parsedData.experience_years) &&
+            parsedData.experience_years > 0 &&
+            experienceYears <= 0
+        ) {
+            setExperienceYears(Math.floor(parsedData.experience_years));
+        }
+
+        if (Array.isArray(parsedData.skills) && parsedData.skills.length > 0) {
+            setSkills((currentSkills) => dedupeSkills([...currentSkills, ...parsedData.skills!]));
+        }
+
+        if (education.length === 0 && Array.isArray(parsedData.education) && parsedData.education.length > 0) {
+            const mappedEducation = parsedData.education
+                .map((entry) => {
+                    const institution = typeof entry?.institution === 'string' ? entry.institution.trim() : '';
+                    const degree = typeof entry?.degree === 'string' ? entry.degree.trim() : '';
+                    const fieldOfStudy = typeof entry?.field === 'string' ? entry.field.trim() : '';
+
+                    if (!institution && !degree && !fieldOfStudy) {
+                        return null;
+                    }
+
+                    return {
+                        institution: institution || 'Institution',
+                        degree: degree || 'Degree',
+                        fieldOfStudy,
+                        startDate: normalizeMonthPrecision(DEFAULT_IMPORTED_START_DATE),
+                        endDate: '',
+                        isCurrent: false,
+                    } as EducationEntry;
+                })
+                .filter((entry): entry is EducationEntry => entry !== null);
+
+            if (mappedEducation.length > 0) {
+                setEducation(mappedEducation);
+            }
+        }
+
+        if (workHistory.length === 0 && Array.isArray(parsedData.employers) && parsedData.employers.length > 0) {
+            const mappedWorkHistory = parsedData.employers
+                .map((entry) => {
+                    const company = typeof entry?.name === 'string' ? entry.name.trim() : '';
+                    const title = typeof entry?.title === 'string' ? entry.title.trim() : '';
+                    const description = typeof entry?.duration === 'string' ? entry.duration.trim() : '';
+
+                    if (!company && !title) {
+                        return null;
+                    }
+
+                    const duration = parseDuration(entry?.duration);
+
+                    return {
+                        company: company || 'Employer',
+                        title: title || 'Role',
+                        startDate: duration.startDate,
+                        endDate: duration.isCurrent ? '' : duration.endDate || '',
+                        description,
+                        isCurrent: duration.isCurrent,
+                    } as WorkExperience;
+                })
+                .filter((entry): entry is WorkExperience => entry !== null);
+
+            if (mappedWorkHistory.length > 0) {
+                setWorkHistory(mappedWorkHistory);
+            }
+        }
+    }
 
     function buildAuthHeaders(): Record<string, string> {
         if (typeof window === 'undefined') {
@@ -164,6 +335,7 @@ export default function ProfilePage() {
             setResumeParsedSkillsCount(0);
             setResumePopulationStatus('none');
             setResumeMergeSummary(null);
+            setLastAutoFilledResumeId(null);
             return;
         }
 
@@ -178,6 +350,11 @@ export default function ProfilePage() {
         setResumeParsedSkillsCount(parsedSkills.length);
         setResumePopulationStatus(resume.parsePopulationStatus ?? 'none');
         setResumeMergeSummary(resume.parseMergeSummary ?? null);
+
+        if (resume.parsedData && lastAutoFilledResumeId !== resume.id) {
+            autoFillFromParsedData(resume.parsedData);
+            setLastAutoFilledResumeId(resume.id);
+        }
     }
 
     function getResumeSyncStatusMessage(): string {
@@ -513,23 +690,49 @@ export default function ProfilePage() {
         setSaving(true);
 
         try {
-            const educationPayload = education.map((entry) => ({
-                institution: entry.institution.trim(),
-                degree: entry.degree.trim(),
-                fieldOfStudy: entry.fieldOfStudy?.trim() || undefined,
-                startDate: entry.startDate,
-                endDate: entry.isCurrent ? null : normalizeOptionalDate(entry.endDate),
-                isCurrent: entry.isCurrent,
-            }));
+            const educationPayload = education
+                .filter(
+                    (entry) =>
+                        isNonEmptyText(entry.institution) ||
+                        isNonEmptyText(entry.degree) ||
+                        isNonEmptyText(entry.fieldOfStudy) ||
+                        isNonEmptyText(entry.startDate) ||
+                        isNonEmptyText(entry.endDate)
+                )
+                .map((entry) => ({
+                    institution: entry.institution.trim(),
+                    degree: entry.degree.trim(),
+                    fieldOfStudy: entry.fieldOfStudy?.trim() || undefined,
+                    startDate: normalizeMonthPrecision(entry.startDate),
+                    endDate: entry.isCurrent
+                        ? null
+                        : normalizeNullableMonth(normalizeOptionalDate(entry.endDate)),
+                    isCurrent: entry.isCurrent,
+                }))
+                .filter((entry) => entry.institution.length > 0 && entry.degree.length > 0 && entry.startDate.length > 0);
 
-            const workHistoryPayload = workHistory.map((entry) => ({
-                company: entry.company.trim(),
-                title: entry.title.trim(),
-                startDate: entry.startDate,
-                endDate: entry.isCurrent ? null : normalizeOptionalDate(entry.endDate),
-                description: entry.description?.trim() || undefined,
-                isCurrent: entry.isCurrent,
-            }));
+            const workHistoryPayload = workHistory
+                .filter(
+                    (entry) =>
+                        isNonEmptyText(entry.company) ||
+                        isNonEmptyText(entry.title) ||
+                        isNonEmptyText(entry.startDate) ||
+                        isNonEmptyText(entry.endDate) ||
+                        isNonEmptyText(entry.description)
+                )
+                .map((entry) => ({
+                    company: entry.company.trim(),
+                    title: entry.title.trim(),
+                    startDate: normalizeMonthPrecision(entry.startDate),
+                    endDate: entry.isCurrent
+                        ? null
+                        : normalizeNullableMonth(normalizeOptionalDate(entry.endDate)),
+                    description: entry.description?.trim() || undefined,
+                    isCurrent: entry.isCurrent,
+                }))
+                .filter((entry) => entry.company.length > 0 && entry.title.length > 0 && entry.startDate.length > 0);
+
+            const normalizedSkills = dedupeSkills(skills);
 
             const method = profileExists ? 'PUT' : 'POST';
             const response = await fetch(buildApiUrl('/api/profile'), {
@@ -542,7 +745,7 @@ export default function ProfilePage() {
                 body: JSON.stringify({
                     fullName: fullName.trim(),
                     experienceYears,
-                    skills,
+                    skills: normalizedSkills,
                     education: educationPayload,
                     workHistory: workHistoryPayload,
                 }),
@@ -562,8 +765,19 @@ export default function ProfilePage() {
             if (!response.ok) {
                 const validationMessages = Array.isArray(data?.error?.details)
                     ? data.error.details
-                        .map((detail: { message?: string }) => detail?.message)
-                        .filter((message: string | undefined): message is string => Boolean(message))
+                        .map((detail: unknown) => {
+                            if (typeof detail === 'string') {
+                                return detail;
+                            }
+
+                            if (detail && typeof detail === 'object' && 'message' in detail) {
+                                const message = (detail as { message?: unknown }).message;
+                                return typeof message === 'string' ? message : '';
+                            }
+
+                            return '';
+                        })
+                        .filter((message: string): message is string => message.length > 0)
                     : [];
 
                 setError(
@@ -1054,8 +1268,8 @@ export default function ProfilePage() {
                                         <div>
                                             <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem' }}>Start Date *</label>
                                             <input
-                                                type="date"
-                                                value={edu.startDate}
+                                                type="month"
+                                                value={normalizeMonthPrecision(edu.startDate)}
                                                 onChange={(e) => updateEducation(index, 'startDate', e.target.value)}
                                                 required
                                                 disabled={saving}
@@ -1066,8 +1280,8 @@ export default function ProfilePage() {
                                         <div>
                                             <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem' }}>End Date</label>
                                             <input
-                                                type="date"
-                                                value={edu.endDate || ''}
+                                                type="month"
+                                                value={normalizeMonthPrecision(edu.endDate)}
                                                 onChange={(e) => updateEducation(index, 'endDate', e.target.value)}
                                                 disabled={saving || edu.isCurrent}
                                                 style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '6px' }}
@@ -1147,8 +1361,8 @@ export default function ProfilePage() {
                                         <div>
                                             <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem' }}>Start Date *</label>
                                             <input
-                                                type="date"
-                                                value={work.startDate}
+                                                type="month"
+                                                value={normalizeMonthPrecision(work.startDate)}
                                                 onChange={(e) => updateWorkHistory(index, 'startDate', e.target.value)}
                                                 required
                                                 disabled={saving}
@@ -1159,8 +1373,8 @@ export default function ProfilePage() {
                                         <div>
                                             <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem' }}>End Date</label>
                                             <input
-                                                type="date"
-                                                value={work.endDate || ''}
+                                                type="month"
+                                                value={normalizeMonthPrecision(work.endDate)}
                                                 onChange={(e) => updateWorkHistory(index, 'endDate', e.target.value)}
                                                 disabled={saving || work.isCurrent}
                                                 style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '6px' }}
