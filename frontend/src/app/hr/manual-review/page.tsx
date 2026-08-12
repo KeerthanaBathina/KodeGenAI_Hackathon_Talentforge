@@ -17,13 +17,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ManualReviewFilters } from '@/lib/api/manualReview';
 import {
     ensureReviewQueueBadgeRealtime,
-    emitReviewQueueBadgeCount,
     subscribeToQueueNewApplication,
     subscribeToReviewQueueBadgeCount,
     type ReviewQueueBadgeCountPayload,
     type QueueNewApplicationPayload,
 } from '@/lib/reviewQueueRealtime';
 import { buildApiUrl } from '@/lib/api/url';
+import { HrSidebarShell } from '@/components/hr/HrSidebarShell';
 
 type QueueFilterState = Pick<
     ManualReviewFilters,
@@ -37,6 +37,10 @@ interface RequisitionOption {
 
 interface RequisitionFiltersResponse {
     departments?: string[];
+}
+
+interface QueueStatsResponse {
+    totalCount?: number;
 }
 
 function parseFilterStateFromUrl(): QueueFilterState {
@@ -121,11 +125,14 @@ export default function ManualReviewQueuePage() {
     useEffect(() => {
         async function loadFilterOptions() {
             try {
-                const [filterOptionsResponse, requisitionsResponse] = await Promise.all([
+                const [filterOptionsResponse, requisitionsResponse, queueStatsResponse] = await Promise.all([
                     fetch(buildApiUrl('/api/requisitions/filters'), {
                         credentials: 'include',
                     }),
                     fetch(buildApiUrl('/api/requisitions?page=1&pageSize=100&status=open'), {
+                        credentials: 'include',
+                    }),
+                    fetch(buildApiUrl('/api/manual-review-queue/stats'), {
                         credentials: 'include',
                     }),
                 ]);
@@ -146,6 +153,15 @@ export default function ManualReviewQueuePage() {
                             title: item.title,
                         }))
                     );
+                }
+
+                if (queueStatsResponse.ok) {
+                    const stats = (await queueStatsResponse.json()) as QueueStatsResponse;
+                    setBadgeCounts((current) => ({
+                        pendingCount: stats.totalCount ?? 0,
+                        urgentCount: current?.urgentCount ?? 0,
+                        timestamp: current?.timestamp ?? new Date().toISOString(),
+                    }));
                 }
             } catch (error) {
                 console.error('Failed to load manual review filter options', error);
@@ -219,13 +235,14 @@ export default function ManualReviewQueuePage() {
     }
 
     return (
-        <div
-            style={{
-                maxWidth: '1500px',
-                margin: '0 auto',
-                padding: '32px 24px',
-            }}
-        >
+        <HrSidebarShell>
+            <div
+                style={{
+                    maxWidth: '1500px',
+                    margin: '0 auto',
+                    padding: '32px 24px',
+                }}
+            >
             {toast && (
                 <div
                     data-testid={`toast-${toast.type}`}
@@ -602,6 +619,7 @@ export default function ManualReviewQueuePage() {
 
             {/* Queue Table */}
             <ManualReviewQueueTable filters={filters} />
-        </div>
+            </div>
+        </HrSidebarShell>
     );
 }

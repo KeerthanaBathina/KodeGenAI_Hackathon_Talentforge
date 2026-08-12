@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { buildApiUrl } from '@/lib/api/url';
 import styles from './page.module.css';
@@ -104,6 +105,7 @@ function formatSlaBreachDuration(slaRemainingSeconds: number): string {
 }
 
 export default function HrDashboardPage() {
+  const router = useRouter();
   const [pendingReviews, setPendingReviews] = useState(0);
   const [slaBreaches, setSlaBreaches] = useState(0);
   const [openRequisitions, setOpenRequisitions] = useState(0);
@@ -112,6 +114,28 @@ export default function HrDashboardPage() {
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [criticalAlerts, setCriticalAlerts] = useState<DashboardAlert[]>([]);
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  async function handleLogout() {
+    setLoggingOut(true);
+
+    try {
+      await fetch(buildApiUrl('/api/auth/logout'), {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error('HR logout request failed:', error);
+    } finally {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_role');
+        localStorage.removeItem('auth_email');
+      }
+
+      router.replace('/login');
+    }
+  }
 
   useEffect(() => {
     let mounted = true;
@@ -290,12 +314,12 @@ export default function HrDashboardPage() {
             <Link className={styles.navItem} href="/requisitions/bulk-import">
               Requisitions
             </Link>
-            <Link className={styles.navItem} href="/hr/manual-review">
+            {/* <Link className={styles.navItem} href="/hr/manual-review">
               Interviews
             </Link>
             <Link className={styles.navItem} href="/analytics/pipeline">
               Analytics
-            </Link>
+            </Link> */}
           </nav>
         </aside>
 
@@ -304,12 +328,20 @@ export default function HrDashboardPage() {
             <h1>HR Dashboard</h1>
             <div className={styles.headerRight}>
               <button
+                className={styles.logoutButton}
+                type="button"
+                onClick={handleLogout}
+                disabled={loggingOut}
+              >
+                {loggingOut ? 'Logging out...' : 'Logout'}
+              </button>
+              {/* <button
                 className={styles.notificationButton}
                 type="button"
                 aria-label={`Notifications ${unreadNotifications > 0 ? `(${unreadNotifications} unread)` : ''}`}
               >
                 {unreadNotifications > 0 ? unreadNotifications : 'N'}
-              </button>
+              </button> */}
               <div className={styles.avatar}>HR</div>
             </div>
           </header>

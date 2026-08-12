@@ -181,6 +181,26 @@
   width: 2rem;
 }
 
+.logoutButton {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.48rem;
+  color: #334155;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.76rem;
+  font-weight: 700;
+  height: 2rem;
+  justify-content: center;
+  padding: 0 0.75rem;
+}
+
+.logoutButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
 .avatar {
   align-items: center;
   background: #6366f1;

@@ -8,6 +8,7 @@ import { getAuthToken } from '@/lib/auth';
 import { useToast } from '@/contexts/ToastContext';
 import type { ImportResultData } from '@/components/requisitions/types';
 import { buildApiUrl } from '@/lib/api/url';
+import { HrSidebarShell } from '@/components/hr/HrSidebarShell';
 import styles from './page.module.css';
 
 export default function BulkImportPage() {
@@ -63,7 +64,8 @@ export default function BulkImportPage() {
   };
 
   return (
-    <main className={styles.page}>
+    <HrSidebarShell>
+      <main className={styles.page}>
       <header className={styles.header}>
         <h1 className={styles.title}>Bulk Import Requisitions</h1>
         <p className={styles.subtitle}>
@@ -166,6 +168,7 @@ export default function BulkImportPage() {
           Back to Jobs
         </Link>
       </div>
-    </main>
+      </main>
+    </HrSidebarShell>
   );
 }
