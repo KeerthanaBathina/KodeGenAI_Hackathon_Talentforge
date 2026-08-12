@@ -55,6 +55,8 @@ const envSchema = z.object({
   RESUME_PARSER_ENDPOINT: z.string().url('RESUME_PARSER_ENDPOINT must be a valid URL').optional(),
   RESUME_PARSER_API_KEY: z.string().optional(),
   RESUME_PARSER_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120000).default(30000),
+  GROQ_API_KEY: z.string().optional(),
+  GROQ_MODEL: z.string().default('llama-3.3-70b-versatile'),
   // Redis for BullMQ
   REDIS_HOST: z.string().default('localhost'),
   REDIS_PORT: z.string().default('6379'),

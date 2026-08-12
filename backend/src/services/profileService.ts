@@ -3,6 +3,25 @@ import { auditService } from './auditService';
 import logger from '../utils/logger';
 import type { ProfileData, WorkExperience, EducationEntry, ProfileCompletionStatus, OnboardingSection } from '../types/profile';
 
+function extractDraftPhone(draftData: unknown): string | null {
+    if (!draftData || typeof draftData !== 'object' || Array.isArray(draftData)) {
+        return null;
+    }
+
+    const step1 = (draftData as Record<string, unknown>).step1_personal;
+    if (!step1 || typeof step1 !== 'object' || Array.isArray(step1)) {
+        return null;
+    }
+
+    const phoneValue = (step1 as Record<string, unknown>).phone;
+    if (typeof phoneValue !== 'string') {
+        return null;
+    }
+
+    const normalized = phoneValue.trim();
+    return normalized.length > 0 ? normalized : null;
+}
+
 export class ProfileError extends Error {
     constructor(
         message: string,
@@ -95,15 +114,46 @@ export async function createProfile(
 export async function getProfileByCandidate(candidateId: string): Promise<any | null> {
     const profile = await prisma.profile.findUnique({
         where: { candidateId },
+        include: {
+            candidate: {
+                select: {
+                    email: true,
+                    phone: true,
+                },
+            },
+        },
     });
 
     if (!profile) {
         return null;
     }
 
+    let resolvedPhone = profile.candidate?.phone?.trim() || null;
+
+    if (!resolvedPhone) {
+        const latestApplication = await prisma.application.findFirst({
+            where: { candidateId },
+            orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+            select: {
+                draftData: true,
+            },
+        });
+
+        resolvedPhone = extractDraftPhone(latestApplication?.draftData);
+    }
+
     const completion = await calculateProfileCompletion(candidateId);
 
-    return { ...profile, completionStatus: completion };
+    return {
+        ...profile,
+        phone: resolvedPhone,
+        email: profile.candidate?.email ?? null,
+        candidate: {
+            ...profile.candidate,
+            phone: resolvedPhone,
+        },
+        completionStatus: completion,
+    };
 }
 
 /**

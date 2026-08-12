@@ -22,6 +22,8 @@ export interface ManualReviewQueueItem {
     scheduledStageType?: 'aptitude' | 'coding' | 'technical' | 'hr' | null;
     submittedAt: string;
     screeningScore?: number | null;
+    aiScoreOverall?: number | null;
+    aiScoreSource?: 'groq' | 'heuristic' | null;
     screeningConfidence?: number | null;
     aptitudeScore?: number | null;
     path?: 'fresher' | 'experienced' | null;

@@ -72,11 +72,39 @@ interface RequisitionMatchContext {
 }
 
 interface SkillMatchSummary {
+    source?: 'groq' | 'heuristic';
     matchedRequired: string[];
     matchedPreferred: string[];
     requiredCoveragePercent: number;
     preferredCoveragePercent: number;
     overallScorePercent: number;
+    summary?: string;
+    fallbackReason?:
+        | 'missing_groq_api_key'
+        | 'empty_resume_skills'
+        | 'groq_rate_limited'
+        | 'groq_http_error'
+        | 'groq_parse_error'
+        | 'groq_request_failed';
+}
+
+function getGroqFallbackMessage(reason?: SkillMatchSummary['fallbackReason']): string {
+    switch (reason) {
+        case 'missing_groq_api_key':
+            return 'Groq score unavailable because the backend API key is not loaded.';
+        case 'empty_resume_skills':
+            return 'Groq score unavailable because no resume skills were extracted.';
+        case 'groq_rate_limited':
+            return 'Groq score unavailable because the API rate limit was reached.';
+        case 'groq_http_error':
+            return 'Groq score unavailable because the API returned an error response.';
+        case 'groq_parse_error':
+            return 'Groq score unavailable because the API response could not be parsed.';
+        case 'groq_request_failed':
+            return 'Groq score unavailable because the API request failed.';
+        default:
+            return 'Groq score unavailable. Showing parsed resume match above.';
+    }
 }
 
 function normalizeSkillToken(skill: string): string {
@@ -114,11 +142,13 @@ function buildSkillMatchSummary(
     const weightedScore = Math.round((requiredCoverage * 0.8 + preferredCoverage * 0.2) * 100);
 
     return {
+        source: 'heuristic',
         matchedRequired,
         matchedPreferred,
         requiredCoveragePercent: Math.round(requiredCoverage * 100),
         preferredCoveragePercent: Math.round(preferredCoverage * 100),
         overallScorePercent: weightedScore,
+        summary: 'Computed using deterministic skill overlap.',
     };
 }
 
@@ -162,6 +192,7 @@ export default function ApplicationFormPage() {
     const [parsedResumeSkillsCount, setParsedResumeSkillsCount] = useState(0);
     const [initializingResumeUpload, setInitializingResumeUpload] = useState(false);
     const [requisitionMatchContext, setRequisitionMatchContext] = useState<RequisitionMatchContext | null>(null);
+    const [aiSkillScore, setAiSkillScore] = useState<SkillMatchSummary | null>(null);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
     function applyResumeState(application: ExistingApplicationResponse | null) {
@@ -267,6 +298,8 @@ export default function ApplicationFormPage() {
     useEffect(() => {
         async function loadData() {
             try {
+                let profilePrefill: Pick<FormData['step1_personal'], 'fullName' | 'email' | 'phone'> | null = null;
+
                 const requisitionResponse = await fetch(buildApiUrl(`/api/requisitions/${requisitionId}`), {
                     credentials: 'include',
                 });
@@ -303,14 +336,70 @@ export default function ApplicationFormPage() {
 
                 if (profileResponse.ok) {
                     const profile = await profileResponse.json();
+                    const fallbackAuthEmail =
+                        typeof window !== 'undefined' ? localStorage.getItem('auth_email') || '' : '';
+                    const fallbackAuthPhone =
+                        typeof window !== 'undefined' ? localStorage.getItem('auth_phone') || '' : '';
+
+                    const resolvedProfilePrefill = {
+                        fullName: profile.fullName || '',
+                        email:
+                            profile.candidate?.email ||
+                            profile.email ||
+                            fallbackAuthEmail,
+                        phone:
+                            profile.candidate?.phone ||
+                            profile.candidate?.phoneNumber ||
+                            profile.phone ||
+                            fallbackAuthPhone ||
+                            '',
+                    };
+                    profilePrefill = resolvedProfilePrefill;
+
                     setFormData((prev) => ({
                         ...prev,
                         step1_personal: {
                             ...prev.step1_personal,
-                            fullName: profile.fullName || '',
-                            email: profile.candidate?.email || '',
+                            fullName: resolvedProfilePrefill.fullName,
+                            email: resolvedProfilePrefill.email,
+                            phone: resolvedProfilePrefill.phone,
                         },
                     }));
+                }
+
+                const contactInfoResponse = await fetch(buildApiUrl('/api/applications/contact-info'), {
+                    credentials: 'include',
+                });
+
+                if (contactInfoResponse.ok) {
+                    const contactInfo = await contactInfoResponse.json();
+                    setFormData((prev) => ({
+                        ...prev,
+                        step1_personal: {
+                            ...prev.step1_personal,
+                            email:
+                                prev.step1_personal.email ||
+                                contactInfo.email ||
+                                '',
+                            phone:
+                                prev.step1_personal.phone ||
+                                contactInfo.phone ||
+                                (typeof window !== 'undefined' ? localStorage.getItem('auth_phone') || '' : '') ||
+                                '',
+                        },
+                    }));
+
+                    profilePrefill = {
+                        fullName: profilePrefill?.fullName || '',
+                        email:
+                            profilePrefill?.email ||
+                            contactInfo.email ||
+                            '',
+                        phone:
+                            profilePrefill?.phone ||
+                            contactInfo.phone ||
+                            '',
+                    };
                 }
 
                 // Load latest application state for this requisition (draft/resume)
@@ -334,8 +423,25 @@ export default function ApplicationFormPage() {
                     }
 
                     if (existingApplication.draftData) {
+                        const draftStep1 = existingApplication.draftData?.step1_personal || {};
+
                         setFormData((previous) => ({
-                            step1_personal: existingApplication.draftData?.step1_personal || previous.step1_personal,
+                            step1_personal: {
+                                ...previous.step1_personal,
+                                ...draftStep1,
+                                fullName:
+                                    profilePrefill?.fullName?.trim() ||
+                                    draftStep1.fullName?.trim() ||
+                                    previous.step1_personal.fullName,
+                                email:
+                                    profilePrefill?.email?.trim() ||
+                                    draftStep1.email?.trim() ||
+                                    previous.step1_personal.email,
+                                phone:
+                                    profilePrefill?.phone?.trim() ||
+                                    draftStep1.phone?.trim() ||
+                                    previous.step1_personal.phone,
+                            },
                             step2_experience: existingApplication.draftData?.step2_experience || previous.step2_experience,
                             step3_coverLetter: existingApplication.draftData?.step3_coverLetter || previous.step3_coverLetter,
                         }));
@@ -404,6 +510,72 @@ export default function ApplicationFormPage() {
         };
     }, [
         applicationId,
+        hasUploadedResume,
+        isResumeParsed,
+        requisitionId,
+        resumePopulationStatus,
+        resumeScanStatus,
+    ]);
+
+    useEffect(() => {
+        if (
+            !hasUploadedResume ||
+            resumeScanStatus !== 'clean' ||
+            !isResumeParsed ||
+            resumePopulationStatus === 'pending_consent' ||
+            resumePopulationStatus === 'pending_profile_sync'
+        ) {
+            setAiSkillScore(null);
+            return;
+        }
+
+        let cancelled = false;
+
+        const fetchAiScore = async () => {
+            try {
+                const response = await fetch(
+                    buildApiUrl(`/api/applications/ai-score/${requisitionId}`),
+                    { credentials: 'include' }
+                );
+
+                if (!response.ok || cancelled) {
+                    return;
+                }
+
+                const score = await response.json();
+                if (cancelled) {
+                    return;
+                }
+
+                setAiSkillScore({
+                    source: score.source === 'groq' ? 'groq' : 'heuristic',
+                    matchedRequired: Array.isArray(score.matchedRequired) ? score.matchedRequired : [],
+                    matchedPreferred: Array.isArray(score.matchedPreferred) ? score.matchedPreferred : [],
+                    requiredCoveragePercent: Number(score.requiredCoveragePercent) || 0,
+                    preferredCoveragePercent: Number(score.preferredCoveragePercent) || 0,
+                    overallScorePercent: Number(score.overallScorePercent) || 0,
+                    summary: typeof score.summary === 'string' ? score.summary : undefined,
+                    fallbackReason:
+                        score.fallbackReason === 'missing_groq_api_key' ||
+                        score.fallbackReason === 'empty_resume_skills' ||
+                        score.fallbackReason === 'groq_rate_limited' ||
+                        score.fallbackReason === 'groq_http_error' ||
+                        score.fallbackReason === 'groq_parse_error' ||
+                        score.fallbackReason === 'groq_request_failed'
+                            ? score.fallbackReason
+                            : undefined,
+                });
+            } catch {
+                // Non-blocking: UI falls back to deterministic score.
+            }
+        };
+
+        fetchAiScore();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [
         hasUploadedResume,
         isResumeParsed,
         requisitionId,
@@ -678,13 +850,15 @@ export default function ApplicationFormPage() {
         isResumeParsed &&
         resumePopulationStatus !== 'pending_consent' &&
         resumePopulationStatus !== 'pending_profile_sync';
-    const skillMatchSummary = requisitionMatchContext
+    const heuristicSkillMatchSummary = requisitionMatchContext
         ? buildSkillMatchSummary(
               parsedResumeSkills,
               requisitionMatchContext.requiredSkills,
               requisitionMatchContext.preferredSkills
           )
         : null;
+    const groqSkillMatchSummary = aiSkillScore?.source === 'groq' ? aiSkillScore : null;
+    const skillMatchSummary = groqSkillMatchSummary ?? heuristicSkillMatchSummary;
 
     return (
         <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
@@ -1145,7 +1319,7 @@ export default function ApplicationFormPage() {
                                                 {resumeScanStatus === 'clean' &&
                                                     isResumeParsed &&
                                                     resumePopulationStatus !== 'pending_consent' &&
-                                                    skillMatchSummary && (
+                                                    heuristicSkillMatchSummary && (
                                                     <div
                                                         style={{
                                                             marginTop: '0.875rem',
@@ -1156,16 +1330,32 @@ export default function ApplicationFormPage() {
                                                         }}
                                                     >
                                                         <p style={{ margin: 0, color: '#0f172a', fontWeight: 600, fontSize: '0.875rem' }}>
-                                                            AI Skill Match for {requisitionMatchContext?.title ?? 'this job'}: {skillMatchSummary.overallScorePercent}%
+                                                            Parsed Resume Match for {requisitionMatchContext?.title ?? 'this job'}: {heuristicSkillMatchSummary.overallScorePercent}%
                                                         </p>
+                                                        <p style={{ margin: '0.25rem 0 0', color: '#64748b', fontSize: '0.75rem' }}>
+                                                            Source: Deterministic skill overlap (required + preferred skills)
+                                                        </p>
+                                                        <p style={{ margin: '0.375rem 0 0', color: '#0f172a', fontWeight: 600, fontSize: '0.875rem' }}>
+                                                            Groq Match Score: {groqSkillMatchSummary ? `${groqSkillMatchSummary.overallScorePercent}%` : 'Not available'}
+                                                        </p>
+                                                        <p style={{ margin: '0.25rem 0 0', color: '#64748b', fontSize: '0.75rem' }}>
+                                                            {groqSkillMatchSummary
+                                                                ? 'Source: Groq'
+                                                                : getGroqFallbackMessage(aiSkillScore?.fallbackReason)}
+                                                        </p>
+                                                        {skillMatchSummary?.summary && (
+                                                            <p style={{ margin: '0.25rem 0 0', color: '#334155', fontSize: '0.8125rem' }}>
+                                                                {skillMatchSummary.summary}
+                                                            </p>
+                                                        )}
                                                         <p style={{ margin: '0.375rem 0 0', color: '#475569', fontSize: '0.8125rem' }}>
-                                                            Required skills matched: {skillMatchSummary.matchedRequired.length}/
-                                                            {requisitionMatchContext?.requiredSkills.length ?? 0} ({skillMatchSummary.requiredCoveragePercent}%)
+                                                            Required skills matched: {heuristicSkillMatchSummary.matchedRequired.length}/
+                                                            {requisitionMatchContext?.requiredSkills.length ?? 0} ({heuristicSkillMatchSummary.requiredCoveragePercent}%)
                                                         </p>
                                                         {(requisitionMatchContext?.preferredSkills.length ?? 0) > 0 && (
                                                             <p style={{ margin: '0.25rem 0 0', color: '#475569', fontSize: '0.8125rem' }}>
-                                                                Preferred skills matched: {skillMatchSummary.matchedPreferred.length}/
-                                                                {requisitionMatchContext?.preferredSkills.length ?? 0} ({skillMatchSummary.preferredCoveragePercent}%)
+                                                                Preferred skills matched: {heuristicSkillMatchSummary.matchedPreferred.length}/
+                                                                {requisitionMatchContext?.preferredSkills.length ?? 0} ({heuristicSkillMatchSummary.preferredCoveragePercent}%)
                                                             </p>
                                                         )}
 

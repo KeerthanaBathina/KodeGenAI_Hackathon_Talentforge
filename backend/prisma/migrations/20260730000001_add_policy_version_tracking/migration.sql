@@ -50,8 +50,8 @@ UPDATE "applications" a
 SET "screeningThresholdId" = (
   SELECT st.id
   FROM "screening_thresholds" st
-  WHERE st."effectiveFrom" <= COALESCE(a."submittedAt", a."createdAt")
-  ORDER BY st."effectiveFrom" DESC
+  WHERE st."effective_from" <= COALESCE(a."submittedAt", a."createdAt")
+  ORDER BY st."effective_from" DESC
   LIMIT 1
 )
 WHERE "screeningThresholdId" IS NULL;

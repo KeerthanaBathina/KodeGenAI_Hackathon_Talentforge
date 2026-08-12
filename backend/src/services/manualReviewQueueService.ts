@@ -23,6 +23,7 @@ import { emitReviewQueueBadgeCountSnapshot } from './reviewQueueRealtimeService'
 import { renderTemplate } from './templateRenderer';
 import { scheduleInterview } from './interviewSchedulingService';
 import { sendEmail } from './brevoEmailService';
+import { scoreResumeWithAi } from './resumeAiScoringService';
 
 const ALLOWED_REASON_CATEGORIES: Record<
     'shortlisted' | 'rejected',
@@ -343,6 +344,8 @@ export interface ManualReviewQueueItem {
     scheduledStageType?: InterviewStageType | null;
     submittedAt: Date;
     screeningScore?: number | null;
+    aiScoreOverall?: number | null;
+    aiScoreSource?: 'groq' | 'heuristic' | null;
     screeningConfidence?: number | null;
     aptitudeScore?: number | null;
     path: ApplicationPath | null;
@@ -355,6 +358,19 @@ export interface ManualReviewQueueItem {
     canShortlist: boolean;
     canReject: boolean;
     decisionLocked: boolean;
+}
+
+function extractResumeSkills(parsedData: unknown): string[] {
+    if (!parsedData || typeof parsedData !== 'object' || Array.isArray(parsedData)) {
+        return [];
+    }
+
+    const skills = (parsedData as Record<string, unknown>).skills;
+    if (!Array.isArray(skills)) {
+        return [];
+    }
+
+    return skills.filter((value): value is string => typeof value === 'string');
 }
 
 export interface ManualReviewQueueStats {
@@ -613,6 +629,8 @@ export async function getManualReviewQueue(
                     title: true,
                     department: true,
                     jobFamilyId: true,
+                    requiredSkills: true,
+                    preferredSkills: true,
                 },
             },
             screenings: {
@@ -643,6 +661,8 @@ export async function getManualReviewQueue(
                     id: true,
                     fileName: true,
                     mimeType: true,
+                    scanStatus: true,
+                    parsedData: true,
                 },
             },
             interviewStages: {
@@ -661,8 +681,8 @@ export async function getManualReviewQueue(
         },
     });
 
-    const items = applications
-        .map((app): ManualReviewQueueItem => {
+    const queueEntries = applications
+        .map((app) => {
             const score = app.screenings[0]?.score ?? null;
             const confidence = app.screenings[0]?.confidence
                 ? Number(app.screenings[0].confidence)
@@ -676,7 +696,7 @@ export async function getManualReviewQueue(
                 env.REVIEW_QUEUE_SLA_HOURS
             );
 
-            return applyDecisionFlags({
+            const baseItem = applyDecisionFlags({
                 id: app.id,
                 candidateId: app.candidate.id,
                 candidateName: buildCandidateName(app.candidate.profile?.fullName),
@@ -694,6 +714,8 @@ export async function getManualReviewQueue(
                 pathOverridden: app.pathOverridden,
                 submittedAt: app.submittedAt,
                 screeningScore: score,
+                aiScoreOverall: null,
+                aiScoreSource: null,
                 screeningConfidence: confidence,
                 aptitudeScore,
                 ...sla,
@@ -701,15 +723,70 @@ export async function getManualReviewQueue(
                 canReject: true,
                 decisionLocked: false,
             });
-        })
-        .filter((item) => inScoreBand(item.screeningScore ?? null, filters.scoreBand));
 
-    const sorted = sortQueueItems(items, sortBy, sortDir);
+            return {
+                item: baseItem,
+                roleTitle: app.requisition.title,
+                requiredSkills: app.requisition.requiredSkills,
+                preferredSkills: app.requisition.preferredSkills,
+                resumeSkills: extractResumeSkills(app.resume?.parsedData),
+                resumeScanStatus: app.resume?.scanStatus ?? null,
+            };
+        })
+        .filter((entry) => inScoreBand(entry.item.screeningScore ?? null, filters.scoreBand));
+
+    const sorted = sortQueueItems(
+        queueEntries.map((entry) => entry.item),
+        sortBy,
+        sortDir
+    );
     const paged = sorted.slice(skip, skip + limit);
+
+    const pagedIds = new Set(paged.map((item) => item.id));
+    const pagedEntries = queueEntries.filter((entry) => pagedIds.has(entry.item.id));
+
+    const aiScoreByApplicationId = new Map<
+        string,
+        { overallScorePercent: number; source: 'groq' | 'heuristic' }
+    >();
+
+    await Promise.all(
+        pagedEntries.map(async (entry) => {
+            if (entry.resumeScanStatus !== 'clean' || entry.resumeSkills.length === 0) {
+                return;
+            }
+
+            const score = await scoreResumeWithAi({
+                roleTitle: entry.roleTitle,
+                resumeSkills: entry.resumeSkills,
+                requiredSkills: entry.requiredSkills,
+                preferredSkills: entry.preferredSkills,
+            });
+
+            aiScoreByApplicationId.set(entry.item.id, {
+                overallScorePercent: score.overallScorePercent,
+                source: score.source,
+            });
+        })
+    );
+
+    const pagedWithAiScore = paged.map((item) => {
+        const aiScore = aiScoreByApplicationId.get(item.id);
+        if (!aiScore) {
+            return item;
+        }
+
+        return {
+            ...item,
+            aiScoreOverall: aiScore.overallScorePercent,
+            aiScoreSource: aiScore.source,
+        };
+    });
+
     const total = sorted.length;
 
     return {
-        items: paged,
+        items: pagedWithAiScore,
         total,
         page,
         limit,

@@ -13,6 +13,7 @@ import {
     WithdrawalError,
 } from '../services/applicationWithdrawalService';
 import { getApplicationStageStatus } from '../services/stagePrerequisiteService';
+import { scoreResumeWithAi } from '../services/resumeAiScoringService';
 import { authenticate } from '../middleware/authenticate';
 import logger from '../utils/logger';
 import prisma from '../db/prisma';
@@ -98,6 +99,25 @@ function readResumeParseMergeSummary(scanResult: unknown): Record<string, unknow
 
     const summary = scanResult.parseMergeSummary;
     return isJsonRecord(summary) ? summary : null;
+}
+
+function readDraftPhoneFromDraftData(draftData: unknown): string | null {
+    if (!isJsonRecord(draftData)) {
+        return null;
+    }
+
+    const step1 = draftData.step1_personal;
+    if (!isJsonRecord(step1)) {
+        return null;
+    }
+
+    const phone = step1.phone;
+    if (typeof phone !== 'string') {
+        return null;
+    }
+
+    const normalized = phone.trim();
+    return normalized.length > 0 ? normalized : null;
 }
 
 /**
@@ -274,6 +294,192 @@ router.post('/drafts/:requisitionId/submit', authenticate, async (req, res) => {
 });
 
 // ==================== Application Routes ====================
+
+/**
+ * GET /api/applications/contact-info
+ * Returns authenticated candidate contact info for application prefill.
+ */
+router.get('/contact-info', authenticate, async (req, res) => {
+    try {
+        const candidateId = req.user!.id;
+
+        const candidate = await prisma.candidate.findUnique({
+            where: { id: candidateId },
+            select: {
+                email: true,
+                phone: true,
+            },
+        });
+
+        if (!candidate) {
+            return res.status(404).json({
+                error: {
+                    code: 'CANDIDATE_NOT_FOUND',
+                    message: 'Candidate not found',
+                },
+            });
+        }
+
+        let resolvedPhone = candidate.phone?.trim() || null;
+
+        if (!resolvedPhone) {
+            const latestApplication = await prisma.application.findFirst({
+                where: { candidateId },
+                orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+                select: {
+                    draftData: true,
+                },
+            });
+
+            resolvedPhone = readDraftPhoneFromDraftData(latestApplication?.draftData);
+        }
+
+        return res.status(200).json({
+            email: candidate.email,
+            phone: resolvedPhone,
+        });
+    } catch (error) {
+        logger.error('Error fetching candidate contact info', {
+            error: error instanceof Error ? error.message : String(error),
+            candidateId: req.user?.id,
+        });
+
+        return res.status(500).json({
+            error: {
+                code: 'INTERNAL_SERVER_ERROR',
+                message: 'Unable to fetch candidate contact info',
+            },
+        });
+    }
+});
+
+/**
+ * GET /api/applications/ai-score/:requisitionId
+ * Scores candidate resume skills against job required/preferred skills.
+ */
+router.get('/ai-score/:requisitionId', authenticate, async (req, res) => {
+    try {
+        const requisitionId = req.params.requisitionId;
+        const candidateId = req.user!.id;
+
+        if (!RequisitionIdSchema.safeParse(requisitionId).success) {
+            return res.status(400).json({
+                error: {
+                    code: 'INVALID_REQUISITION_ID',
+                    message: 'Invalid requisition ID format',
+                },
+            });
+        }
+
+        const requisition = await prisma.requisition.findUnique({
+            where: { id: requisitionId },
+            select: {
+                title: true,
+                requiredSkills: true,
+                preferredSkills: true,
+            },
+        });
+
+        if (!requisition) {
+            return res.status(404).json({
+                error: {
+                    code: 'REQUISITION_NOT_FOUND',
+                    message: 'Requisition not found',
+                },
+            });
+        }
+
+        const application = await prisma.application.findFirst({
+            where: {
+                candidateId,
+                requisitionId,
+            },
+            orderBy: {
+                createdAt: 'desc',
+            },
+            select: {
+                id: true,
+                resume: {
+                    select: {
+                        id: true,
+                        parsedData: true,
+                        scanStatus: true,
+                    },
+                },
+            },
+        });
+
+        let resumeContext = application?.resume ?? null;
+
+        if (!resumeContext?.id || resumeContext.scanStatus !== 'clean') {
+            const latestCleanResumeApplication = await prisma.application.findFirst({
+                where: {
+                    candidateId,
+                    resume: {
+                        is: {
+                            scanStatus: 'clean',
+                        },
+                    },
+                },
+                orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+                select: {
+                    resume: {
+                        select: {
+                            id: true,
+                            parsedData: true,
+                            scanStatus: true,
+                        },
+                    },
+                },
+            });
+
+            resumeContext = latestCleanResumeApplication?.resume ?? null;
+        }
+
+        if (!resumeContext?.id || resumeContext.scanStatus !== 'clean') {
+            return res.status(409).json({
+                error: {
+                    code: 'RESUME_NOT_READY',
+                    message: 'Resume is not ready for AI scoring yet',
+                },
+            });
+        }
+
+        const parsedSkillsRaw = resumeContext.parsedData && typeof resumeContext.parsedData === 'object'
+            ? (resumeContext.parsedData as Record<string, unknown>).skills
+            : [];
+
+        const resumeSkills = Array.isArray(parsedSkillsRaw)
+            ? parsedSkillsRaw.filter((value): value is string => typeof value === 'string')
+            : [];
+
+        const aiScore = await scoreResumeWithAi({
+            roleTitle: requisition.title,
+            resumeSkills,
+            requiredSkills: requisition.requiredSkills,
+            preferredSkills: requisition.preferredSkills,
+        });
+
+        return res.status(200).json({
+            applicationId: application?.id ?? null,
+            requisitionId,
+            ...aiScore,
+        });
+    } catch (error) {
+        logger.error('Error calculating AI resume score', {
+            error: error instanceof Error ? error.message : String(error),
+            candidateId: req.user?.id,
+            requisitionId: req.params.requisitionId,
+        });
+
+        return res.status(500).json({
+            error: {
+                code: 'INTERNAL_SERVER_ERROR',
+                message: 'Unable to calculate AI score',
+            },
+        });
+    }
+});
 
 /**
  * GET /api/applications/by-requisition/:requisitionId
@@ -513,7 +719,6 @@ router.get('/:id/can-withdraw', authenticate, async (req, res) => {
         logger.error('Error checking withdrawal eligibility', {
             error: error instanceof Error ? error.message : String(error),
             candidateId: req.user?.id,
-            applicationId: req.params.id,
         });
 
         return res.status(500).json({
@@ -536,6 +741,31 @@ router.get('/:id', authenticate, async (req, res) => {
 
         const application = await prisma.application.findUnique({
             where: { id: applicationId },
+            select: {
+                id: true,
+                status: true,
+                submittedAt: true,
+                requisitionId: true,
+                path: true,
+                pathOverridden: true,
+                candidateId: true,
+                interviewStages: {
+                    where: {
+                        state: 'scheduled',
+                        scheduledAt: { not: null },
+                    },
+                    orderBy: {
+                        scheduledAt: 'desc',
+                    },
+                    take: 1,
+                    select: {
+                        type: true,
+                        scheduledAt: true,
+                        endAt: true,
+                        timezone: true,
+                    },
+                },
+            },
         });
 
         if (!application) {
@@ -547,7 +777,6 @@ router.get('/:id', authenticate, async (req, res) => {
             });
         }
 
-        // Verify ownership
         if (application.candidateId !== candidateId) {
             return res.status(403).json({
                 error: {
@@ -557,7 +786,22 @@ router.get('/:id', authenticate, async (req, res) => {
             });
         }
 
-        return res.status(200).json(application);
+        return res.status(200).json({
+            id: application.id,
+            status: application.status,
+            submittedAt: application.submittedAt,
+            requisitionId: application.requisitionId,
+            path: application.path,
+            pathOverridden: application.pathOverridden,
+            scheduledStage: application.interviewStages[0]
+                ? {
+                      type: application.interviewStages[0].type,
+                      scheduledAt: application.interviewStages[0].scheduledAt?.toISOString() ?? null,
+                      endAt: application.interviewStages[0].endAt?.toISOString() ?? null,
+                      timezone: application.interviewStages[0].timezone,
+                  }
+                : null,
+        });
     } catch (error) {
         logger.error('Error fetching application', {
             error: error instanceof Error ? error.message : String(error),
@@ -576,21 +820,11 @@ router.get('/:id', authenticate, async (req, res) => {
 
 /**
  * PATCH /api/applications/:id/withdraw
- * Withdraw application before HR review
+ * Withdraw a submitted application
  */
 router.patch('/:id/withdraw', authenticate, async (req, res) => {
     try {
         const applicationId = req.params.id;
-
-        if (!z.string().uuid().safeParse(applicationId).success) {
-            return res.status(400).json({
-                error: {
-                    code: 'INVALID_APPLICATION_ID',
-                    message: 'Invalid application ID format',
-                },
-            });
-        }
-
         const candidateId = req.user!.id;
 
         const application = await withdrawApplication({ applicationId, candidateId });
@@ -598,7 +832,10 @@ router.patch('/:id/withdraw', authenticate, async (req, res) => {
         return res.status(200).json({
             id: application.id,
             status: application.status,
-            message: 'Application withdrawn successfully',
+            submittedAt: application.submittedAt,
+            requisitionId: application.requisitionId,
+            path: application.path,
+            pathOverridden: application.pathOverridden,
         });
     } catch (error) {
         if (error instanceof WithdrawalError) {
@@ -606,10 +843,10 @@ router.patch('/:id/withdraw', authenticate, async (req, res) => {
                 error.code === 'APPLICATION_NOT_FOUND'
                     ? 404
                     : error.code === 'UNAUTHORIZED'
-                        ? 403
-                        : error.code === 'WITHDRAWAL_NOT_ALLOWED'
-                            ? 409
-                            : 400;
+                      ? 403
+                      : error.code === 'WITHDRAWAL_NOT_ALLOWED'
+                        ? 409
+                        : 400;
 
             return res.status(statusCode).json({
                 error: {

@@ -90,6 +90,7 @@ export default function RegisterPage() {
           // Prevent stale non-candidate sessions from hijacking profile redirects.
           localStorage.removeItem('auth_token');
         }
+        localStorage.setItem('auth_phone', `${phoneCode}${phoneNumber.replace(/\s+/g, '')}`);
       }
       const normalizedEmail = encodeURIComponent(email.trim().toLowerCase());
       const requestedNext = searchParams.get('next');
@@ -117,7 +118,7 @@ export default function RegisterPage() {
 
       <section className={`${styles.pageBody} ${styles.pageBodyTop}`}>
         <div className={`${styles.card} ${styles.registerCard}`}>
-          <div className={styles.stepRail}>
+          {/* <div className={styles.stepRail}>
             <div className={styles.stepItem}>
               <span className={`${styles.stepCircle} ${styles.stepActive}`}>1</span>
               <span className={`${styles.stepLabel} ${styles.stepLabelActive}`}>Contact Details</span>
@@ -132,11 +133,11 @@ export default function RegisterPage() {
               <span className={`${styles.stepCircle} ${styles.stepPending}`}>3</span>
               <span className={`${styles.stepLabel} ${styles.stepLabelPending}`}>Consent</span>
             </div>
-          </div>
+          </div> */}
 
           <h1 className={styles.cardTitle}>Create your account</h1>
-          <p className={styles.cardSubtitle}>Step 1 of 3 . Enter your contact details</p>
-
+          {/* <p className={styles.cardSubtitle}>Step 1 of 3 . Enter your contact details</p> */}
+            <br></br>
           <form onSubmit={handleSubmit} className={styles.form} noValidate>
             <div className={styles.row2}>
               <div className={styles.field}>

@@ -979,11 +979,19 @@ export function ManualReviewQueueTable({
                                         fontWeight: 500,
                                         color: '#111827',
                                     }}
+                                    title={
+                                        item.aiScoreSource
+                                            ? `AI score source: ${item.aiScoreSource === 'groq' ? 'Groq' : 'Heuristic fallback'}`
+                                            : undefined
+                                    }
                                 >
-                                    {item.screeningScore !== null &&
-                                    item.screeningScore !== undefined
-                                        ? item.screeningScore
+                                    {item.aiScoreOverall !== null &&
+                                    item.aiScoreOverall !== undefined
+                                        ? `${item.aiScoreOverall}%`
                                         : '—'}
+                                    {item.aiScoreOverall !== null &&
+                                    item.aiScoreOverall !== undefined &&
+                                    item.aiScoreSource === 'groq' && null}
                                 </td>
                                 <td
                                     style={{

@@ -13,6 +13,12 @@ interface Application {
     requisitionId: string;
     path?: 'fresher' | 'experienced' | null;
     pathOverridden?: boolean;
+    scheduledStage?: {
+        type: 'aptitude' | 'coding' | 'technical' | 'hr' | string;
+        scheduledAt: string | null;
+        endAt: string | null;
+        timezone: string;
+    } | null;
 }
 
 type ApplicationStatus =
@@ -174,11 +180,19 @@ export default function ApplicationTrackingPage() {
     }
 
     const currentStatus = application.status as ApplicationStatus;
+    const hasScheduledInterview = Boolean(application.scheduledStage?.scheduledAt);
+    const effectiveStatus: ApplicationStatus =
+        hasScheduledInterview &&
+        (currentStatus === 'submitted' ||
+            currentStatus === 'screening' ||
+            currentStatus === 'pending_review')
+            ? 'interviewing'
+            : currentStatus;
     const referenceId = application.id.toUpperCase().slice(0, 8);
     const canWithdraw = currentStatus === 'submitted';
 
     // Calculate current stage index
-    const currentStageIndex = statusStages.findIndex((stage) => stage.key === currentStatus);
+    const currentStageIndex = statusStages.findIndex((stage) => stage.key === effectiveStatus);
     const isWithdrawn = currentStatus === 'withdrawn';
     const isRejected = currentStatus === 'rejected';
 

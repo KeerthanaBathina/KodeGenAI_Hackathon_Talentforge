@@ -6,3 +6,5 @@ dist
 .env.*.local
 
 .railway
+backend/.local-resume-storage/resumes
+propel/telemetry

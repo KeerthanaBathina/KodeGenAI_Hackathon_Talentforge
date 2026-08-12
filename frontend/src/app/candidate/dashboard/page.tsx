@@ -108,6 +108,16 @@ interface RecommendationResult {
     overlapSkills: string[];
 }
 
+interface AiScorePayload {
+    overallScorePercent?: number;
+    source?: 'groq' | 'heuristic';
+}
+
+interface AiRecommendedJob {
+    requisition: Requisition;
+    score: number;
+}
+
 function getStatusBadgeStyle(status: string): { backgroundColor: string; color: string; border: string } {
     if (status === 'submitted' || status === 'screening') {
         return {
@@ -148,63 +158,6 @@ function getStatusBadgeStyle(status: string): { backgroundColor: string; color: 
     };
 }
 
-function computeRecommendationScore(
-    requisition: Requisition,
-    profileSkills: string[],
-    experienceYears: number,
-    preferredDepartments: Set<string>
-): RecommendationResult {
-    let score = 0;
-
-    const minYearsExperience =
-        requisition.minExperienceYears ??
-        requisition.eligibilityCriteria?.minYearsExperience ??
-        0;
-
-    const profileSkillSet = new Set(
-        profileSkills.map(normalizeSkill).filter((skill) => skill.length > 0)
-    );
-
-    const requiredSkills = (requisition.requiredSkills ?? []).map((skill) => skill.trim());
-    const overlapSkills = requiredSkills.filter((skill) =>
-        profileSkillSet.has(normalizeSkill(skill))
-    );
-    const overlapCount = overlapSkills.length;
-
-    if (requiredSkills.length > 0 && profileSkillSet.size > 0) {
-        score += Math.round((overlapCount / requiredSkills.length) * 65);
-    } else if (profileSkillSet.size > 0) {
-        score += 15;
-    } else {
-        score += 10;
-    }
-
-    if (experienceYears >= minYearsExperience) {
-        score += 20;
-    } else if (minYearsExperience - experienceYears === 1) {
-        score += 10;
-    } else if (minYearsExperience - experienceYears === 2) {
-        score += 4;
-    } else {
-        score += 0;
-    }
-
-    if (preferredDepartments.has(requisition.department)) {
-        score += 10;
-    }
-
-    const openSlots = Math.max(requisition.slots - requisition.filledSlots, 0);
-    if (openSlots > 0) {
-        score += 5;
-    }
-
-    return {
-        score: Math.min(99, Math.max(0, score)),
-        overlapCount,
-        overlapSkills,
-    };
-}
-
 export default function CandidateDashboardPage() {
     const router = useRouter();
 
@@ -220,6 +173,8 @@ export default function CandidateDashboardPage() {
     const [experienceYears, setExperienceYears] = useState(0);
     const [activeApplications, setActiveApplications] = useState<CandidateApplication[]>([]);
     const [openRequisitions, setOpenRequisitions] = useState<Requisition[]>([]);
+    const [recommendedJobs, setRecommendedJobs] = useState<AiRecommendedJob[]>([]);
+    const [loadingRecommendations, setLoadingRecommendations] = useState(true);
 
     useEffect(() => {
         let isMounted = true;
@@ -329,44 +284,78 @@ export default function CandidateDashboardPage() {
         return new Set(activeApplications.map((application) => application.requisitionId));
     }, [activeApplications]);
 
-    const [recommendedJobs, isRecommendationFallback] = useMemo(() => {
-        const preferredDepartments = new Set(
-            activeApplications.map((application) => application.requisition.department)
-        );
+    useEffect(() => {
+        let cancelled = false;
 
-        const hasProfileSkills = profileSkills.some((skill) => skill.trim().length > 0);
+        async function loadAiMatchScores() {
+            if (!cancelled) {
+                setLoadingRecommendations(true);
+            }
 
-        const recommendationPool = openRequisitions
-            .filter((requisition) => !activeRequisitionIds.has(requisition.id))
-            .map((requisition) => {
-                const recommendation = computeRecommendationScore(
-                    requisition,
-                    profileSkills,
-                    experienceYears,
-                    preferredDepartments
-                );
+            const recommendationPool = openRequisitions.filter(
+                (requisition) => !activeRequisitionIds.has(requisition.id)
+            );
 
-                return {
-                    requisition,
-                    score: recommendation.score,
-                    overlapCount: recommendation.overlapCount,
-                    overlapSkills: recommendation.overlapSkills,
-                };
-            });
+            if (recommendationPool.length === 0) {
+                if (!cancelled) {
+                    setRecommendedJobs([]);
+                    setLoadingRecommendations(false);
+                }
+                return;
+            }
 
-        const strictSkillMatches = hasProfileSkills
-            ? recommendationPool.filter((candidate) => candidate.overlapCount > 0)
-            : recommendationPool;
+            const entries = await Promise.all(
+                recommendationPool.map(async (requisition) => {
+                    try {
+                        const response = await fetch(
+                            buildApiUrl(`/api/applications/ai-score/${requisition.id}`),
+                            { credentials: 'include' }
+                        );
 
-        const usingFallback = hasProfileSkills && strictSkillMatches.length === 0;
-        const rankedPool = usingFallback ? recommendationPool : strictSkillMatches;
+                        if (!response.ok) {
+                            return null;
+                        }
 
-        const shortlisted = rankedPool
-            .sort((left, right) => right.score - left.score)
-            .slice(0, 3);
+                        const payload: AiScorePayload = await response.json();
+                        if (payload.source !== 'groq') {
+                            return null;
+                        }
 
-        return [shortlisted, usingFallback] as const;
-    }, [activeApplications, activeRequisitionIds, experienceYears, openRequisitions, profileSkills]);
+                        const score = Number(payload.overallScorePercent);
+
+                        if (!Number.isFinite(score)) {
+                            return null;
+                        }
+
+                        return {
+                            requisition,
+                            score,
+                        } satisfies AiRecommendedJob;
+                    } catch {
+                        return null;
+                    }
+                })
+            );
+
+            if (cancelled) {
+                return;
+            }
+
+            const ranked = entries
+                .filter((entry): entry is AiRecommendedJob => entry !== null)
+                .sort((left, right) => right.score - left.score)
+                .slice(0, 3);
+
+            setRecommendedJobs(ranked);
+            setLoadingRecommendations(false);
+        }
+
+        void loadAiMatchScores();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [activeRequisitionIds, openRequisitions]);
 
     const completedSectionLabels = completion.completedSections
         .map((section) => COMPLETION_SECTION_LABELS[section] || section)
@@ -576,19 +565,15 @@ export default function CandidateDashboardPage() {
                 {recommendedJobs.length === 0 ? (
                     <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '18px' }}>
                         <p style={{ color: '#64748b' }}>
-                            No recommendations available right now. Update your profile and check again.
+                            {loadingRecommendations
+                                ? 'Loading match recommendations...'
+                                : 'No match recommendations available yet. Upload a parsed resume and check again.'}
                         </p>
                     </div>
                 ) : (
                     <>
-                        {isRecommendationFallback && (
-                            <div style={{ marginBottom: '12px', backgroundColor: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '10px', padding: '10px 12px', color: '#9a3412', fontSize: '13px' }}>
-                                We could not find direct skill matches yet, so these are experience-based suggestions. Add more role-specific skills in your profile for tighter recommendations.
-                            </div>
-                        )}
-
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '14px' }}>
-                        {recommendedJobs.map(({ requisition, score, overlapSkills, overlapCount }) => {
+                        {recommendedJobs.map(({ requisition, score }) => {
                             const minYearsExperience =
                                 requisition.minExperienceYears ??
                                 requisition.eligibilityCriteria?.minYearsExperience ??
@@ -605,11 +590,6 @@ export default function CandidateDashboardPage() {
                                     <p style={{ color: '#64748b', fontSize: '12px', marginBottom: '8px' }}>
                                         {minYearsExperience}+ years experience
                                     </p>
-                                    {overlapCount > 0 && (
-                                        <p style={{ color: '#047857', fontSize: '12px', marginBottom: '8px' }}>
-                                            Skill match: {overlapSkills.slice(0, 3).join(', ')}
-                                        </p>
-                                    )}
                                     <p style={{ color: '#06b6d4', fontWeight: 700, fontSize: '12px', marginBottom: '10px' }}>
                                         Match {score}%
                                     </p>

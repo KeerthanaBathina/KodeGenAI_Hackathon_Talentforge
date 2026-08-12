@@ -29,21 +29,55 @@ interface EligibilityStatus {
     message?: string;
 }
 
+interface AiScoreResponse {
+    overallScorePercent?: number;
+    source?: 'groq' | 'heuristic';
+}
+
 export default function RequisitionCard({ requisition }: RequisitionCardProps) {
     const router = useRouter();
     const [eligibility, setEligibility] = useState<EligibilityStatus | null>(null);
     const [hasDraft, setHasDraft] = useState(false);
+    const [aiMatchPercent, setAiMatchPercent] = useState<number | null>(null);
+    const [aiMatchSource, setAiMatchSource] = useState<'groq' | 'heuristic' | null>(null);
+    const [isAiMatchPending, setIsAiMatchPending] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [showTooltip, setShowTooltip] = useState(false);
 
     useEffect(() => {
         async function checkStatus() {
             try {
+                const aiScorePromise = fetch(
+                    buildApiUrl(`/api/applications/ai-score/${requisition.id}`),
+                    { credentials: 'include' }
+                );
+
                 // Check eligibility (includes duplicate + cooling period)
                 const eligibilityResponse = await fetch(
                     buildApiUrl(`/api/requisitions/${requisition.id}/eligibility`),
                     { credentials: 'include' }
                 );
+
+                const aiScoreResponse = await aiScorePromise;
+
+                if (aiScoreResponse.ok) {
+                    const aiScoreData: AiScoreResponse = await aiScoreResponse.json();
+                    const overallScore = Number(aiScoreData.overallScorePercent);
+
+                    if (Number.isFinite(overallScore)) {
+                        setAiMatchPercent(overallScore);
+                        setAiMatchSource(aiScoreData.source === 'groq' ? 'groq' : 'heuristic');
+                        setIsAiMatchPending(false);
+                    }
+                } else if (aiScoreResponse.status === 409) {
+                    setAiMatchPercent(null);
+                    setAiMatchSource(null);
+                    setIsAiMatchPending(true);
+                } else {
+                    setAiMatchPercent(null);
+                    setAiMatchSource(null);
+                    setIsAiMatchPending(false);
+                }
 
                 if (eligibilityResponse.ok) {
                     const eligibilityData = await eligibilityResponse.json();
@@ -166,6 +200,32 @@ export default function RequisitionCard({ requisition }: RequisitionCardProps) {
                     ? `${slotsRemaining} position${slotsRemaining > 1 ? 's' : ''} available`
                     : 'No positions available'}
             </div>
+
+            {aiMatchPercent !== null && (
+                <div
+                    title={`Match score source: ${aiMatchSource === 'groq' ? 'Groq' : 'Heuristic fallback'}`}
+                    style={{
+                        marginBottom: '1rem',
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        color: '#1d4ed8',
+                    }}
+                >
+                    Match: {aiMatchPercent}%
+                </div>
+            )}
+
+            {aiMatchPercent === null && isAiMatchPending && (
+                <div
+                    style={{
+                        marginBottom: '1rem',
+                        fontSize: '0.8125rem',
+                        color: '#6b7280',
+                    }}
+                >
+                    Match score is being prepared...
+                </div>
+            )}
 
             {/* Application Status States */}
             {!isLoading && eligibility && (

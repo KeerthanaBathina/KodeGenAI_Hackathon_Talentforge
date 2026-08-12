@@ -76,6 +76,7 @@ export default function LoginPage() {
         localStorage.removeItem('auth_token');
         localStorage.removeItem('auth_role');
         localStorage.removeItem('auth_email');
+        localStorage.removeItem('auth_phone');
 
         if (!email || !password) {
             setError('Email and password are required');
@@ -166,6 +167,22 @@ export default function LoginPage() {
                 localStorage.setItem('auth_role', role);
             }
             localStorage.setItem('auth_email', normalizedEmail);
+
+                if ((body.user?.role ?? 'candidate') === 'candidate') {
+                    try {
+                        const contactInfoResponse = await fetch(buildApiUrl('/api/applications/contact-info'), {
+                            credentials: 'include',
+                        });
+                        if (contactInfoResponse.ok) {
+                            const contactInfo = await contactInfoResponse.json();
+                            if (typeof contactInfo?.phone === 'string' && contactInfo.phone.trim().length > 0) {
+                                localStorage.setItem('auth_phone', contactInfo.phone.trim());
+                            }
+                        }
+                    } catch {
+                        // Non-blocking: phone fallback can still come from profile/contact fetch on apply page.
+                    }
+                }
 
             router.push(redirectTo);
         } catch (err) {
