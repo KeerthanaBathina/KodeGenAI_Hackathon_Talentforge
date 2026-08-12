@@ -9,6 +9,16 @@ const mocks = vi.hoisted(() => ({
     overrideApplicationPath: vi.fn(),
     scheduleInitialInterviewFromManualReview: vi.fn(),
     bulkRejectApplications: vi.fn(),
+    getResumeFileByApplicationId: vi.fn(),
+    ResumeUploadError: class ResumeUploadError extends Error {
+        code: string;
+
+        constructor(code: string, message: string) {
+            super(message);
+            this.code = code;
+            this.name = 'ResumeUploadError';
+        }
+    },
     InvalidReasonCodeError: class InvalidReasonCodeError extends Error {},
     ApplicationDecisionLockedError: class ApplicationDecisionLockedError extends Error {},
     InvalidPathOverrideError: class InvalidPathOverrideError extends Error {
@@ -64,6 +74,11 @@ vi.mock('../../services/manualReviewQueueService', () => ({
     InvalidPathOverrideError: mocks.InvalidPathOverrideError,
 }));
 
+vi.mock('../../services/resumeService', () => ({
+    getResumeFileByApplicationId: mocks.getResumeFileByApplicationId,
+    ResumeUploadError: mocks.ResumeUploadError,
+}));
+
 import manualReviewQueueRouter from '../manualReviewQueue';
 
 function createTestApp() {
@@ -81,6 +96,7 @@ describe('manual review queue API integration tests', () => {
         mocks.overrideApplicationPath.mockReset();
         mocks.scheduleInitialInterviewFromManualReview.mockReset();
         mocks.bulkRejectApplications.mockReset();
+        mocks.getResumeFileByApplicationId.mockReset();
     });
 
     it('forwards filters and returns SLA + decision metadata fields', async () => {
@@ -204,6 +220,27 @@ describe('manual review queue API integration tests', () => {
             },
         ]);
         expect(mocks.getDecisionReasonCodes).toHaveBeenCalledWith('shortlisted');
+    });
+
+    it('streams the uploaded resume inline for authorized reviewers', async () => {
+        mocks.getResumeFileByApplicationId.mockResolvedValue({
+            resumeId: 'resume-1',
+            fileName: 'alex-resume.pdf',
+            mimeType: 'application/pdf',
+            bytes: Buffer.from('%PDF-1.4 test resume'),
+        });
+
+        const app = createTestApp();
+        const response = await request(app)
+            .get('/api/manual-review-queue/app-1/resume')
+            .set('x-test-role', 'hr_manager');
+
+        expect(response.status).toBe(200);
+        expect(response.headers['content-type']).toContain('application/pdf');
+        expect(response.headers['content-disposition']).toContain('inline; filename="alex-resume.pdf"');
+        expect(response.headers['x-frame-options']).toBeUndefined();
+        expect(response.headers['content-security-policy']).toContain("frame-ancestors 'self'");
+        expect(mocks.getResumeFileByApplicationId).toHaveBeenCalledWith('app-1');
     });
 
     it('returns 400 for invalid reason-code query enums', async () => {

@@ -11,6 +11,7 @@
 
 import React from 'react';
 import { useCallback, useEffect, useState } from 'react';
+import { buildApiUrl } from '@/lib/api/url';
 import {
     getManualReviewQueue,
     getManualReviewReasonCodes,
@@ -395,6 +396,18 @@ export function ManualReviewQueueTable({
         } finally {
             setBulkSubmitting(false);
         }
+    }
+
+    function handleOpenResumePreview(item: ManualReviewQueueItem) {
+        if (!item.resumeId) {
+            return;
+        }
+
+        window.open(
+            buildApiUrl(`/api/manual-review-queue/${item.id}/resume`),
+            '_blank',
+            'noopener,noreferrer'
+        );
     }
 
     function handleCancelPathOverride() {
@@ -853,13 +866,24 @@ export function ManualReviewQueueTable({
                             <th
                                 style={{
                                     padding: '12px 16px',
+                                    textAlign: 'center',
+                                    fontSize: '13px',
+                                    fontWeight: 600,
+                                    color: '#374151',
+                                }}
+                            >
+                                Resume
+                            </th>
+                            <th
+                                style={{
+                                    padding: '12px 16px',
                                     textAlign: 'left',
                                     fontSize: '13px',
                                     fontWeight: 600,
                                     color: '#374151',
                                 }}
                             >
-                                Review Reason
+                                Status
                             </th>
                             <th
                                 style={{
@@ -1043,8 +1067,32 @@ export function ManualReviewQueueTable({
                                         {item.pathOverridden ? ' (overridden)' : ''}
                                     </span>
                                 </td>
+                                <td style={{ padding: '16px', textAlign: 'center' }}>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleOpenResumePreview(item)}
+                                        disabled={!item.resumeId}
+                                        aria-label={`View resume for ${item.candidateName}`}
+                                        style={{
+                                            padding: '6px 12px',
+                                            fontSize: '13px',
+                                            fontWeight: 600,
+                                            color: '#FFFFFF',
+                                            backgroundColor: item.resumeId ? '#2563EB' : '#9CA3AF',
+                                            border: 'none',
+                                            borderRadius: '6px',
+                                            cursor: item.resumeId ? 'pointer' : 'not-allowed',
+                                            whiteSpace: 'nowrap',
+                                        }}
+                                    >
+                                        View Resume
+                                    </button>
+                                </td>
                                 <td style={{ padding: '16px' }}>
-                                    <ReviewReasonBadge reason={item.manualReviewReason} />
+                                    <ReviewReasonBadge
+                                        reason={item.manualReviewReason}
+                                        scheduledStageType={item.scheduledStageType}
+                                    />
                                 </td>
                                 <td style={{ padding: '16px', textAlign: 'right' }}>
                                     <div

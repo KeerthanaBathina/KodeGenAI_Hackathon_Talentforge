@@ -29,14 +29,6 @@ const INTERNAL_USER_ROLES = new Set([
 ]);
 
 function extractAuthToken(req: Request): string | null {
-    const authHeader = req.headers.authorization;
-    if (typeof authHeader === 'string' && authHeader.toLowerCase().startsWith('bearer ')) {
-        const bearerToken = authHeader.slice(7).trim();
-        if (bearerToken.length > 0) {
-            return bearerToken;
-        }
-    }
-
     const cookieToken = req.cookies?.auth_token;
     if (typeof cookieToken === 'string' && cookieToken.length > 0) {
         return cookieToken;
@@ -47,6 +39,14 @@ function extractAuthToken(req: Request): string | null {
         const match = rawCookieHeader.match(/(?:^|;\s*)auth_token=([^;]+)/);
         if (match?.[1]) {
             return decodeURIComponent(match[1]);
+        }
+    }
+
+    const authHeader = req.headers.authorization;
+    if (typeof authHeader === 'string' && authHeader.toLowerCase().startsWith('bearer ')) {
+        const bearerToken = authHeader.slice(7).trim();
+        if (bearerToken.length > 0) {
+            return bearerToken;
         }
     }
 

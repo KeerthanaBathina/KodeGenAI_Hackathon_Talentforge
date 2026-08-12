@@ -337,6 +337,10 @@ export interface ManualReviewQueueItem {
     requisitionDepartment: string;
     status: string;
     manualReviewReason: string | null;
+    resumeId?: string | null;
+    resumeFileName?: string | null;
+    resumeMimeType?: string | null;
+    scheduledStageType?: InterviewStageType | null;
     submittedAt: Date;
     screeningScore?: number | null;
     screeningConfidence?: number | null;
@@ -634,6 +638,26 @@ export async function getManualReviewQueue(
                     score: true,
                 },
             },
+            resume: {
+                select: {
+                    id: true,
+                    fileName: true,
+                    mimeType: true,
+                },
+            },
+            interviewStages: {
+                where: {
+                    state: 'scheduled',
+                    scheduledAt: { not: null },
+                },
+                orderBy: {
+                    scheduledAt: 'desc',
+                },
+                take: 1,
+                select: {
+                    type: true,
+                },
+            },
         },
     });
 
@@ -662,6 +686,10 @@ export async function getManualReviewQueue(
                 requisitionDepartment: app.requisition.department,
                 status: app.status,
                 manualReviewReason: app.manualReviewReason,
+                resumeId: app.resume?.id ?? null,
+                resumeFileName: app.resume?.fileName ?? null,
+                resumeMimeType: app.resume?.mimeType ?? null,
+                scheduledStageType: app.interviewStages[0]?.type ?? null,
                 path: app.path,
                 pathOverridden: app.pathOverridden,
                 submittedAt: app.submittedAt,

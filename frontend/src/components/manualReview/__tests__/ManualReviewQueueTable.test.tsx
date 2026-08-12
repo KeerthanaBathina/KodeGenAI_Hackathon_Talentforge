@@ -4,6 +4,8 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ManualReviewQueueTable } from '../ManualReviewQueueTable';
 
+const openSpy = vi.fn();
+
 const mocks = vi.hoisted(() => ({
   getManualReviewQueue: vi.fn(),
   getManualReviewReasonCodes: vi.fn(),
@@ -50,6 +52,9 @@ function buildResponse() {
         requisitionDepartment: 'Engineering',
         status: 'pending_review',
         manualReviewReason: 'low_confidence',
+        resumeId: 'resume-red',
+        resumeFileName: 'alex-red-resume.pdf',
+        resumeMimeType: 'application/pdf',
         submittedAt: '2026-07-25T00:00:00.000Z',
         screeningScore: 82,
         screeningConfidence: 0.9,
@@ -74,10 +79,15 @@ function buildResponse() {
         requisitionDepartment: 'Engineering',
         status: 'pending_review',
         manualReviewReason: 'flagged',
+        resumeId: 'resume-amber',
+        resumeFileName: 'blair-amber-resume.docx',
+        resumeMimeType:
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         submittedAt: '2026-07-25T00:00:00.000Z',
         screeningScore: 71,
         screeningConfidence: 0.7,
         aptitudeScore: 84,
+        scheduledStageType: 'coding',
         path: 'experienced',
         pathOverridden: true,
         slaDeadlineAt: '2026-07-27T00:00:00.000Z',
@@ -99,6 +109,8 @@ function buildResponse() {
 
 describe('ManualReviewQueueTable', () => {
   beforeEach(() => {
+    openSpy.mockReset();
+    vi.stubGlobal('open', openSpy);
     mocks.getManualReviewQueue.mockReset();
     mocks.getManualReviewReasonCodes.mockReset();
     mocks.markApplicationAsReviewed.mockReset();
@@ -246,10 +258,33 @@ describe('ManualReviewQueueTable', () => {
     render(<ManualReviewQueueTable />);
 
     expect(await screen.findByText('Alex Red')).toBeInTheDocument();
+    expect(screen.getByText('Resume')).toBeInTheDocument();
     expect(screen.getByText('Test Score')).toBeInTheDocument();
     expect(screen.getByLabelText('Interview path fresher')).toBeInTheDocument();
     expect(screen.getByText('experienced (overridden)')).toBeInTheDocument();
     expect(screen.getByText('84%')).toBeInTheDocument();
+  });
+
+  it('opens resume in a new tab', async () => {
+    const user = userEvent.setup();
+    render(<ManualReviewQueueTable />);
+
+    await screen.findByText('Alex Red');
+    await user.click(screen.getByRole('button', { name: 'View resume for Alex Red' }));
+
+    expect(openSpy).toHaveBeenCalledWith(
+      expect.stringContaining('/api/manual-review-queue/app-red/resume'),
+      '_blank',
+      'noopener,noreferrer'
+    );
+  });
+
+  it('shows scheduled stage text in review reason when a stage is scheduled', async () => {
+    render(<ManualReviewQueueTable />);
+
+    expect(await screen.findByText('Alex Red')).toBeInTheDocument();
+    expect(screen.getByText('Programming Scheduled')).toBeInTheDocument();
+    expect(screen.queryByText('queue unavailable dev')).not.toBeInTheDocument();
   });
 
   it('opens path override modal, validates justification length, and submits override', async () => {

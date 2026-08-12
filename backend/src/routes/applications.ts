@@ -429,13 +429,21 @@ router.get('/mine', authenticate, async (req, res) => {
                 },
                 interviewStages: {
                     where: {
-                        state: 'scheduled',
-                        scheduledAt: { not: null },
+                        OR: [
+                            {
+                                state: 'scheduled',
+                                scheduledAt: { not: null },
+                            },
+                            {
+                                type: 'aptitude',
+                                state: 'completed',
+                            },
+                        ],
                     },
                     orderBy: [{ scheduledAt: 'desc' }],
-                    take: 1,
                     select: {
                         type: true,
+                        state: true,
                         scheduledAt: true,
                         endAt: true,
                         timezone: true,
@@ -444,18 +452,28 @@ router.get('/mine', authenticate, async (req, res) => {
             },
         });
 
-        const responseData = applications.map(({ assessmentSessions, interviewStages, ...application }) => ({
-            ...application,
-            aptitudeTestUrl: assessmentSessions[0]?.testUrl ?? null,
-            scheduledStage: interviewStages[0]
-                ? {
-                      type: interviewStages[0].type,
-                      scheduledAt: interviewStages[0].scheduledAt?.toISOString() ?? null,
-                      endAt: interviewStages[0].endAt?.toISOString() ?? null,
-                      timezone: interviewStages[0].timezone,
-                  }
-                : null,
-        }));
+        const responseData = applications.map(({ assessmentSessions, interviewStages, ...application }) => {
+            const scheduledStage = interviewStages.find(
+                (stage) => stage.state === 'scheduled' && stage.scheduledAt !== null
+            );
+            const hasCompletedAptitudeStep = interviewStages.some(
+                (stage) => stage.type === 'aptitude' && stage.state === 'completed'
+            );
+
+            return {
+                ...application,
+                aptitudeTestUrl: assessmentSessions[0]?.testUrl ?? null,
+                scheduledStage: scheduledStage
+                    ? {
+                          type: scheduledStage.type,
+                          scheduledAt: scheduledStage.scheduledAt?.toISOString() ?? null,
+                          endAt: scheduledStage.endAt?.toISOString() ?? null,
+                          timezone: scheduledStage.timezone,
+                      }
+                    : null,
+                hasCompletedAptitudeStep,
+            };
+        });
 
         return res.status(200).json({
             data: responseData,

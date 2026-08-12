@@ -50,6 +50,20 @@ function createCorsOriginValidator() {
   const normalizedConfiguredOrigin = env.FRONTEND_URL.replace(/\/$/, '');
   const allowedOrigins = new Set<string>([normalizedConfiguredOrigin]);
 
+  const isAllowedLocalDevOrigin = (origin: string): boolean => {
+    if (env.NODE_ENV !== 'development') {
+      return false;
+    }
+
+    try {
+      const parsed = new URL(origin);
+      const isLoopbackHost = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
+      return (parsed.protocol === 'http:' || parsed.protocol === 'https:') && isLoopbackHost;
+    } catch {
+      return false;
+    }
+  };
+
   if (env.NODE_ENV === 'development') {
     [
       'http://localhost:3000',
@@ -67,7 +81,7 @@ function createCorsOriginValidator() {
     }
 
     const normalizedOrigin = origin.replace(/\/$/, '');
-    if (allowedOrigins.has(normalizedOrigin)) {
+    if (allowedOrigins.has(normalizedOrigin) || isAllowedLocalDevOrigin(normalizedOrigin)) {
       callback(null, true);
       return;
     }

@@ -112,7 +112,7 @@ export function QueueStatsSummary() {
             </div>
 
             {/* By Reason Cards */}
-            {Object.entries(stats.byReason).map(([reason, count]) => (
+            {/* {Object.entries(stats.byReason).map(([reason, count]) => (
                 <div
                     key={reason}
                     style={{
@@ -142,7 +142,7 @@ export function QueueStatsSummary() {
                         {count}
                     </div>
                 </div>
-            ))}
+            ))} */}
 
             {/* Oldest Application Age Card */}
             {stats.oldestApplicationAgeHours !== null && (

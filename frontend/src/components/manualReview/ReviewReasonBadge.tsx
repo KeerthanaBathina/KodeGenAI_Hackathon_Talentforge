@@ -12,7 +12,15 @@ import React from 'react';
 
 interface ReviewReasonBadgeProps {
     reason: string | null;
+    scheduledStageType?: 'aptitude' | 'coding' | 'technical' | 'hr' | null;
 }
+
+const scheduledStageLabels: Record<NonNullable<ReviewReasonBadgeProps['scheduledStageType']>, string> = {
+    aptitude: 'Aptitude Scheduled',
+    coding: 'Programming Scheduled',
+    technical: 'Technical Interview Scheduled',
+    hr: 'HR Round Scheduled',
+};
 
 const reasonConfig: Record<
     string,
@@ -40,7 +48,27 @@ const reasonConfig: Record<
     },
 };
 
-export function ReviewReasonBadge({ reason }: ReviewReasonBadgeProps) {
+export function ReviewReasonBadge({ reason, scheduledStageType }: ReviewReasonBadgeProps) {
+    if (scheduledStageType) {
+        return (
+            <span
+                style={{
+                    display: 'inline-block',
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    backgroundColor: '#DBEAFE',
+                    color: '#1D4ED8',
+                }}
+                role="status"
+                aria-label={`Review reason: ${scheduledStageLabels[scheduledStageType]}`}
+            >
+                {scheduledStageLabels[scheduledStageType]}
+            </span>
+        );
+    }
+
     if (!reason) {
         return (
             <span

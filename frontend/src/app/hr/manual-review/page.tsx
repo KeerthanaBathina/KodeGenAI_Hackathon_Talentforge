@@ -221,7 +221,7 @@ export default function ManualReviewQueuePage() {
     return (
         <div
             style={{
-                maxWidth: '1400px',
+                maxWidth: '1500px',
                 margin: '0 auto',
                 padding: '32px 24px',
             }}

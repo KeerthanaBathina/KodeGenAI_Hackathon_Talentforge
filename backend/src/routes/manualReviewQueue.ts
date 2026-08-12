@@ -10,15 +10,18 @@
 
 import express from 'express';
 import { z } from 'zod';
+import { env } from '../config/env';
 import { ManualReviewQueueService } from '../services/manualReviewQueueService';
 import { InvalidReasonCodeError } from '../services/manualReviewQueueService';
 import { ApplicationDecisionLockedError } from '../services/manualReviewQueueService';
 import { InvalidPathOverrideError } from '../services/manualReviewQueueService';
+import { getResumeFileByApplicationId, ResumeUploadError } from '../services/resumeService';
 import { authenticate } from '../middleware/authenticate';
 import { authorize } from '../middleware/authorize';
 import { InterviewConflictError, PrerequisiteNotMetError } from '../services/interviewSchedulingService';
 
 const router = express.Router();
+const manualReviewFrameAncestor = new URL(env.FRONTEND_URL).origin;
 
 // Apply authentication to all routes
 router.use(authenticate);
@@ -197,6 +200,47 @@ router.get(
                 console.error('[ManualReviewQueue] Failed to fetch reason codes:', error);
                 res.status(500).json({ error: 'Failed to fetch reason codes' });
             }
+        }
+    }
+);
+
+router.get(
+    '/:id/resume',
+    authorize(['recruiter', 'hr_reviewer', 'hr_manager']),
+    async (req, res) => {
+        try {
+            const { id } = req.params;
+
+            if (!id) {
+                res.status(400).json({ error: 'Application ID is required' });
+                return;
+            }
+
+            const resume = await getResumeFileByApplicationId(id);
+
+            if (!resume) {
+                res.status(404).json({ error: 'Resume not found' });
+                return;
+            }
+
+            const safeFileName = resume.fileName.replace(/[\r\n"]/g, '_');
+            res.removeHeader('X-Frame-Options');
+            res.setHeader(
+                'Content-Security-Policy',
+                `default-src 'none'; frame-ancestors 'self' ${manualReviewFrameAncestor}; sandbox allow-same-origin allow-scripts allow-downloads`
+            );
+            res.setHeader('Content-Type', resume.mimeType);
+            res.setHeader('Content-Disposition', `inline; filename="${safeFileName}"`);
+            res.setHeader('Content-Length', resume.bytes.length.toString());
+            res.status(200).send(resume.bytes);
+        } catch (error) {
+            if (error instanceof ResumeUploadError && error.code === 'RESUME_DOWNLOAD_FAILED') {
+                res.status(502).json({ error: 'Failed to load resume file' });
+                return;
+            }
+
+            console.error('[ManualReviewQueue] Failed to load resume preview:', error);
+            res.status(500).json({ error: 'Failed to load resume preview' });
         }
     }
 );

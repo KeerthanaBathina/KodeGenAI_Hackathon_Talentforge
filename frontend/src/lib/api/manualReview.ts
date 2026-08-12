@@ -16,6 +16,10 @@ export interface ManualReviewQueueItem {
     requisitionDepartment: string;
     status: 'pending_review' | 'shortlisted' | 'rejected' | string;
     manualReviewReason: string | null;
+    resumeId?: string | null;
+    resumeFileName?: string | null;
+    resumeMimeType?: 'application/pdf' | 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' | string | null;
+    scheduledStageType?: 'aptitude' | 'coding' | 'technical' | 'hr' | null;
     submittedAt: string;
     screeningScore?: number | null;
     screeningConfidence?: number | null;

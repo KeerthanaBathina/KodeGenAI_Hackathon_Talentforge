@@ -1,9 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import prisma from '../db/prisma';
 import { env } from '../config/env';
 import logger from '../utils/logger';
 
 const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+const LOCAL_UPLOAD_ROOT = resolve(process.cwd(), '.local-resume-storage');
 
 const ALLOWED_MIME_TYPES = [
     'application/pdf',
@@ -36,6 +39,13 @@ export interface GeneratePresignedUrlResult {
     storageKey: string;
     resumeId: string;
     expiresIn: number;
+}
+
+export interface ResumeFilePayload {
+    resumeId: string;
+    fileName: string;
+    mimeType: string;
+    bytes: Buffer;
 }
 
 export class ResumeUploadError extends Error {
@@ -131,5 +141,50 @@ export async function generatePresignedUrl(
         storageKey,
         resumeId: resume.id,
         expiresIn: PRESIGNED_URL_EXPIRY_SECONDS,
+    };
+}
+
+export async function getResumeFileByApplicationId(
+    applicationId: string
+): Promise<ResumeFilePayload | null> {
+    const resume = await prisma.resume.findUnique({
+        where: { applicationId },
+        select: {
+            id: true,
+            storageKey: true,
+            fileName: true,
+            mimeType: true,
+        },
+    });
+
+    if (!resume) {
+        return null;
+    }
+
+    let bytes: Buffer;
+
+    if (isLocalResumeUploadMode()) {
+        bytes = await readFile(resolve(LOCAL_UPLOAD_ROOT, resume.storageKey));
+    } else {
+        const { data, error } = await supabase.storage.from('resumes').download(resume.storageKey);
+
+        if (error || !data) {
+            logger.error('Failed to download resume from storage', {
+                error,
+                applicationId,
+                resumeId: resume.id,
+                storageKey: resume.storageKey,
+            });
+            throw new ResumeUploadError('RESUME_DOWNLOAD_FAILED', 'Failed to download resume');
+        }
+
+        bytes = Buffer.from(await data.arrayBuffer());
+    }
+
+    return {
+        resumeId: resume.id,
+        fileName: resume.fileName,
+        mimeType: resume.mimeType,
+        bytes,
     };
 }

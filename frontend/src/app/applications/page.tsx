@@ -13,6 +13,7 @@ interface CandidateApplication {
     submittedAt: string;
     draftSavedAt?: string | null;
     aptitudeTestUrl?: string | null;
+    hasCompletedAptitudeStep?: boolean;
     scheduledStage?: {
         type: 'aptitude' | 'coding' | 'technical' | 'hr' | string;
         scheduledAt: string | null;
@@ -199,8 +200,13 @@ export default function ApplicationsPage() {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '12px' }}>
                         {applications.map((application) => {
                             const statusBadge = getStatusBadgeStyle(application.status);
-                            const hasScheduledCandidateStep =
-                                Boolean(application.aptitudeTestUrl) || Boolean(application.scheduledStage);
+                            const candidateStepMessage = application.scheduledStage
+                                ? `Check your email. Your ${formatStageLabel(application.scheduledStage.type)} got scheduled.`
+                                : application.aptitudeTestUrl
+                                  ? 'Check your email. Your aptitude test got scheduled.'
+                                  : application.hasCompletedAptitudeStep
+                                    ? 'Your aptitude test is completed. Wait for further communication.'
+                                    : null;
 
                             const isDraft = application.status === 'draft';
                             const primaryHref = isDraft
@@ -229,11 +235,9 @@ export default function ApplicationsPage() {
                                             : `Submitted on ${new Date(application.submittedAt).toLocaleDateString()}`}
                                     </p>
 
-                                    {!isDraft && hasScheduledCandidateStep ? (
+                                    {!isDraft && candidateStepMessage ? (
                                         <p style={{ color: '#0f766e', fontSize: '13px', fontWeight: 600, marginBottom: '12px' }}>
-                                            {application.scheduledStage
-                                                ? `Check your email. Your ${formatStageLabel(application.scheduledStage.type)} got scheduled.`
-                                                : 'Check your email. Your aptitude test got scheduled.'}
+                                            {candidateStepMessage}
                                         </p>
                                     ) : null}
 
