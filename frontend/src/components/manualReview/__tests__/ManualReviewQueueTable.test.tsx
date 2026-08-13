@@ -287,6 +287,25 @@ describe('ManualReviewQueueTable', () => {
     expect(screen.queryByText('queue unavailable dev')).not.toBeInTheDocument();
   });
 
+  it('shows unknown status when interview is not scheduled and queue status is unavailable', async () => {
+    mocks.getManualReviewQueue.mockResolvedValueOnce({
+      ...buildResponse(),
+      items: [
+        {
+          ...buildResponse().items[0],
+          status: 'queue_unavailable_dev',
+          scheduledStageType: null,
+        },
+      ],
+      total: 1,
+    });
+
+    render(<ManualReviewQueueTable />);
+
+    expect(await screen.findByText('Alex Red')).toBeInTheDocument();
+    expect(screen.getByText('unknown status')).toBeInTheDocument();
+  });
+
   it('opens path override modal, validates justification length, and submits override', async () => {
     const user = userEvent.setup();
     mocks.overrideApplicationPath.mockResolvedValue({

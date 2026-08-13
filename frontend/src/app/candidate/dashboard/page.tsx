@@ -76,6 +76,19 @@ const STATUS_LABELS: Record<string, string> = {
     withdrawn: 'Withdrawn',
 };
 
+function getApplicationStatusLabel(application: CandidateApplication): string {
+    const normalizedStatus = application.status.trim().toLowerCase().replace(/\s+/g, '_');
+
+    if (
+        !application.scheduledStage &&
+        (normalizedStatus === 'queue_unavailable_dev' || normalizedStatus === 'queue_unavailable')
+    ) {
+        return 'Unknown Status';
+    }
+
+    return STATUS_LABELS[normalizedStatus] || application.status;
+}
+
 function formatJobType(jobType: string): string {
     const labels: Record<string, string> = {
         full_time: 'Full-time',
@@ -527,7 +540,7 @@ export default function CandidateDashboardPage() {
                                             </p>
                                         </div>
                                         <span style={{ borderRadius: '6px', padding: '4px 8px', fontSize: '12px', fontWeight: 600, height: 'fit-content', ...statusBadge }}>
-                                            {STATUS_LABELS[application.status] || application.status}
+                                            {getApplicationStatusLabel(application)}
                                         </span>
                                     </div>
 

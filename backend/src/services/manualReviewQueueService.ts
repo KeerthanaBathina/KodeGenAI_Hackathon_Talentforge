@@ -272,6 +272,12 @@ async function dispatchDecisionCommunication(
                 },
                 '[MOCK EMAIL] decision notification dispatched'
             );
+        } else {
+            await sendEmail(
+                communication.application.candidate.email,
+                rendered.subject,
+                rendered.bodyHtml
+            );
         }
 
         await prisma.communication.update({

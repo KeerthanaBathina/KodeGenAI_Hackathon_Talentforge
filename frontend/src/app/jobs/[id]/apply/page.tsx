@@ -915,42 +915,66 @@ export default function ApplicationFormPage() {
 
                 {/* Progress Indicator */}
                 <div style={{ marginBottom: '2rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                        {[1, 2, 3, 4].map((step) => (
-                            <div key={step} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                        {['Personal Info', 'Experience', 'Cover Letter', 'Review & Resume'].map((label, index) => {
+                            const step = index + 1;
+                            const emphasized = step <= currentStep;
+
+                            return (
                                 <div
+                                    key={label}
                                     style={{
-                                        width: '2rem',
-                                        height: '2rem',
-                                        borderRadius: '50%',
-                                        backgroundColor: step <= currentStep ? '#3b82f6' : '#d1d5db',
-                                        color: 'white',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontWeight: '600',
+                                        flex: 1,
+                                        position: 'relative',
+                                        textAlign: 'center',
                                     }}
                                 >
-                                    {step < currentStep ? '✓' : step}
-                                </div>
-                                {step < 4 && (
+                                    {step < 4 && (
+                                        <div
+                                            style={{
+                                                position: 'absolute',
+                                                top: '1rem',
+                                                left: '50%',
+                                                right: '-50%',
+                                                height: '2px',
+                                                backgroundColor: step < currentStep ? '#3b82f6' : '#d1d5db',
+                                            }}
+                                        />
+                                    )}
+
                                     <div
                                         style={{
-                                            flex: 1,
-                                            height: '2px',
-                                            backgroundColor: step < currentStep ? '#3b82f6' : '#d1d5db',
-                                            marginLeft: '0.5rem',
+                                            width: '2rem',
+                                            height: '2rem',
+                                            margin: '0 auto',
+                                            borderRadius: '50%',
+                                            backgroundColor: emphasized ? '#3b82f6' : '#d1d5db',
+                                            color: 'white',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontWeight: '600',
+                                            position: 'relative',
+                                            zIndex: 1,
                                         }}
-                                    />
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#6b7280' }}>
-                        <span>Personal Info</span>
-                        <span>Experience</span>
-                        <span>Cover Letter</span>
-                        <span>Review & Resume</span>
+                                    >
+                                        {step < currentStep ? '✓' : step}
+                                    </div>
+
+                                    <div
+                                        style={{
+                                            marginTop: '0.5rem',
+                                            fontSize: '0.75rem',
+                                            lineHeight: 1.2,
+                                            fontWeight: emphasized ? 600 : 500,
+                                            color: emphasized ? '#1E3A8A' : '#6B7280',
+                                        }}
+                                    >
+                                        {label}
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
 

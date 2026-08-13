@@ -79,6 +79,19 @@ const ALLOWED_STAGES_BY_PATH: Record<'fresher' | 'experienced', SchedulableStage
     experienced: ['technical', 'hr'],
 };
 
+function getDisplayStatus(
+    status: string,
+    scheduledStageType?: 'aptitude' | 'coding' | 'technical' | 'hr' | null,
+): string {
+    const normalizedStatus = status.trim().toLowerCase().replace(/\s+/g, '_');
+
+    if (!scheduledStageType && (normalizedStatus === 'queue_unavailable_dev' || normalizedStatus === 'queue_unavailable')) {
+        return 'unknown status';
+    }
+
+    return status.replace(/_/g, ' ');
+}
+
 export function ManualReviewQueueTable({
     filters = {},
     onQueueSnapshot,
@@ -968,7 +981,7 @@ export function ManualReviewQueueTable({
                                             textTransform: 'capitalize',
                                         }}
                                     >
-                                        {item.status.replace('_', ' ')}
+                                        {getDisplayStatus(item.status, item.scheduledStageType)}
                                     </span>
                                 </td>
                                 <td

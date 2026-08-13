@@ -21,6 +21,10 @@ const loggerMocks = vi.hoisted(() => ({
   debug: vi.fn(),
 }));
 
+const emailMocks = vi.hoisted(() => ({
+  sendEmail: vi.fn(),
+}));
+
 const prismaMocks = vi.hoisted(() => ({
   transaction: vi.fn(),
   communicationFindUnique: vi.fn(),
@@ -40,12 +44,16 @@ vi.mock('../../db/prisma', () => ({
 vi.mock('../../config/env', () => ({
   env: {
     REVIEW_QUEUE_SLA_HOURS: 48,
-    EMAIL_PROVIDER: 'mock',
+    EMAIL_PROVIDER: 'brevo',
   },
 }));
 
 vi.mock('../templateRenderer', () => ({
   renderTemplate: vi.fn((template: { subject: string; bodyHtml: string; bodyText: string }) => template),
+}));
+
+vi.mock('../brevoEmailService', () => ({
+  sendEmail: emailMocks.sendEmail,
 }));
 
 vi.mock('../../utils/logger', () => ({
@@ -101,6 +109,8 @@ describe('markAsReviewed side effects and audit behavior', () => {
     prismaMocks.transaction.mockReset();
     prismaMocks.communicationFindUnique.mockReset();
     prismaMocks.communicationUpdate.mockReset();
+    emailMocks.sendEmail.mockReset();
+    emailMocks.sendEmail.mockResolvedValue(undefined);
     loggerMocks.info.mockReset();
     loggerMocks.warn.mockReset();
     loggerMocks.error.mockReset();
@@ -242,9 +252,72 @@ describe('markAsReviewed side effects and audit behavior', () => {
     expect(prismaMocks.communicationFindUnique).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: 'comm-1' } })
     );
+    expect(emailMocks.sendEmail).toHaveBeenCalledWith(
+      'candidate@example.com',
+      'You are shortlisted for {{role_title}}',
+      '<p>Hi {{candidate_name}}</p>'
+    );
     expect(prismaMocks.communicationUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'comm-1' },
+        data: expect.objectContaining({ status: 'sent' }),
+      })
+    );
+  });
+
+  it('sends rejection email before marking the communication as sent', async () => {
+    txMocks.reasonCodeFindFirst.mockResolvedValue({ id: 'reason-2', code: 'skills_gap' });
+    txMocks.applicationFindUnique.mockResolvedValue({
+      id: 'app-2',
+      status: 'pending_review',
+      requisitionId: 'req-2',
+      manualReviewReason: 'flagged',
+      requisition: {
+        jobFamilyId: '00000003-0000-0000-0000-000000000001',
+      },
+    });
+    txMocks.templateFindFirst.mockResolvedValue({
+      id: 'tpl-reject',
+      type: 'rejection',
+      name: 'Application Rejected',
+    });
+    txMocks.communicationCreate.mockResolvedValue({ id: 'comm-2', status: 'queued' });
+    txMocks.reviewCreate.mockResolvedValue({ id: 'review-2' });
+    txMocks.auditEventCreate.mockResolvedValue({ id: 'audit-2' });
+
+    prismaMocks.communicationFindUnique.mockResolvedValue({
+      id: 'comm-2',
+      applicationId: 'app-2',
+      template: {
+        subject: 'Update on your application for {{role_title}}',
+        bodyHtml: '<p>Thank you for applying, {{candidate_name}}</p>',
+        bodyText: 'Thank you for applying, {{candidate_name}}',
+      },
+      application: {
+        id: 'app-2',
+        candidate: {
+          email: 'reject@example.com',
+          profile: { fullName: 'Candidate Two' },
+        },
+        requisition: {
+          title: 'QA Engineer',
+        },
+      },
+    });
+    prismaMocks.communicationUpdate.mockResolvedValue({ id: 'comm-2' });
+
+    await markAsReviewed('app-2', 'reviewer-2', 'rejected', 'skills_gap', 'Insufficient match.');
+
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    expect(emailMocks.sendEmail).toHaveBeenCalledWith(
+      'reject@example.com',
+      'Update on your application for {{role_title}}',
+      '<p>Thank you for applying, {{candidate_name}}</p>'
+    );
+    expect(prismaMocks.communicationUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'comm-2' },
         data: expect.objectContaining({ status: 'sent' }),
       })
     );

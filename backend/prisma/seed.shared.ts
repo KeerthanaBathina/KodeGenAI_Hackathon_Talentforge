@@ -1,6 +1,9 @@
 import { PrismaClient, ReasonCodeCategory, TemplateType, UserRole } from '@prisma/client';
 
 const REASON_CODES: Array<{ code: string; category: ReasonCodeCategory; displayText: string }> = [
+  { code: 'strong_skills_match', category: 'decision', displayText: 'Strong skills match for the role' },
+  { code: 'meets_core_requirements', category: 'decision', displayText: 'Meets core role requirements' },
+  { code: 'high_growth_potential', category: 'decision', displayText: 'High growth potential for the team' },
   { code: 'did_not_meet_requirements', category: 'rejection', displayText: 'Did not meet minimum job requirements' },
   { code: 'insufficient_experience', category: 'rejection', displayText: 'Insufficient years of relevant experience' },
   { code: 'skills_gap', category: 'rejection', displayText: 'Significant gap in required technical skills' },

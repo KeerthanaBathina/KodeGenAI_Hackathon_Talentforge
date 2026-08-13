@@ -18,7 +18,7 @@ import {
 import { renderTemplate } from '../services/templateRenderer';
 import { resolveTemplate } from '../services/templateService';
 import nodemailer, { type SendMailOptions, type Transporter } from 'nodemailer';
-import Brevo from '@getbrevo/brevo';
+import { BrevoClient } from '@getbrevo/brevo';
 import { prisma } from '../db/prisma';
 import { TemplateType } from '@prisma/client';
 
@@ -41,7 +41,7 @@ export type SendPasswordResetEmailInput = {
 };
 
 let smtpTransporter: Transporter | null = null;
-let brevoApiInstance: Brevo.TransactionalEmailsApi | null = null;
+let brevoApiInstance: BrevoClient | null = null;
 
 function getSmtpTransporter(): Transporter {
   if (smtpTransporter) {
@@ -65,7 +65,7 @@ function getSmtpTransporter(): Transporter {
   return smtpTransporter;
 }
 
-function getBrevoClient(): Brevo.TransactionalEmailsApi {
+function getBrevoClient(): BrevoClient {
   if (brevoApiInstance) {
     return brevoApiInstance;
   }
@@ -74,8 +74,9 @@ function getBrevoClient(): Brevo.TransactionalEmailsApi {
     throw new Error('BREVO_API_KEY is required when EMAIL_PROVIDER=brevo');
   }
 
-  const apiInstance = new Brevo.TransactionalEmailsApi();
-  apiInstance.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, env.BREVO_API_KEY);
+  const apiInstance = new BrevoClient({
+    apiKey: env.BREVO_API_KEY,
+  });
   brevoApiInstance = apiInstance;
   return apiInstance;
 }
@@ -166,7 +167,7 @@ export async function sendEmail(options: SendMailOptions): Promise<void> {
     const textContent = options.text?.toString() || undefined;
     const attachments = toBrevoAttachments(options.attachments);
 
-    const emailPayload: Brevo.SendSmtpEmail = {
+    const emailPayload = {
       sender: {
         name: env.BREVO_SENDER_NAME || 'Recruitment Portal',
         email: env.EMAIL_FROM,
@@ -178,7 +179,7 @@ export async function sendEmail(options: SendMailOptions): Promise<void> {
       attachment: attachments.length > 0 ? attachments : undefined,
     };
 
-    await getBrevoClient().sendTransacEmail(emailPayload);
+    await getBrevoClient().transactionalEmails.sendTransacEmail(emailPayload);
     return;
   }
 
