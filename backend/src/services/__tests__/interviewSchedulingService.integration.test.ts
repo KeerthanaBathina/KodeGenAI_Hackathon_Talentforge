@@ -71,6 +71,7 @@ vi.mock('../stagePrerequisiteService', () => ({
 }));
 
 import { scheduleInterview, InterviewConflictError } from '../interviewSchedulingService';
+import { dispatchInterviewInviteEmail } from '../interviewInviteService';
 
 describe('interviewSchedulingService', () => {
     beforeEach(() => {
@@ -237,5 +238,44 @@ describe('interviewSchedulingService', () => {
 
         expect(result.id).toBe('stage-override-1');
         expect(prerequisiteMocks.canScheduleStage).not.toHaveBeenCalled();
+        await flushSetImmediateQueue();
+    });
+
+    it('suppresses generic candidate invite when requested', async () => {
+        vi.mocked(dispatchInterviewInviteEmail).mockClear();
+
+        prismaMocks.interviewStageFindMany.mockResolvedValue([]);
+        prismaMocks.interviewStageCreate.mockResolvedValue({
+            id: 'stage-apt-1',
+            applicationId: 'app-1',
+            type: 'aptitude',
+            scheduledAt: new Date('2026-07-25T06:00:00.000Z'),
+            endAt: new Date('2026-07-25T06:45:00.000Z'),
+            timezone: 'Asia/Kolkata',
+            panelMembers: ['panel-1'],
+        });
+
+        const result = await scheduleInterview({
+            applicationId: 'app-1',
+            type: 'aptitude',
+            startAt: '2026-07-25T06:00:00.000Z',
+            endAt: '2026-07-25T06:45:00.000Z',
+            timezone: 'Asia/Kolkata',
+            panelMemberIds: ['panel-1'],
+            suppressCandidateInviteEmail: true,
+        });
+
+        await flushSetImmediateQueue();
+
+        const inviteDispatchMock = vi.mocked(dispatchInterviewInviteEmail);
+
+        expect(result.communicationsQueued).toBe(3);
+        expect(inviteDispatchMock).toHaveBeenCalled();
+        expect(inviteDispatchMock).not.toHaveBeenCalledWith(
+            expect.anything(),
+            expect.objectContaining({
+                email: 'candidate@example.com',
+            })
+        );
     });
 });

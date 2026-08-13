@@ -138,9 +138,9 @@ export default function ApplicationSuccessPage() {
                 )}
 
                 {/* Email Confirmation Notice */}
-                <p style={{ fontSize: '1rem', color: '#6b7280', marginBottom: '2rem' }}>
+                {/* <p style={{ fontSize: '1rem', color: '#6b7280', marginBottom: '2rem' }}>
                     A confirmation email has been sent to your inbox with tracking details.
-                </p>
+                </p> */}
 
                 {/* Action Buttons */}
                 <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>

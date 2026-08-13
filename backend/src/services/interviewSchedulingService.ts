@@ -31,6 +31,7 @@ export interface ScheduleInterviewInput {
     panelMemberIds: string[];
     joinUrl?: string;
     skipPrerequisiteCheck?: boolean;
+    suppressCandidateInviteEmail?: boolean;
 }
 
 export interface InterviewConflict {
@@ -361,12 +362,14 @@ export async function scheduleInterview(input: ScheduleInterviewInput): Promise<
 
     if (templateId) {
         const recipients = [
-            {
-                email: application.candidate.email,
-                name: application.candidate.profile?.fullName || 'Candidate',
-                timezone: application.candidate.timezone,
-                role: 'candidate' as const,
-            },
+            ...(input.suppressCandidateInviteEmail
+                ? []
+                : [{
+                    email: application.candidate.email,
+                    name: application.candidate.profile?.fullName || 'Candidate',
+                    timezone: application.candidate.timezone,
+                    role: 'candidate' as const,
+                }]),
             ...panelists.map((panelist) => ({
                 email: panelist.email,
                 name: panelist.fullName,
@@ -469,32 +472,34 @@ export async function scheduleInterview(input: ScheduleInterviewInput): Promise<
         });
 
         const reminderRecipients = recipients.map((recipient) => recipient.email);
-        const reminder24hAt = startAtUtc.getTime() - 24 * 60 * 60 * 1000;
-        const reminder1hAt = startAtUtc.getTime() - 60 * 60 * 1000;
+        if (reminderRecipients.length > 0) {
+            const reminder24hAt = startAtUtc.getTime() - 24 * 60 * 60 * 1000;
+            const reminder1hAt = startAtUtc.getTime() - 60 * 60 * 1000;
 
-        await enqueueInterviewReminder(
-            {
-                interviewId: stage.id,
-                applicationId: input.applicationId,
-                reminderType: '24h',
-                recipientEmails: reminderRecipients,
-                scheduledAt: startAtUtc.toISOString(),
-            },
-            reminder24hAt - Date.now()
-        );
+            await enqueueInterviewReminder(
+                {
+                    interviewId: stage.id,
+                    applicationId: input.applicationId,
+                    reminderType: '24h',
+                    recipientEmails: reminderRecipients,
+                    scheduledAt: startAtUtc.toISOString(),
+                },
+                reminder24hAt - Date.now()
+            );
 
-        await enqueueInterviewReminder(
-            {
-                interviewId: stage.id,
-                applicationId: input.applicationId,
-                reminderType: '1h',
-                recipientEmails: reminderRecipients,
-                scheduledAt: startAtUtc.toISOString(),
-            },
-            reminder1hAt - Date.now()
-        );
+            await enqueueInterviewReminder(
+                {
+                    interviewId: stage.id,
+                    applicationId: input.applicationId,
+                    reminderType: '1h',
+                    recipientEmails: reminderRecipients,
+                    scheduledAt: startAtUtc.toISOString(),
+                },
+                reminder1hAt - Date.now()
+            );
 
-        reminderJobsQueued = 2;
+            reminderJobsQueued = 2;
+        }
     }
 
     await auditEvent({

@@ -1465,6 +1465,7 @@ export async function scheduleInitialInterviewFromManualReview(
         panelMemberIds: [panelist.id],
         joinUrl,
         skipPrerequisiteCheck: true,
+        suppressCandidateInviteEmail: true,
     });
 
     const candidateName = application.candidate.profile?.fullName?.trim() || 'Candidate';
