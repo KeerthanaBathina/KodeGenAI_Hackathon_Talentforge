@@ -1,15 +1,7 @@
 name: Security Audit
 
 on:
-  pull_request:
-    branches:
-      - main
-    paths:
-      - frontend/package-lock.json
-      - backend/package-lock.json
-      - .github/workflows/security-audit.yml
-  schedule:
-    - cron: '0 8 * * 1'
+  workflow_dispatch:
 
 jobs:
   audit-frontend:

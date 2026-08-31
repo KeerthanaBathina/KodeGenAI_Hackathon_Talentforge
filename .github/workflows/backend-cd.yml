@@ -1,16 +1,7 @@
 name: Backend CD
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - backend/**
-      - .github/workflows/backend-cd.yml
-  pull_request:
-    types: [opened, synchronize, reopened]
-    paths:
-      - backend/**
+  workflow_dispatch:
 
 defaults:
   run:

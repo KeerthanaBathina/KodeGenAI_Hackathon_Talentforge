@@ -1,9 +1,7 @@
 name: CD Orchestrator
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 concurrency:
   group: production-deploy

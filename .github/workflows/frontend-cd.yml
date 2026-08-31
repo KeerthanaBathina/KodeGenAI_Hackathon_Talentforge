@@ -1,16 +1,7 @@
 name: Frontend CD
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - frontend/**
-      - .github/workflows/frontend-cd.yml
-  pull_request:
-    types: [opened, synchronize, reopened]
-    paths:
-      - frontend/**
+  workflow_dispatch:
 
 defaults:
   run:
